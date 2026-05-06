@@ -81,7 +81,7 @@ src/
 
 Deploy to Vercel in one click:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tornikepe/peit)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftornikepe%2Fpeit&env=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,NEXT_PUBLIC_CLERK_SIGN_IN_URL,NEXT_PUBLIC_CLERK_SIGN_UP_URL,NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL,NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL&envDescription=Get%20your%20Clerk%20API%20keys%20from%20dashboard.clerk.com&envLink=https%3A%2F%2Fdashboard.clerk.com&project-name=peit&repository-name=peit)
 
 Add your environment variables in the Vercel dashboard before deploying to production.
 
