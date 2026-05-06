@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   Zap, ArrowLeft, ArrowRight, Check, Bot as BotIcon,
   MessageSquare, Palette, Sparkles, Plus, Trash2,
+  Globe, Loader2, AlertCircle, Wand2,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
 import {
@@ -48,6 +49,80 @@ export default function NewBotPage() {
     ka: DEFAULT_GREETINGS.ka,
   });
   const [brandColor, setBrandColor] = useState<string>(BRAND_COLORS[0]);
+
+  // Site analysis state
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<{
+    title: string;
+    description: string;
+    detectedIndustry: string | null;
+    pagesScraped: number;
+    signals: Record<string, boolean>;
+    contact: { emails: string[]; phones: string[]; addresses: string[] };
+    source: 'ai' | 'heuristic';
+  } | null>(null);
+
+  async function analyzeSite() {
+    if (!websiteUrl.trim()) {
+      setAnalyzeError('გთხოვთ შეიყვანოთ ვებსაიტის URL');
+      return;
+    }
+    setAnalyzing(true);
+    setAnalyzeError(null);
+    setAnalysisResult(null);
+    try {
+      const res = await fetch('/api/analyze-site', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: websiteUrl, lang: primaryLang }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'ანალიზი ვერ მოხერხდა');
+      }
+
+      // Auto-fill industry if detected and user hasn't customized
+      if (data.analysis.detectedIndustry && industry === 'services') {
+        const matched = INDUSTRIES.find(i => i.slug === data.analysis.detectedIndustry);
+        if (matched) setIndustry(matched.slug);
+      }
+
+      // Auto-fill name if empty
+      if (!name.trim() && data.analysis.title) {
+        const cleanTitle = data.analysis.title
+          .replace(/\s*[|\-—–]\s*.*$/, '') // strip "| Tagline"
+          .slice(0, 60);
+        if (cleanTitle.length >= 2) setName(cleanTitle);
+      }
+
+      // Replace FAQs with generated ones
+      const generatedFaqs: FAQItem[] = (data.faqs as { q: string; a: string }[]).map(f => ({
+        id: createFaqId(),
+        q: f.q,
+        a: f.a,
+      }));
+
+      if (generatedFaqs.length > 0) {
+        setFaqs(generatedFaqs);
+      }
+
+      setAnalysisResult({
+        title: data.analysis.title,
+        description: data.analysis.description,
+        detectedIndustry: data.analysis.detectedIndustry,
+        pagesScraped: data.analysis.pagesScraped,
+        signals: data.analysis.signals,
+        contact: data.analysis.contact,
+        source: data.source,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'უცნობი შეცდომა';
+      setAnalyzeError(msg);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   // Validation per step
   const canNext = (() => {
@@ -271,21 +346,113 @@ export default function NewBotPage() {
                 </p>
               </div>
 
-              {/* Website URL */}
+              {/* Website URL + Analyze */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  ვებსაიტის URL <span className="text-gray-600 font-normal">(არჩევითი)</span>
+                  ვებსაიტის URL <span className="text-gray-600 font-normal">(ავტო-ანალიზი)</span>
                 </label>
-                <input
-                  type="url"
-                  value={websiteUrl}
-                  onChange={e => setWebsiteUrl(e.target.value)}
-                  placeholder="https://yourbusiness.ge"
-                  className="w-full bg-[#13131f] border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 transition-colors"
-                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+                    <input
+                      type="url"
+                      value={websiteUrl}
+                      onChange={e => { setWebsiteUrl(e.target.value); setAnalyzeError(null); }}
+                      placeholder="https://yourbusiness.ge"
+                      disabled={analyzing}
+                      className="w-full bg-[#13131f] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 transition-colors disabled:opacity-60"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={analyzeSite}
+                    disabled={analyzing || !websiteUrl.trim()}
+                    className="btn-primary inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-3 rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
+                  >
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        ანალიზი...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4" />
+                        გაანალიზე
+                      </>
+                    )}
+                  </button>
+                </div>
                 <p className="text-xs text-gray-600 mt-2">
-                  ბოტი ავტომატურად სკანერებს ვებსაიტს და ისწავლის კონტენტს. (მალე)
+                  ბოტი ავტომატურად წაიკითხავს საიტს, გაიგებს რას აკეთებთ და შექმნის FAQ-ებს.
                 </p>
+
+                {/* Error */}
+                {analyzeError && (
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-red-300 text-xs leading-relaxed">{analyzeError}</p>
+                  </div>
+                )}
+
+                {/* Result */}
+                {analysisResult && (
+                  <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
+                    <div className="flex items-start gap-2 mb-3">
+                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-emerald-300 text-sm font-semibold mb-0.5">
+                          ანალიზი დასრულდა
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          {analysisResult.pagesScraped} გვერდი წაიკითხა ·{' '}
+                          {analysisResult.source === 'ai' ? '🧠 AI-powered' : '⚡ Rule-based'} ·{' '}
+                          {faqs.length} FAQ შეიქმნა
+                        </p>
+                      </div>
+                    </div>
+
+                    {analysisResult.title && (
+                      <div className="mb-2">
+                        <p className="text-xs text-gray-500">გაიგო რას აკეთებთ:</p>
+                        <p className="text-white text-sm font-medium">{analysisResult.title}</p>
+                        {analysisResult.description && (
+                          <p className="text-gray-400 text-xs mt-1 line-clamp-2">{analysisResult.description}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Detected signals */}
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {analysisResult.detectedIndustry && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300">
+                          📌 {INDUSTRIES.find(i => i.slug === analysisResult.detectedIndustry)?.label ?? analysisResult.detectedIndustry}
+                        </span>
+                      )}
+                      {analysisResult.signals.hasPricing && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">💰 ფასები</span>
+                      )}
+                      {analysisResult.signals.hasHours && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">🕒 საათები</span>
+                      )}
+                      {analysisResult.signals.hasBooking && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">📅 ჯავშანი</span>
+                      )}
+                      {analysisResult.signals.hasShipping && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">🚚 მიწოდება</span>
+                      )}
+                      {analysisResult.contact.phones.length > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">📞 {analysisResult.contact.phones[0]}</span>
+                      )}
+                      {analysisResult.contact.emails.length > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">✉️ {analysisResult.contact.emails[0]}</span>
+                      )}
+                    </div>
+
+                    <p className="text-gray-500 text-[11px] mt-3">
+                      ↓ FAQ-ები ქვემოთ ავტომატურად შეივსო. შეგიძლია შეცვალო ან ჩაამატო.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* FAQs */}
