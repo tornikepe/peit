@@ -92,8 +92,8 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
       setTyping(false);
       setMsgs(prev => [...prev, { id: uid + 1, from: 'bot', text: replyText, matched, source }]);
 
-      // Bump mock stats
-      updateBot(bot.id, {
+      // Bump mock stats (fire-and-forget)
+      void updateBot(bot.id, {
         stats: {
           ...bot.stats,
           messages: bot.stats.messages + 1,

@@ -6,6 +6,8 @@ import { UserButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import BotsList from "@/components/dashboard/BotsList";
 import DashboardStats from "@/components/dashboard/DashboardStats";
+import MigrationBanner from "@/components/dashboard/MigrationBanner";
+import StorageModeBadge from "@/components/dashboard/StorageModeBadge";
 
 export const metadata: Metadata = {
   title: "Dashboard — Peit",
@@ -47,6 +49,7 @@ export default async function DashboardPage() {
           </nav>
 
           <div className="flex items-center gap-3">
+            <StorageModeBadge />
             <button className="relative p-2 rounded-lg hover:bg-white/[0.05] transition-colors text-gray-400 hover:text-white">
               <Bell className="w-4 h-4" />
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-violet-500" />
@@ -73,6 +76,9 @@ export default async function DashboardPage() {
             ახალი ბოტი
           </Link>
         </div>
+
+        {/* Migration banner (only shows if cloud + local bots exist) */}
+        <MigrationBanner />
 
         {/* Stats */}
         <div className="mb-8">

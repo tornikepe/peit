@@ -57,35 +57,35 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function toggleStatus() {
+  async function toggleStatus() {
     if (!bot) return;
     const next: BotStatus = bot.status === 'active' ? 'paused' : 'active';
-    updateBot(bot.id, { status: next });
+    await updateBot(bot.id, { status: next });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!bot) return;
-    deleteBot(bot.id);
+    await deleteBot(bot.id);
     router.push('/dashboard');
   }
 
-  function addQuickFaq() {
+  async function addQuickFaq() {
     if (!bot) return;
-    updateBot(bot.id, {
+    await updateBot(bot.id, {
       faqs: [...bot.faqs, { id: createFaqId(), q: '', a: '' }],
     });
   }
 
-  function updateFaq(faqId: string, patch: { q?: string; a?: string }) {
+  async function updateFaq(faqId: string, patch: { q?: string; a?: string }) {
     if (!bot) return;
-    updateBot(bot.id, {
+    await updateBot(bot.id, {
       faqs: bot.faqs.map(f => f.id === faqId ? { ...f, ...patch } : f),
     });
   }
 
-  function removeFaq(faqId: string) {
+  async function removeFaq(faqId: string) {
     if (!bot) return;
-    updateBot(bot.id, {
+    await updateBot(bot.id, {
       faqs: bot.faqs.filter(f => f.id !== faqId),
     });
   }

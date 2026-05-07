@@ -1,16 +1,30 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext, useContext, useEffect, useState, useCallback, useRef,
+} from 'react';
 import type { Bot } from '@/lib/bots';
 import { loadBots, saveBots } from '@/lib/bots';
+import {
+  fetchMe, apiListBots, apiCreateBot, apiUpdateBot, apiDeleteBot,
+  apiMigrateBots, ApiError,
+} from '@/lib/api-client';
+
+export type StorageMode = 'cloud' | 'local' | 'unknown';
 
 interface BotsContextValue {
   bots: Bot[];
   loaded: boolean;
+  mode: StorageMode;
+  /** True when cloud is reachable AND localStorage still has unmigrated bots. */
+  hasLocalToMigrate: boolean;
+  migrating: boolean;
+  refresh: () => Promise<void>;
+  migrateLocalToCloud: () => Promise<{ imported: number; failed: number }>;
   getBot: (id: string) => Bot | undefined;
-  addBot: (bot: Bot) => void;
-  updateBot: (id: string, patch: Partial<Bot>) => void;
-  deleteBot: (id: string) => void;
+  addBot: (bot: Bot) => Promise<Bot>;
+  updateBot: (id: string, patch: Partial<Bot>) => Promise<void>;
+  deleteBot: (id: string) => Promise<void>;
 }
 
 const BotsContext = createContext<BotsContextValue | null>(null);
@@ -18,42 +32,140 @@ const BotsContext = createContext<BotsContextValue | null>(null);
 export function BotsProvider({ children }: { children: React.ReactNode }) {
   const [bots, setBots] = useState<Bot[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [mode, setMode] = useState<StorageMode>('unknown');
+  const [hasLocalToMigrate, setHasLocalToMigrate] = useState(false);
+  const [migrating, setMigrating] = useState(false);
 
+  // Persist to localStorage whenever bots change in local mode
+  const isLocalMode = useRef(false);
+  isLocalMode.current = mode === 'local';
   useEffect(() => {
+    if (loaded && isLocalMode.current) saveBots(bots);
+  }, [bots, loaded]);
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  const detectAndLoad = useCallback(async () => {
+    // Try cloud first
+    try {
+      const me = await fetchMe();
+      if (me) {
+        const cloudBots = await apiListBots();
+        setBots(cloudBots);
+        setMode('cloud');
+
+        // Check if there are still unmigrated localStorage bots
+        const local = loadBots();
+        setHasLocalToMigrate(local.length > 0);
+
+        setLoaded(true);
+        return;
+      }
+    } catch (e) {
+      // 503 = DB not configured, 401 = not signed in
+      if (!(e instanceof ApiError) || (e.status !== 503 && e.status !== 401)) {
+        console.error('[bots] cloud fetch failed:', e);
+      }
+    }
+
+    // Fallback to localStorage
     setBots(loadBots());
+    setMode('local');
+    setHasLocalToMigrate(false);
     setLoaded(true);
   }, []);
 
-  // Persist on change (after initial load)
-  useEffect(() => {
-    if (loaded) saveBots(bots);
-  }, [bots, loaded]);
+  useEffect(() => { void detectAndLoad(); }, [detectAndLoad]);
+
+  // ── Migration ────────────────────────────────────────────────────────────
+
+  const migrateLocalToCloud = useCallback(async () => {
+    setMigrating(true);
+    try {
+      const local = loadBots();
+      if (local.length === 0) {
+        setHasLocalToMigrate(false);
+        return { imported: 0, failed: 0 };
+      }
+      const { imported, failed } = await apiMigrateBots(local);
+
+      // On success: clear localStorage so we don't double-import
+      if (failed.length === 0) {
+        saveBots([]);
+        setHasLocalToMigrate(false);
+      }
+
+      // Reload from cloud
+      const cloudBots = await apiListBots();
+      setBots(cloudBots);
+
+      return { imported: imported.length, failed: failed.length };
+    } finally {
+      setMigrating(false);
+    }
+  }, []);
+
+  // ── CRUD ─────────────────────────────────────────────────────────────────
+
+  const refresh = useCallback(async () => {
+    if (mode === 'cloud') {
+      try {
+        const cloudBots = await apiListBots();
+        setBots(cloudBots);
+      } catch (e) {
+        console.error('[bots] refresh failed:', e);
+      }
+    } else {
+      setBots(loadBots());
+    }
+  }, [mode]);
 
   const getBot = useCallback(
     (id: string) => bots.find(b => b.id === id),
-    [bots]
+    [bots],
   );
 
-  const addBot = useCallback((bot: Bot) => {
+  const addBot = useCallback(async (bot: Bot): Promise<Bot> => {
+    if (mode === 'cloud') {
+      const { id: _id, createdAt: _c, updatedAt: _u, stats: _s, ...input } = bot;
+      const created = await apiCreateBot(input);
+      setBots(prev => [created, ...prev]);
+      return created;
+    }
     setBots(prev => [bot, ...prev]);
-  }, []);
+    return bot;
+  }, [mode]);
 
-  const updateBot = useCallback((id: string, patch: Partial<Bot>) => {
+  const updateBot = useCallback(async (id: string, patch: Partial<Bot>): Promise<void> => {
+    if (mode === 'cloud') {
+      const updated = await apiUpdateBot(id, patch);
+      setBots(prev => prev.map(b => b.id === id ? updated : b));
+      return;
+    }
     setBots(prev =>
       prev.map(b =>
         b.id === id
           ? { ...b, ...patch, updatedAt: new Date().toISOString() }
-          : b
-      )
+          : b,
+      ),
     );
-  }, []);
+  }, [mode]);
 
-  const deleteBot = useCallback((id: string) => {
+  const deleteBot = useCallback(async (id: string): Promise<void> => {
+    if (mode === 'cloud') {
+      await apiDeleteBot(id);
+      setBots(prev => prev.filter(b => b.id !== id));
+      return;
+    }
     setBots(prev => prev.filter(b => b.id !== id));
-  }, []);
+  }, [mode]);
 
   return (
-    <BotsContext.Provider value={{ bots, loaded, getBot, addBot, updateBot, deleteBot }}>
+    <BotsContext.Provider value={{
+      bots, loaded, mode, hasLocalToMigrate, migrating,
+      refresh, migrateLocalToCloud,
+      getBot, addBot, updateBot, deleteBot,
+    }}>
       {children}
     </BotsContext.Provider>
   );

@@ -29,19 +29,20 @@ npm install
 
 ### Environment Variables
 
-Create a `.env.local` file in the root directory:
+Copy `.env.local.example` → `.env.local` and fill in:
 
-```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
+- **Clerk** — required for auth. Get keys from [dashboard.clerk.com](https://dashboard.clerk.com) → API Keys.
+- **`DATABASE_URL`** — optional. If set, bots persist server-side and sync across devices. If unset, they're saved to localStorage. Use [Neon](https://neon.tech) or [Supabase](https://supabase.com) for a free Postgres instance.
+- **`ANTHROPIC_API_KEY`** — optional. Enables AI-generated FAQs in the website analyzer.
 
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/signin
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+### Database setup (optional)
+
+Once `DATABASE_URL` is set:
+
+```bash
+npm run db:push       # creates / updates tables in your Postgres
+npm run db:studio     # browse data in Drizzle Studio
 ```
-
-Get your keys from [dashboard.clerk.com](https://dashboard.clerk.com) → API Keys.
 
 ### Run
 

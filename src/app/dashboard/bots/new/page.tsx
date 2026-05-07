@@ -164,34 +164,43 @@ export default function NewBotPage() {
     setFaqs(prev => prev.filter(f => f.id !== id));
   }
 
-  function handleSubmit() {
-    const cleanFaqs = faqs.filter(f => f.q.trim() && f.a.trim());
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-    // Build greetings/fallbacks for all selected languages
-    const finalGreeting: Partial<Record<BotLang, string>> = {};
-    const finalFallback: Partial<Record<BotLang, string>> = {};
-    for (const l of languages) {
-      finalGreeting[l] = greeting[l]?.trim() || DEFAULT_GREETINGS[l];
-      finalFallback[l] = DEFAULT_FALLBACKS[l];
+  async function handleSubmit() {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const cleanFaqs = faqs.filter(f => f.q.trim() && f.a.trim());
+
+      const finalGreeting: Partial<Record<BotLang, string>> = {};
+      const finalFallback: Partial<Record<BotLang, string>> = {};
+      for (const l of languages) {
+        finalGreeting[l] = greeting[l]?.trim() || DEFAULT_GREETINGS[l];
+        finalFallback[l] = DEFAULT_FALLBACKS[l];
+      }
+
+      const draft: Bot = makeNewBot({
+        name: name.trim(),
+        industry,
+        languages,
+        primaryLang,
+        tone,
+        greeting: finalGreeting,
+        fallback: finalFallback,
+        faqs: cleanFaqs,
+        knowledgeChunks,
+        websiteUrl: websiteUrl.trim() || undefined,
+        brandColor,
+        status: 'active',
+      });
+
+      const created = await addBot(draft);
+      router.push(`/dashboard/bots/${created.id}`);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'შენახვა ვერ მოხერხდა');
+      setSubmitting(false);
     }
-
-    const bot: Bot = makeNewBot({
-      name: name.trim(),
-      industry,
-      languages,
-      primaryLang,
-      tone,
-      greeting: finalGreeting,
-      fallback: finalFallback,
-      faqs: cleanFaqs,
-      knowledgeChunks,
-      websiteUrl: websiteUrl.trim() || undefined,
-      brandColor,
-      status: 'active',
-    });
-
-    addBot(bot);
-    router.push(`/dashboard/bots/${bot.id}`);
   }
 
   return (
@@ -679,14 +688,29 @@ export default function NewBotPage() {
               <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              ბოტის შექმნა
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              {submitError && (
+                <p className="text-red-400 text-xs">{submitError}</p>
+              )}
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    ვქმნი...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    ბოტის შექმნა
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
       </main>
