@@ -14,6 +14,7 @@ interface Msg {
   from: 'user' | 'bot';
   text: string;
   matched?: boolean;
+  source?: 'faq' | 'knowledge' | 'fallback';
 }
 
 const LANG_LABELS: Record<BotLang, { flag: string; name: string; placeholder: string; reset: string }> = {
@@ -86,10 +87,10 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
     setTyping(true);
 
     setTimeout(() => {
-      const reply = botReply(msg, bot, activeLang);
-      const matched = bot.faqs.some(f => reply === f.a);
+      const { text: replyText, source } = botReply(msg, bot, activeLang);
+      const matched = source !== 'fallback';
       setTyping(false);
-      setMsgs(prev => [...prev, { id: uid + 1, from: 'bot', text: reply, matched }]);
+      setMsgs(prev => [...prev, { id: uid + 1, from: 'bot', text: replyText, matched, source }]);
 
       // Bump mock stats
       updateBot(bot.id, {
@@ -218,9 +219,15 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
                   >
                     {m.text}
                   </div>
-                  {m.from === 'bot' && m.matched !== undefined && (
-                    <p className={`text-[10px] mt-1 px-1 ${m.matched ? 'text-emerald-500' : 'text-amber-500'}`}>
-                      {m.matched ? '✓ FAQ-ში მოიძებნა' : '⚡ Fallback პასუხი'}
+                  {m.from === 'bot' && m.source !== undefined && (
+                    <p className={`text-[10px] mt-1 px-1 ${
+                      m.source === 'faq' ? 'text-emerald-500' :
+                      m.source === 'knowledge' ? 'text-blue-400' :
+                      'text-amber-500'
+                    }`}>
+                      {m.source === 'faq' ? '✓ FAQ-ში მოიძებნა' :
+                       m.source === 'knowledge' ? '🔍 საიტის კონტენტიდან' :
+                       '⚡ Fallback პასუხი'}
                     </p>
                   )}
                 </div>

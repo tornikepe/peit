@@ -13,7 +13,7 @@ import {
   INDUSTRIES, TONES, BRAND_COLORS,
   DEFAULT_GREETINGS, DEFAULT_FALLBACKS,
   makeNewBot, createFaqId,
-  type Bot, type BotLang, type BotTone, type FAQItem,
+  type Bot, type BotLang, type BotTone, type FAQItem, type KnowledgeChunk,
 } from '@/lib/bots';
 
 const LANG_OPTIONS: { value: BotLang; label: string; flag: string }[] = [
@@ -51,6 +51,7 @@ export default function NewBotPage() {
   const [brandColor, setBrandColor] = useState<string>(BRAND_COLORS[0]);
 
   // Site analysis state
+  const [knowledgeChunks, setKnowledgeChunks] = useState<KnowledgeChunk[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<{
@@ -94,6 +95,11 @@ export default function NewBotPage() {
           .replace(/\s*[|\-—–]\s*.*$/, '') // strip "| Tagline"
           .slice(0, 60);
         if (cleanTitle.length >= 2) setName(cleanTitle);
+      }
+
+      // Save knowledge chunks
+      if (Array.isArray(data.chunks) && data.chunks.length > 0) {
+        setKnowledgeChunks(data.chunks as KnowledgeChunk[]);
       }
 
       // Replace FAQs with generated ones
@@ -178,6 +184,7 @@ export default function NewBotPage() {
       greeting: finalGreeting,
       fallback: finalFallback,
       faqs: cleanFaqs,
+      knowledgeChunks,
       websiteUrl: websiteUrl.trim() || undefined,
       brandColor,
       status: 'active',
@@ -406,7 +413,7 @@ export default function NewBotPage() {
                         <p className="text-gray-400 text-xs">
                           {analysisResult.pagesScraped} გვერდი წაიკითხა ·{' '}
                           {analysisResult.source === 'ai' ? '🧠 AI-powered' : '⚡ Rule-based'} ·{' '}
-                          {faqs.length} FAQ შეიქმნა
+                          {faqs.length} FAQ · {knowledgeChunks.length} chunk
                         </p>
                       </div>
                     </div>

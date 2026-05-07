@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { analyzeSite, generateFaqsFromAnalysis, aiEnhanceFaqs } from '@/lib/scraper';
+import {
+  analyzeSite,
+  buildKnowledgeChunks,
+  generateFaqsFromAnalysis,
+  aiEnhanceFaqs,
+} from '@/lib/scraper';
 import type { BotLang } from '@/lib/bots';
 
 export const runtime = 'nodejs';
@@ -26,11 +31,15 @@ export async function POST(req: Request) {
   try {
     const analysis = await analyzeSite(url);
 
-    // Try AI enhancement first; fall back to heuristic.
+    // Build knowledge chunks from ALL scraped content
+    const chunks = buildKnowledgeChunks(analysis);
+
+    // Generate FAQs: try AI first, fall back to heuristic
     const aiFaqs = await aiEnhanceFaqs(analysis, lang);
-    const faqs = aiFaqs && aiFaqs.length > 0
-      ? aiFaqs
-      : generateFaqsFromAnalysis(analysis, lang);
+    const faqs =
+      aiFaqs && aiFaqs.length > 0
+        ? aiFaqs
+        : generateFaqsFromAnalysis(analysis, lang);
 
     return NextResponse.json({
       ok: true,
@@ -45,8 +54,10 @@ export async function POST(req: Request) {
         contact: analysis.contact,
         headingsCount: analysis.headings.length,
         paragraphsCount: analysis.paragraphs.length,
+        chunksCount: chunks.length,
       },
       faqs,
+      chunks, // ← full knowledge base for storage in bot
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Analysis failed';
