@@ -36,6 +36,8 @@ export interface Bot {
     enabled: boolean;
     fields: ('name' | 'email' | 'phone')[];
   };
+  /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
+  allowedOrigins: string[];
   status: BotStatus;
   createdAt: string;
   updatedAt: string;
@@ -127,6 +129,7 @@ export function makeNewBot(partial: Partial<Bot> = {}): Bot {
     knowledgeChunks: [],
     brandColor: '#7c3aed',
     leadCapture: { enabled: true, fields: ['name', 'email'] },
+    allowedOrigins: [],
     status: 'draft',
     createdAt: now,
     updatedAt: now,

@@ -61,8 +61,9 @@ export const bots = pgTable('bots', {
   brandColor:   varchar('brand_color', { length: 16 }).notNull().default('#7c3aed'),
   leadCapture:  jsonb('lead_capture').$type<{ enabled: boolean; fields: string[] }>()
                   .notNull().default({ enabled: true, fields: ['name', 'email'] }),
+  /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
+  allowedOrigins: jsonb('allowed_origins').$type<string[]>().notNull().default([]),
   status:       botStatusEnum('status').notNull().default('draft'),
-  // Mock metrics (cached counters; real values aggregate from messages/leads)
   statsCache:   jsonb('stats_cache').$type<{ messages: number; leads: number; conversations: number }>()
                   .notNull().default({ messages: 0, leads: 0, conversations: 0 }),
   createdAt:    timestamp('created_at').defaultNow().notNull(),
@@ -159,7 +160,10 @@ export const subscriptions = pgTable('subscriptions', {
   plan:                 subPlanEnum('plan').notNull().default('starter'),
   status:               subStatusEnum('status').notNull().default('trialing'),
   trialEndsAt:          timestamp('trial_ends_at'),
+  currentPeriodStart:   timestamp('current_period_start').defaultNow().notNull(),
   currentPeriodEnd:     timestamp('current_period_end'),
+  /** Messages used this billing period — reset on rollover. */
+  messagesThisPeriod:   integer('messages_this_period').notNull().default(0),
   stripeCustomerId:     varchar('stripe_customer_id', { length: 64 }),
   stripeSubscriptionId: varchar('stripe_subscription_id', { length: 64 }),
   cancelAtPeriodEnd:    boolean('cancel_at_period_end').notNull().default(false),
@@ -168,6 +172,17 @@ export const subscriptions = pgTable('subscriptions', {
 }, t => ({
   userIdx: uniqueIndex('subscriptions_user_idx').on(t.userId),
 }));
+
+// ─── rate_limits ───────────────────────────────────────────────────────────
+// Sliding-window counter, atomic via UPSERT.
+// Key shape: "ip:1.2.3.4:1m", "bot:<uuid>:1h", "visitor:<uuid>:1h", etc.
+
+export const rateLimits = pgTable('rate_limits', {
+  key:           varchar('key', { length: 200 }).primaryKey(),
+  count:         integer('count').notNull().default(0),
+  windowStart:   timestamp('window_start').notNull().defaultNow(),
+  windowSeconds: integer('window_seconds').notNull(),
+});
 
 // ─── Relations ─────────────────────────────────────────────────────────────
 

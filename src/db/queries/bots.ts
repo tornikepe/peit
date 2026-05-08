@@ -1,6 +1,6 @@
 // Bot CRUD — DB-backed. All queries are scoped to the owning user.
 
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { requireDb, schema } from '@/db';
 import type { Bot, BotLang, BotStatus, BotTone, FAQItem, KnowledgeChunk } from '@/lib/bots';
 import { embedBatch, isEmbeddingsAvailable } from '@/lib/embeddings';
@@ -43,6 +43,7 @@ function rowToBot(
     websiteUrl:   row.websiteUrl ?? undefined,
     brandColor:   row.brandColor,
     leadCapture:  row.leadCapture as Bot['leadCapture'],
+    allowedOrigins: (row.allowedOrigins as string[]) ?? [],
     status:       row.status as BotStatus,
     createdAt:    row.createdAt.toISOString(),
     updatedAt:    row.updatedAt.toISOString(),
@@ -57,6 +58,16 @@ function rowToBot(
       keywords: c.keywords,
     })),
   };
+}
+
+/** Count of bots owned by user — used for plan-tier creation limits. */
+export async function countBotsForUser(userDbId: string): Promise<number> {
+  const db = requireDb();
+  const rows = await db.execute<{ count: number }>(sql`
+    SELECT COUNT(*)::int AS count FROM ${schema.bots}
+    WHERE owner_id = ${userDbId}
+  `);
+  return Number((rows as unknown as { count: number }[])[0]?.count ?? 0);
 }
 
 export async function listBotsForUser(userDbId: string): Promise<Bot[]> {
@@ -110,6 +121,7 @@ export interface CreateBotInput {
   websiteUrl?: string;
   brandColor: string;
   leadCapture: Bot['leadCapture'];
+  allowedOrigins?: string[];
   status: BotStatus;
   faqs: { q: string; a: string }[];
   knowledgeChunks: { heading: string; content: string; keywords: string[] }[];
@@ -124,18 +136,19 @@ export async function createBotForUser(
   return await db.transaction(async tx => {
     const [bot] = await tx.insert(schema.bots)
       .values({
-        ownerId:     userDbId,
-        name:        input.name,
-        industry:    input.industry,
-        languages:   input.languages,
-        primaryLang: input.primaryLang,
-        tone:        input.tone,
-        greeting:    input.greeting as Record<string, string>,
-        fallback:    input.fallback as Record<string, string>,
-        websiteUrl:  input.websiteUrl,
-        brandColor:  input.brandColor,
-        leadCapture: input.leadCapture,
-        status:      input.status,
+        ownerId:        userDbId,
+        name:           input.name,
+        industry:       input.industry,
+        languages:      input.languages,
+        primaryLang:    input.primaryLang,
+        tone:           input.tone,
+        greeting:       input.greeting as Record<string, string>,
+        fallback:       input.fallback as Record<string, string>,
+        websiteUrl:     input.websiteUrl,
+        brandColor:     input.brandColor,
+        leadCapture:    input.leadCapture,
+        allowedOrigins: input.allowedOrigins ?? [],
+        status:         input.status,
       })
       .returning();
 
@@ -183,6 +196,7 @@ export interface UpdateBotInput {
   websiteUrl?: string | null;
   brandColor?: string;
   leadCapture?: Bot['leadCapture'];
+  allowedOrigins?: string[];
   status?: BotStatus;
   /** Replace full FAQ list. */
   faqs?: { q: string; a: string }[];
@@ -219,6 +233,7 @@ export async function updateBotForUser(
     if (patch.websiteUrl !== undefined)  update.websiteUrl = patch.websiteUrl;
     if (patch.brandColor !== undefined)  update.brandColor = patch.brandColor;
     if (patch.leadCapture !== undefined) update.leadCapture = patch.leadCapture;
+    if (patch.allowedOrigins !== undefined) update.allowedOrigins = patch.allowedOrigins;
     if (patch.status !== undefined)      update.status = patch.status;
     if (patch.stats !== undefined)       update.statsCache = patch.stats;
 

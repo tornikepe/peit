@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
+import AllowedOrigins from '@/components/dashboard/AllowedOrigins';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -353,6 +354,14 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 ცალკე ფანჯარაში ნახვა
               </a>
             </div>
+
+            {/* Allowed origins */}
+            <AllowedOrigins
+              value={bot.allowedOrigins ?? []}
+              onSave={async next => {
+                await updateBot(bot.id, { allowedOrigins: next });
+              }}
+            />
 
             {/* AI Index */}
             <div className="glass rounded-2xl p-6">

@@ -8,6 +8,7 @@ import BotsList from "@/components/dashboard/BotsList";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import MigrationBanner from "@/components/dashboard/MigrationBanner";
 import StorageModeBadge from "@/components/dashboard/StorageModeBadge";
+import UsagePanel from "@/components/dashboard/UsagePanel";
 
 export const metadata: Metadata = {
   title: "Dashboard — Peit",
@@ -79,6 +80,9 @@ export default async function DashboardPage() {
 
         {/* Migration banner (only shows if cloud + local bots exist) */}
         <MigrationBanner />
+
+        {/* Plan + usage */}
+        <UsagePanel />
 
         {/* Stats */}
         <div className="mb-8">

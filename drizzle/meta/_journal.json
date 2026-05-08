@@ -15,6 +15,13 @@
       "when": 1778240184862,
       "tag": "0001_ambitious_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778269709378,
+      "tag": "0002_remarkable_star_brand",
+      "breakpoints": true
     }
   ]
 }

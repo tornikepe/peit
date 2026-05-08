@@ -3,6 +3,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
+import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -17,7 +18,7 @@ interface LeadBody {
 }
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const db = getDb();
@@ -26,8 +27,13 @@ export async function POST(
   const { id } = await params;
   if (!id) return corsError(400, 'MISSING_ID');
 
+  // Rate limit (lead spam from one IP)
+  const ip = getClientIp(req);
+  const rl = await checkRateLimit(rateLimitKey(['lead', ip]), 5, 600); // 5/10min
+  if (!rl.allowed) return corsError(429, 'RATE_LIMITED');
+
   let body: LeadBody;
-  try { body = await _req.json(); }
+  try { body = await req.json(); }
   catch { return corsError(400, 'INVALID_JSON'); }
 
   const name    = body.name?.trim()    || null;
