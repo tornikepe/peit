@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -9,7 +9,7 @@ import {
   TrendingUp, Plus,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
-import { INDUSTRIES, TONES, type BotStatus, createFaqId } from '@/lib/bots';
+import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -18,6 +18,12 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   const bot = getBot(id);
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Local FAQ state — typing edits this; saves to bot only on blur
+  const [editFaqs, setEditFaqs] = useState<FAQItem[]>([]);
+  useEffect(() => {
+    if (bot) setEditFaqs(bot.faqs);
+  }, [bot?.id, bot?.updatedAt]); // re-sync when bot changes
 
   if (!loaded) {
     return (
@@ -71,23 +77,30 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
 
   async function addQuickFaq() {
     if (!bot) return;
-    await updateBot(bot.id, {
-      faqs: [...bot.faqs, { id: createFaqId(), q: '', a: '' }],
-    });
+    const newFaqs = [...editFaqs, { id: createFaqId(), q: '', a: '' }];
+    setEditFaqs(newFaqs);
+    await updateBot(bot.id, { faqs: newFaqs });
   }
 
-  async function updateFaq(faqId: string, patch: { q?: string; a?: string }) {
+  // Local edit only — does NOT hit the API
+  function editFaqLocal(faqId: string, patch: { q?: string; a?: string }) {
+    setEditFaqs(prev => prev.map(f => f.id === faqId ? { ...f, ...patch } : f));
+  }
+
+  // Save on blur — only if something actually changed vs the bot's current FAQs
+  async function saveFaqsIfChanged() {
     if (!bot) return;
-    await updateBot(bot.id, {
-      faqs: bot.faqs.map(f => f.id === faqId ? { ...f, ...patch } : f),
-    });
+    const orig  = JSON.stringify(bot.faqs.map(f => ({ id: f.id, q: f.q, a: f.a })));
+    const curr  = JSON.stringify(editFaqs.map(f => ({ id: f.id, q: f.q, a: f.a })));
+    if (orig === curr) return;
+    await updateBot(bot.id, { faqs: editFaqs });
   }
 
   async function removeFaq(faqId: string) {
     if (!bot) return;
-    await updateBot(bot.id, {
-      faqs: bot.faqs.filter(f => f.id !== faqId),
-    });
+    const newFaqs = editFaqs.filter(f => f.id !== faqId);
+    setEditFaqs(newFaqs);
+    await updateBot(bot.id, { faqs: newFaqs });
   }
 
   return (
@@ -180,7 +193,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="text-white font-semibold">FAQ ბაზა</h2>
-                  <p className="text-gray-500 text-sm mt-0.5">{bot.faqs.length} ჩანაწერი</p>
+                  <p className="text-gray-500 text-sm mt-0.5">{editFaqs.length} ჩანაწერი</p>
                 </div>
                 <button
                   onClick={addQuickFaq}
@@ -191,7 +204,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 </button>
               </div>
 
-              {bot.faqs.length === 0 ? (
+              {editFaqs.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500 text-sm">FAQ ჯერ არ არის</p>
                   <button onClick={addQuickFaq} className="text-violet-400 hover:text-violet-300 text-sm mt-2">
@@ -200,7 +213,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {bot.faqs.map((faq, i) => (
+                  {editFaqs.map((faq, i) => (
                     <div key={faq.id} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
                       <div className="flex items-start justify-between mb-2">
                         <span className="text-xs font-semibold text-gray-500">FAQ #{i + 1}</span>
@@ -214,13 +227,15 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                       <input
                         type="text"
                         value={faq.q}
-                        onChange={e => updateFaq(faq.id, { q: e.target.value })}
+                        onChange={e => editFaqLocal(faq.id, { q: e.target.value })}
+                        onBlur={saveFaqsIfChanged}
                         placeholder="კითხვა..."
                         className="w-full bg-[#13131f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 mb-2"
                       />
                       <textarea
                         value={faq.a}
-                        onChange={e => updateFaq(faq.id, { a: e.target.value })}
+                        onChange={e => editFaqLocal(faq.id, { a: e.target.value })}
+                        onBlur={saveFaqsIfChanged}
                         placeholder="პასუხი..."
                         rows={2}
                         className="w-full bg-[#13131f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 resize-none"
