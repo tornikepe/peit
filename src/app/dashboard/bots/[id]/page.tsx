@@ -51,11 +51,18 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   const industry = INDUSTRIES.find(i => i.slug === bot.industry);
   const toneInfo = TONES.find(t => t.value === bot.tone);
 
+  // Auto-detect origin so the embed code points at the right server
+  // in dev / staging / prod without hardcoding.
+  const origin = typeof window !== 'undefined'
+    ? window.location.origin
+    : 'https://peit.ge';
+
   const embedCode = `<script
-  src="https://cdn.peit.ge/widget.js"
+  src="${origin}/widget.js"
   data-bot-id="${bot.id}"
-  data-color="${bot.brandColor}">
-</script>`;
+  data-color="${bot.brandColor}"
+  defer
+></script>`;
 
   function copyEmbed() {
     navigator.clipboard.writeText(embedCode);
@@ -302,6 +309,17 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               {copied && (
                 <p className="text-emerald-400 text-xs mt-2">✓ დაკოპირდა!</p>
               )}
+
+              {/* Direct preview link */}
+              <a
+                href={`/widget/${bot.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-center justify-center gap-2 text-xs text-violet-400 hover:text-violet-300 border border-violet-500/20 hover:bg-violet-500/5 rounded-lg py-2 transition-colors"
+              >
+                <Globe className="w-3 h-3" />
+                ცალკე ფანჯარაში ნახვა
+              </a>
             </div>
 
             {/* Bot ID */}
