@@ -1,10 +1,11 @@
 'use client';
 
-import { use, useEffect, useRef, useState } from 'react';
+import { use, useEffect, useRef, useState, useCallback } from 'react';
 import {
   Bot as BotIcon, Send, X, Mail, Phone, User as UserIcon,
-  Loader2, AlertCircle, Sparkles, ChevronLeft, Check,
+  Loader2, AlertCircle, Sparkles, Check, RefreshCw,
 } from 'lucide-react';
+import { renderMd } from '@/lib/md-mini';
 
 type Lang = 'ka' | 'en' | 'ru';
 
@@ -16,37 +17,46 @@ interface PublicBot {
   primaryLang: Lang;
   greeting: Partial<Record<Lang, string>>;
   leadCapture: { enabled: boolean; fields: ('name' | 'email' | 'phone')[] };
+  suggestions: string[];
 }
 
 interface Msg {
-  id: number;
+  id: string;
   from: 'user' | 'bot';
   text: string;
+  source?: 'faq' | 'knowledge' | 'fallback';
+  timestamp: number;
+  status?: 'sending' | 'sent' | 'failed';
 }
 
 const I18N: Record<Lang, {
-  online: string;
-  placeholder: string;
-  send: string;
-  poweredBy: string;
-  leadIntro: string;
-  leadName: string;
-  leadEmail: string;
-  leadPhone: string;
-  leadMessage: string;
-  leadSubmit: string;
-  leadSkip: string;
-  leadThanks: string;
-  leaveContact: string;
-  errorLoad: string;
-  errorSend: string;
-  retry: string;
+  online:        string;
+  placeholder:   string;
+  send:          string;
+  poweredBy:     string;
+  leadIntro:     string;
+  leadName:      string;
+  leadEmail:     string;
+  leadPhone:     string;
+  leadMessage:   string;
+  leadSubmit:    string;
+  leadSkip:      string;
+  leadThanks:    string;
+  leaveContact:  string;
+  errorLoad:     string;
+  errorSend:     string;
+  retry:         string;
+  morningHi:     string;
+  afternoonHi:   string;
+  eveningHi:     string;
+  startConvo:    string;
+  newChat:       string;
 }> = {
   ka: {
     online:       'ონლაინ',
     placeholder:  'შეტყობინება...',
     send:         'გაგზავნა',
-    poweredBy:    'შექმნილია Peit-ით',
+    poweredBy:    'Powered by Peit',
     leadIntro:    'დატოვე კონტაქტი — გიპასუხებთ მალე.',
     leadName:     'სახელი',
     leadEmail:    'ელ-ფოსტა',
@@ -55,10 +65,15 @@ const I18N: Record<Lang, {
     leadSubmit:   'გაგზავნა',
     leadSkip:     'მოგვიანებით',
     leadThanks:   'მადლობა! ჩვენი გუნდი მალე დაგიკავშირდება.',
-    leaveContact: 'დატოვე კონტაქტი',
+    leaveContact: 'კონტაქტის დატოვება',
     errorLoad:    'ჩატის ჩატვირთვა ვერ მოხერხდა.',
-    errorSend:    'გაგზავნა ვერ მოხერხდა. სცადე ისევ.',
+    errorSend:    'ვერ გავგზავნე. ცადე ისევ.',
     retry:        'სცადე ისევ',
+    morningHi:    'დილა მშვიდობისა',
+    afternoonHi:  'გამარჯობა',
+    eveningHi:    'საღამო მშვიდობისა',
+    startConvo:   'დასვი კითხვა ან აირჩიე ქვემოთ',
+    newChat:      'ახალი ჩატი',
   },
   en: {
     online:       'Online',
@@ -70,19 +85,24 @@ const I18N: Record<Lang, {
     leadEmail:    'Email',
     leadPhone:    'Phone',
     leadMessage:  'Message (optional)',
-    leadSubmit:   'Submit',
+    leadSubmit:   'Send',
     leadSkip:     'Maybe later',
     leadThanks:   'Thanks! Our team will reach out shortly.',
     leaveContact: 'Leave contact',
     errorLoad:    'Failed to load chat.',
-    errorSend:    'Couldn\'t send. Please try again.',
+    errorSend:    'Couldn\'t send. Try again.',
     retry:        'Retry',
+    morningHi:    'Good morning',
+    afternoonHi:  'Hi there',
+    eveningHi:    'Good evening',
+    startConvo:   'Ask a question or pick one below',
+    newChat:      'New chat',
   },
   ru: {
     online:       'Онлайн',
     placeholder:  'Сообщение...',
     send:         'Отправить',
-    poweredBy:    'Сделано в Peit',
+    poweredBy:    'Powered by Peit',
     leadIntro:    'Оставьте контакт — скоро ответим.',
     leadName:     'Имя',
     leadEmail:    'Эл. почта',
@@ -95,22 +115,55 @@ const I18N: Record<Lang, {
     errorLoad:    'Не удалось загрузить чат.',
     errorSend:    'Не удалось отправить. Попробуйте снова.',
     retry:        'Повторить',
+    morningHi:    'Доброе утро',
+    afternoonHi:  'Здравствуйте',
+    eveningHi:    'Добрый вечер',
+    startConvo:   'Задайте вопрос или выберите снизу',
+    newChat:      'Новый чат',
   },
 };
 
 const LANG_FLAGS: Record<Lang, string> = { ka: '🇬🇪', en: '🇬🇧', ru: '🇷🇺' };
 
-// ─── postMessage to parent ────────────────────────────────────────────────
-function postToParent(type: string, data?: Record<string, unknown>) {
+function getTimeOfDayKey(): 'morningHi' | 'afternoonHi' | 'eveningHi' {
+  const h = new Date().getHours();
+  if (h < 12) return 'morningHi';
+  if (h < 18) return 'afternoonHi';
+  return 'eveningHi';
+}
+
+// ─── Parent communication ─────────────────────────────────────────────────
+function postToParent(type: string, data: Record<string, unknown> = {}) {
   try {
     window.parent.postMessage({ source: 'peit-widget', type, ...data }, '*');
   } catch { /* ignore */ }
 }
 
+// ─── Local persistence ────────────────────────────────────────────────────
+function storageKey(botId: string, visitorId: string) {
+  return `peit_msgs_${botId}_${visitorId}`;
+}
+function loadMsgs(botId: string, visitorId: string): Msg[] {
+  try {
+    const raw = localStorage.getItem(storageKey(botId, visitorId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Msg[];
+    return Array.isArray(parsed) ? parsed.slice(-50) : [];
+  } catch { return []; }
+}
+function saveMsgs(botId: string, visitorId: string, msgs: Msg[]) {
+  try {
+    localStorage.setItem(storageKey(botId, visitorId), JSON.stringify(msgs.slice(-50)));
+  } catch { /* quota */ }
+}
+
+let msgIdCounter = 0;
+function newMsgId() { return `m_${Date.now()}_${++msgIdCounter}`; }
+
 export default function WidgetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const [bot, setBot] = useState<PublicBot | null>(null);
+  const [bot, setBot]     = useState<PublicBot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -118,11 +171,11 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [counter, setCounter] = useState(1);
+  const [unread, setUnread] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
 
-  const [showLeadForm, setShowLeadForm] = useState(false);
+  const [leadOpen, setLeadOpen] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadName, setLeadName]   = useState('');
   const [leadEmail, setLeadEmail] = useState('');
@@ -131,9 +184,25 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState<string | null>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef   = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Load bot config
+  // Read URL params from launcher (visitor id, page url, prior conversation)
+  const queryRef = useRef<{ vid: string; page: string; title: string; convo: string | null }>({
+    vid: '', page: '', title: '', convo: null,
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    queryRef.current = {
+      vid:   sp.get('vid')   || 'anon',
+      page:  sp.get('page')  || '',
+      title: sp.get('title') || '',
+      convo: sp.get('convo'),
+    };
+  }, []);
+
+  // ─── Load bot config ────────────────────────────────────────────────────
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -148,8 +217,24 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         const b = data.bot as PublicBot;
         setBot(b);
         setActiveLang(b.primaryLang);
-        const greet = b.greeting[b.primaryLang] || `Hi! I'm ${b.name}.`;
-        setMsgs([{ id: 0, from: 'bot', text: greet }]);
+
+        // Restore prior conversation if visitor had one
+        const vid = queryRef.current.vid;
+        const restored = loadMsgs(b.id, vid);
+        if (restored.length > 0) {
+          setMsgs(restored);
+          if (queryRef.current.convo) setConversationId(queryRef.current.convo);
+        } else {
+          // Fresh greeting — composed with time-of-day prefix
+          const greet = b.greeting[b.primaryLang] || 'Hi! 👋';
+          const greetMsg: Msg = {
+            id: newMsgId(),
+            from: 'bot',
+            text: greet,
+            timestamp: Date.now(),
+          };
+          setMsgs([greetMsg]);
+        }
       } catch (e) {
         if (alive) setLoadError(e instanceof Error ? e.message : 'LOAD_FAILED');
       } finally {
@@ -159,76 +244,164 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     return () => { alive = false; };
   }, [id]);
 
-  // ── Reset greeting when language changes
+  // ─── Persist messages locally ───────────────────────────────────────────
   useEffect(() => {
-    if (!bot) return;
-    const greet = bot.greeting[activeLang] || bot.greeting[bot.primaryLang] || '';
-    setMsgs([{ id: counter, from: 'bot', text: greet }]);
-    setCounter(c => c + 1);
-    setConversationId(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLang]);
+    if (bot && queryRef.current.vid && msgs.length > 0) {
+      saveMsgs(bot.id, queryRef.current.vid, msgs);
+    }
+  }, [msgs, bot?.id]);
 
-  // ── Auto-scroll
+  // ─── Reset when language changes ────────────────────────────────────────
+  const switchLang = useCallback((next: Lang) => {
+    if (next === activeLang || !bot) return;
+    setActiveLang(next);
+    const greet = bot.greeting[next] || bot.greeting[bot.primaryLang] || 'Hi! 👋';
+    const greetMsg: Msg = { id: newMsgId(), from: 'bot', text: greet, timestamp: Date.now() };
+    setMsgs([greetMsg]);
+    setConversationId(null);
+    saveMsgs(bot.id, queryRef.current.vid, [greetMsg]);
+    postToParent('reset');
+  }, [activeLang, bot]);
+
+  // ─── Auto-scroll ────────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [msgs, sending]);
 
-  // ── Notify parent we're ready
+  // ─── Handle parent messages (visibility, reset) ─────────────────────────
   useEffect(() => {
-    postToParent('ready');
-  }, []);
+    function onMsg(e: MessageEvent) {
+      if (!e.data || e.data.source !== 'peit-widget-host') return;
+      if (e.data.type === 'opened') {
+        setIsVisible(true);
+        setUnread(0);
+        postToParent('unread', { count: 0 });
+        setTimeout(() => textareaRef.current?.focus(), 200);
+      }
+      if (e.data.type === 'closed') {
+        setIsVisible(false);
+      }
+      if (e.data.type === 'reset') {
+        if (bot) {
+          const greet = bot.greeting[activeLang] || 'Hi! 👋';
+          const greetMsg: Msg = { id: newMsgId(), from: 'bot', text: greet, timestamp: Date.now() };
+          setMsgs([greetMsg]);
+          setConversationId(null);
+          saveMsgs(bot.id, queryRef.current.vid, [greetMsg]);
+        }
+      }
+    }
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [bot, activeLang]);
 
-  // ── Send a message
-  async function send() {
-    const text = input.trim();
+  // ─── Notify parent we're ready ──────────────────────────────────────────
+  useEffect(() => { postToParent('ready'); }, []);
+
+  // ─── Notify parent when conversation ID is known ───────────────────────
+  useEffect(() => {
+    if (conversationId) postToParent('conversation', { id: conversationId });
+  }, [conversationId]);
+
+  // ─── Increment unread when bot replies & widget is hidden ───────────────
+  useEffect(() => {
+    if (!isVisible) {
+      const lastBotMsg = [...msgs].reverse().find(m => m.from === 'bot');
+      const lastUserMsg = [...msgs].reverse().find(m => m.from === 'user');
+      if (lastBotMsg && lastUserMsg && lastBotMsg.timestamp > lastUserMsg.timestamp) {
+        // Only count messages since hidden
+      }
+    }
+  }, [msgs, isVisible]);
+
+  // ─── Auto-resize textarea ───────────────────────────────────────────────
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }, [input]);
+
+  // ─── Send a message ─────────────────────────────────────────────────────
+  const send = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || !bot || sending) return;
 
-    const uid = counter;
-    setCounter(c => c + 2);
+    const userMsg: Msg = {
+      id: newMsgId(), from: 'user', text, timestamp: Date.now(), status: 'sending',
+    };
     setInput('');
     setSending(true);
-    setSendError(null);
-    setMsgs(prev => [...prev, { id: uid, from: 'user', text }]);
+    setMsgs(prev => [...prev, userMsg]);
 
     try {
       const res = await fetch(`/api/widget/${id}/message`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text, lang: activeLang, conversationId }),
+        body: JSON.stringify({
+          text,
+          lang: activeLang,
+          conversationId,
+          visitorId: queryRef.current.vid,
+          pageUrl:   queryRef.current.page,
+          pageTitle: queryRef.current.title,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'SEND_FAILED');
-      setMsgs(prev => [...prev, { id: uid + 1, from: 'bot', text: data.reply }]);
       if (data.conversationId) setConversationId(data.conversationId);
 
-      // After 2nd bot reply, prompt for lead capture if enabled
-      if (
-        bot.leadCapture.enabled &&
-        !leadSubmitted &&
-        msgs.filter(m => m.from === 'bot').length >= 1 &&
-        Math.random() < 0.6
-      ) {
-        // Soft suggestion only — user opens form via the button
+      // Mark user message as sent
+      setMsgs(prev => prev.map(m => m.id === userMsg.id ? { ...m, status: 'sent' } : m));
+
+      // Add bot reply
+      const botMsg: Msg = {
+        id: newMsgId(),
+        from: 'bot',
+        text: data.reply,
+        source: data.source,
+        timestamp: Date.now(),
+      };
+      setMsgs(prev => [...prev, botMsg]);
+
+      // Update parent unread badge if hidden
+      if (!isVisible) {
+        const next = unread + 1;
+        setUnread(next);
+        postToParent('unread', { count: next });
       }
     } catch (e) {
-      setSendError(e instanceof Error ? e.message : 'SEND_FAILED');
+      setMsgs(prev => prev.map(m =>
+        m.id === userMsg.id ? { ...m, status: 'failed' } : m,
+      ));
+      const errMsg: Msg = {
+        id: newMsgId(),
+        from: 'bot',
+        text: '⚠ ' + I18N[activeLang].errorSend,
+        source: 'fallback',
+        timestamp: Date.now(),
+      };
+      setMsgs(prev => [...prev, errMsg]);
     } finally {
       setSending(false);
     }
-  }
+  }, [input, bot, sending, id, activeLang, conversationId, isVisible, unread]);
 
-  // ── Submit lead
+  // ─── Retry a failed message ─────────────────────────────────────────────
+  const retryMsg = useCallback((msgId: string) => {
+    const failed = msgs.find(m => m.id === msgId);
+    if (!failed) return;
+    setMsgs(prev => prev.filter(m => m.id !== msgId));
+    setTimeout(() => send(failed.text), 100);
+  }, [msgs, send]);
+
+  // ─── Submit lead ────────────────────────────────────────────────────────
   async function submitLead() {
     if (!bot) return;
-    const fields = bot.leadCapture.fields;
-    const needsEmail = fields.includes('email');
-    const needsPhone = fields.includes('phone');
-    if (needsEmail && !leadEmail.trim() && !leadPhone.trim()) {
+    if (!leadEmail.trim() && !leadPhone.trim()) {
       setLeadError(I18N[activeLang].leadEmail);
       return;
     }
-
     setLeadSubmitting(true);
     setLeadError(null);
     try {
@@ -246,11 +419,15 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'LEAD_FAILED');
       setLeadSubmitted(true);
-      setShowLeadForm(false);
-      setMsgs(prev => [
-        ...prev,
-        { id: counter + 100, from: 'bot', text: I18N[activeLang].leadThanks },
-      ]);
+      setLeadOpen(false);
+
+      const thanksMsg: Msg = {
+        id: newMsgId(),
+        from: 'bot',
+        text: I18N[activeLang].leadThanks,
+        timestamp: Date.now(),
+      };
+      setMsgs(prev => [...prev, thanksMsg]);
     } catch (e) {
       setLeadError(e instanceof Error ? e.message : 'LEAD_FAILED');
     } finally {
@@ -258,145 +435,64 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  // ── Render error state
+  // ─── New chat ───────────────────────────────────────────────────────────
+  function newChat() {
+    if (!bot) return;
+    const greet = bot.greeting[activeLang] || 'Hi! 👋';
+    const greetMsg: Msg = { id: newMsgId(), from: 'bot', text: greet, timestamp: Date.now() };
+    setMsgs([greetMsg]);
+    setConversationId(null);
+    setLeadSubmitted(false);
+    saveMsgs(bot.id, queryRef.current.vid, [greetMsg]);
+    postToParent('reset');
+    textareaRef.current?.focus();
+  }
+
+  // ── Render error
   if (loadError) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0d0d1a] text-white p-6">
         <AlertCircle className="w-8 h-8 text-red-400 mb-3" />
-        <p className="text-gray-300 text-sm text-center">{I18N.ka.errorLoad}</p>
-        <p className="text-gray-600 text-xs mt-1">{loadError}</p>
+        <p className="text-gray-300 text-sm text-center mb-1">{I18N.ka.errorLoad}</p>
+        <p className="text-gray-600 text-xs">{loadError}</p>
       </div>
     );
   }
 
   if (loading || !bot) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0d0d1a]">
-        <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
+      <div className="h-screen w-screen flex flex-col bg-[#0d0d1a]">
+        {/* Skeleton */}
+        <div className="h-14 border-b border-white/[0.06] px-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white/[0.06] animate-pulse" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3 w-24 bg-white/[0.06] rounded animate-pulse" />
+            <div className="h-2.5 w-16 bg-white/[0.04] rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
+        </div>
       </div>
     );
   }
 
   const ui = I18N[activeLang];
   const color = bot.brandColor;
+  const isFresh = msgs.length <= 1;
 
-  // ── Lead capture form view
-  if (showLeadForm && !leadSubmitted) {
-    const fields = bot.leadCapture.fields;
-    return (
-      <div className="h-screen w-screen flex flex-col bg-[#0d0d1a] text-white">
-        <header
-          className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]"
-          style={{ background: `linear-gradient(90deg, ${color}40, transparent)` }}
-        >
-          <button
-            onClick={() => setShowLeadForm(false)}
-            className="text-gray-400 hover:text-white transition-colors p-1 -ml-1"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div className="flex-1">
-            <p className="text-white font-semibold text-sm">{ui.leaveContact}</p>
-          </div>
-          <button
-            onClick={() => postToParent('close')}
-            className="text-gray-500 hover:text-gray-300 p-1"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3">
-          <p className="text-gray-400 text-sm mb-2">{ui.leadIntro}</p>
-
-          {fields.includes('name') && (
-            <div className="relative">
-              <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600" />
-              <input
-                type="text"
-                value={leadName}
-                onChange={e => setLeadName(e.target.value)}
-                placeholder={ui.leadName}
-                className="w-full bg-white/[0.05] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/50"
-              />
-            </div>
-          )}
-
-          {fields.includes('email') && (
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600" />
-              <input
-                type="email"
-                value={leadEmail}
-                onChange={e => setLeadEmail(e.target.value)}
-                placeholder={ui.leadEmail}
-                className="w-full bg-white/[0.05] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/50"
-              />
-            </div>
-          )}
-
-          {fields.includes('phone') && (
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600" />
-              <input
-                type="tel"
-                value={leadPhone}
-                onChange={e => setLeadPhone(e.target.value)}
-                placeholder={ui.leadPhone}
-                className="w-full bg-white/[0.05] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/50"
-              />
-            </div>
-          )}
-
-          <textarea
-            value={leadMsg}
-            onChange={e => setLeadMsg(e.target.value)}
-            placeholder={ui.leadMessage}
-            rows={3}
-            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/50 resize-none"
-          />
-
-          {leadError && (
-            <p className="flex items-center gap-1 text-red-400 text-xs">
-              <AlertCircle className="w-3 h-3" /> {leadError}
-            </p>
-          )}
-        </div>
-
-        <div className="border-t border-white/[0.06] p-3 flex gap-2">
-          <button
-            onClick={() => setShowLeadForm(false)}
-            className="px-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            {ui.leadSkip}
-          </button>
-          <button
-            onClick={submitLead}
-            disabled={leadSubmitting || (!leadEmail.trim() && !leadPhone.trim())}
-            className="flex-1 inline-flex items-center justify-center gap-2 text-white text-sm font-semibold py-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            style={{ background: color }}
-          >
-            {leadSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            {ui.leadSubmit}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Main chat view
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0d0d1a] text-white">
+    <div className="h-screen w-screen flex flex-col bg-[#0d0d1a] text-white overflow-hidden">
       {/* Header */}
       <header
-        className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0"
-        style={{ background: `linear-gradient(90deg, ${color}40, transparent)` }}
+        className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0 backdrop-blur-md"
+        style={{ background: `linear-gradient(135deg, ${color}45, ${color}15 60%, transparent)` }}
       >
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: `linear-gradient(135deg, ${color}, ${color}aa)` }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+          style={{ background: `linear-gradient(135deg, ${color}, ${color}aa)`, boxShadow: `0 4px 12px ${color}55` }}
         >
-          <BotIcon className="w-4 h-4 text-white" />
+          <BotIcon className="w-4.5 h-4.5 text-white" style={{ width: 18, height: 18 }} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white font-semibold text-sm truncate">{bot.name}</p>
@@ -406,17 +502,17 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
 
-        {/* Lang switcher (only if multi-lang) */}
         {bot.languages.length > 1 && (
-          <div className="flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5 bg-white/[0.05] border border-white/[0.08] rounded-lg p-0.5">
             {bot.languages.map(l => (
               <button
                 key={l}
-                onClick={() => setActiveLang(l)}
+                onClick={() => switchLang(l)}
                 className={`px-1.5 py-1 rounded text-[10px] font-bold transition-all ${
-                  activeLang === l ? 'bg-white/[0.1] text-white' : 'text-gray-500 hover:text-white'
+                  activeLang === l ? 'bg-white/[0.12] text-white' : 'text-gray-500 hover:text-white'
                 }`}
                 title={l}
+                aria-label={`Switch to ${l}`}
               >
                 {LANG_FLAGS[l]}
               </button>
@@ -424,9 +520,20 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           </div>
         )}
 
+        {!isFresh && (
+          <button
+            onClick={newChat}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.05] transition-colors"
+            title={ui.newChat}
+            aria-label={ui.newChat}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         <button
           onClick={() => postToParent('close')}
-          className="text-gray-500 hover:text-gray-300 transition-colors p-1"
+          className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.05] transition-colors"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -434,50 +541,65 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0">
-        {msgs.map(m => (
-          <div key={m.id} className={`flex gap-2 ${m.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {m.from === 'bot' && (
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                style={{ background: `linear-gradient(135deg, ${color}, ${color}aa)` }}
-              >
-                <BotIcon className="w-3.5 h-3.5 text-white" />
-              </div>
-            )}
+      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0 scroll-smooth">
+        {msgs.map((m, i) => {
+          const showAvatar = m.from === 'bot' && (i === 0 || msgs[i - 1].from !== 'bot');
+          return (
             <div
-              className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                m.from === 'user' ? 'text-white rounded-br-sm' : 'bg-white/[0.07] text-gray-200 rounded-bl-sm'
-              }`}
-              style={m.from === 'user' ? { background: color } : undefined}
+              key={m.id}
+              className={`flex gap-2 message-in ${m.from === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {m.text}
-            </div>
-          </div>
-        ))}
+              {m.from === 'bot' && (
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${showAvatar ? '' : 'invisible'}`}
+                  style={{ background: `linear-gradient(135deg, ${color}, ${color}aa)` }}
+                >
+                  <BotIcon className="w-3.5 h-3.5 text-white" />
+                </div>
+              )}
 
+              <div className="max-w-[78%] flex flex-col items-start">
+                <div
+                  className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm ${
+                    m.from === 'user'
+                      ? 'text-white rounded-br-sm self-end'
+                      : 'bg-white/[0.07] text-gray-100 rounded-bl-sm border border-white/[0.04]'
+                  } ${m.status === 'failed' ? 'opacity-70' : ''}`}
+                  style={m.from === 'user' ? {
+                    background: color,
+                    boxShadow: `0 2px 8px ${color}33`,
+                  } : undefined}
+                >
+                  {m.from === 'bot' ? renderMd(m.text) : m.text}
+                </div>
+
+                {/* Status / source indicators */}
+                {m.from === 'user' && m.status === 'failed' && (
+                  <button
+                    onClick={() => retryMsg(m.id)}
+                    className="text-[10px] mt-1 text-red-400 hover:text-red-300 flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5" /> {ui.retry}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Typing indicator */}
         {sending && (
-          <div className="flex gap-2 justify-start">
+          <div className="flex gap-2 justify-start message-in">
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
               style={{ background: `linear-gradient(135deg, ${color}, ${color}aa)` }}
             >
               <BotIcon className="w-3.5 h-3.5 text-white" />
             </div>
-            <div className="bg-white/[0.07] px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
-          </div>
-        )}
-
-        {sendError && (
-          <div className="flex gap-2 justify-start">
-            <div className="bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">
-              <p className="text-red-300 text-xs flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> {ui.errorSend}
-              </p>
+            <div className="bg-white/[0.07] px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1 border border-white/[0.04]">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-typing" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-typing" style={{ animationDelay: '180ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-typing" style={{ animationDelay: '360ms' }} />
             </div>
           </div>
         )}
@@ -485,12 +607,35 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         <div ref={bottomRef} />
       </div>
 
+      {/* Suggestions row (only at the start) */}
+      {isFresh && bot.suggestions.length > 0 && !sending && (
+        <div className="px-4 pb-2 shrink-0">
+          <p className="text-[11px] text-gray-500 mb-2 px-1">{ui.startConvo}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {bot.suggestions.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => send(s)}
+                className="text-xs px-3 py-1.5 rounded-full border text-left transition-all hover:scale-[1.02]"
+                style={{
+                  borderColor: `${color}40`,
+                  color: color,
+                  background: `${color}10`,
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Lead capture CTA */}
-      {bot.leadCapture.enabled && !leadSubmitted && msgs.length >= 3 && (
+      {bot.leadCapture.enabled && !leadSubmitted && msgs.length >= 3 && !leadOpen && (
         <div className="px-4 pb-2 shrink-0">
           <button
-            onClick={() => setShowLeadForm(true)}
-            className="w-full flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] transition-colors"
+            onClick={() => setLeadOpen(true)}
+            className="w-full flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:border-white/[0.14] transition-colors"
           >
             <Mail className="w-3 h-3" />
             {ui.leaveContact}
@@ -500,46 +645,203 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
 
       {leadSubmitted && (
         <div className="px-4 pb-2 shrink-0">
-          <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-400 py-2">
-            <Check className="w-3 h-3" />
-            {ui.leadThanks.split('!')[0]}!
+          <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-400 py-1.5">
+            <Check className="w-3 h-3" /> {ui.leadThanks.split('!')[0]}!
           </div>
         </div>
       )}
 
       {/* Input */}
-      <div className="border-t border-white/[0.06] p-3 flex items-center gap-2 shrink-0">
-        <input
-          type="text"
+      <div className="border-t border-white/[0.06] p-3 flex items-end gap-2 shrink-0 bg-white/[0.02]">
+        <textarea
+          ref={textareaRef}
+          rows={1}
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') send(); }}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
           placeholder={ui.placeholder}
           disabled={sending}
-          className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/40 disabled:opacity-60"
+          className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3.5 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/40 disabled:opacity-60 resize-none max-h-[120px]"
+          style={{ minHeight: '36px' }}
         />
         <button
-          onClick={send}
+          onClick={() => send()}
           disabled={!input.trim() || sending}
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-40 shrink-0"
-          style={{ background: color }}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-30 shrink-0 hover:scale-105 active:scale-95"
+          style={{ background: color, boxShadow: input.trim() ? `0 2px 8px ${color}55` : 'none' }}
           aria-label={ui.send}
         >
-          <Send className="w-3.5 h-3.5 text-white" />
+          {sending
+            ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+            : <Send className="w-3.5 h-3.5 text-white" />
+          }
         </button>
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-white/[0.04] shrink-0">
+      <div className="px-4 py-1.5 border-t border-white/[0.04] shrink-0">
         <a
           href="https://peit.ge"
           target="_blank"
           rel="noopener noreferrer"
           className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors block text-center"
         >
-          {ui.poweredBy}
+          ⚡ {ui.poweredBy}
         </a>
       </div>
+
+      {/* Lead capture drawer (slides up over chat) */}
+      {leadOpen && !leadSubmitted && (
+        <LeadDrawer
+          bot={bot}
+          color={color}
+          ui={ui}
+          name={leadName} setName={setLeadName}
+          email={leadEmail} setEmail={setLeadEmail}
+          phone={leadPhone} setPhone={setLeadPhone}
+          msg={leadMsg} setMsg={setLeadMsg}
+          submitting={leadSubmitting}
+          error={leadError}
+          onSubmit={submitLead}
+          onClose={() => setLeadOpen(false)}
+        />
+      )}
+
+      <style jsx global>{`
+        @keyframes message-in {
+          from { transform: translateY(8px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+        .message-in { animation: message-in .22s cubic-bezier(.34,1.56,.64,1); }
+        @keyframes typing {
+          0%, 60%, 100% { transform: scale(.8); opacity: .5; }
+          30%           { transform: scale(1.2); opacity: 1; }
+        }
+        .animate-typing { animation: typing 1.2s infinite ease-in-out; }
+      `}</style>
+    </div>
+  );
+}
+
+// ─── Lead Drawer (inline, slides up) ──────────────────────────────────────
+function LeadDrawer({
+  bot, color, ui,
+  name, setName, email, setEmail, phone, setPhone, msg, setMsg,
+  submitting, error, onSubmit, onClose,
+}: {
+  bot: PublicBot;
+  color: string;
+  ui: typeof I18N[Lang];
+  name: string;  setName:  (v: string) => void;
+  email: string; setEmail: (v: string) => void;
+  phone: string; setPhone: (v: string) => void;
+  msg: string;   setMsg:   (v: string) => void;
+  submitting: boolean;
+  error: string | null;
+  onSubmit: () => void;
+  onClose: () => void;
+}) {
+  const fields = bot.leadCapture.fields;
+  const canSubmit = (fields.includes('email') ? email.trim() : true)
+                 && (email.trim() || phone.trim());
+
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col bg-[#0d0d1a]/98 backdrop-blur-sm animate-drawer">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2">
+          <Mail className="w-4 h-4 text-violet-400" />
+          <p className="text-white font-semibold text-sm">{ui.leaveContact}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-white p-1 rounded-lg hover:bg-white/[0.05] transition-colors"
+          aria-label="Close form"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+        <p className="text-gray-400 text-xs leading-relaxed">{ui.leadIntro}</p>
+
+        {fields.includes('name') && (
+          <FormInput icon={<UserIcon className="w-3.5 h-3.5" />} value={name} onChange={setName} placeholder={ui.leadName} />
+        )}
+        {fields.includes('email') && (
+          <FormInput icon={<Mail className="w-3.5 h-3.5" />} type="email" value={email} onChange={setEmail} placeholder={ui.leadEmail} />
+        )}
+        {fields.includes('phone') && (
+          <FormInput icon={<Phone className="w-3.5 h-3.5" />} type="tel" value={phone} onChange={setPhone} placeholder={ui.leadPhone} />
+        )}
+
+        <textarea
+          value={msg}
+          onChange={e => setMsg(e.target.value)}
+          placeholder={ui.leadMessage}
+          rows={3}
+          className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/50 resize-none"
+        />
+
+        {error && (
+          <p className="flex items-center gap-1 text-red-400 text-xs">
+            <AlertCircle className="w-3 h-3" /> {error}
+          </p>
+        )}
+      </div>
+
+      <div className="border-t border-white/[0.06] p-3 flex gap-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          {ui.leadSkip}
+        </button>
+        <button
+          onClick={onSubmit}
+          disabled={submitting || !canSubmit}
+          className="flex-1 inline-flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-[.98]"
+          style={{ background: color, boxShadow: `0 2px 8px ${color}55` }}
+        >
+          {submitting
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <Sparkles className="w-3.5 h-3.5" />
+          }
+          {ui.leadSubmit}
+        </button>
+      </div>
+
+      <style jsx>{`
+        @keyframes drawer { from { transform: translateY(20%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-drawer { animation: drawer .25s cubic-bezier(.34,1.56,.64,1); }
+      `}</style>
+    </div>
+  );
+}
+
+function FormInput({
+  icon, value, onChange, placeholder, type = 'text',
+}: {
+  icon: React.ReactNode;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  type?: string;
+}) {
+  return (
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none">{icon}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-white/[0.05] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/50"
+      />
     </div>
   );
 }

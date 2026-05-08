@@ -1,8 +1,9 @@
 // GET /api/widget/[id]/config
 // Public, CORS-enabled. Returns just enough info for the widget to render.
-// Internal fields (ownerId, FAQs, knowledgeChunks) are NEVER exposed.
+// Internal fields (ownerId, knowledgeChunks) are NEVER exposed.
+// FAQ questions are exposed as suggestions (the answers stay server-side).
 
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { CORS_HEADERS, corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
 
@@ -23,14 +24,15 @@ export async function GET(req: Request) {
   const bot = await db.query.bots.findFirst({
     where: eq(schema.bots.id, id),
     columns: {
-      id: true,
-      name: true,
-      brandColor: true,
-      languages: true,
-      primaryLang: true,
-      greeting: true,
-      leadCapture: true,
-      status: true,
+      id: true, name: true, brandColor: true, languages: true,
+      primaryLang: true, greeting: true, leadCapture: true, status: true,
+    },
+    with: {
+      faqs: {
+        orderBy: [asc(schema.faqs.position)],
+        limit: 4,
+        columns: { question: true },
+      },
     },
   });
 
@@ -47,9 +49,9 @@ export async function GET(req: Request) {
       primaryLang: bot.primaryLang,
       greeting:    bot.greeting,
       leadCapture: bot.leadCapture,
+      suggestions: bot.faqs.map(f => f.question).filter(q => q && q.length < 80),
     },
   });
 }
 
-// Re-export so Next.js attaches headers on plain responses too
 export { CORS_HEADERS };

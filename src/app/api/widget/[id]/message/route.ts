@@ -17,6 +17,9 @@ interface MessageBody {
   lang?: BotLang;
   conversationId?: string;
   channel?: 'web' | 'telegram' | 'instagram' | 'facebook' | 'playground';
+  visitorId?: string;
+  pageUrl?: string;
+  pageTitle?: string;
 }
 
 export async function POST(req: Request) {
@@ -76,6 +79,13 @@ export async function POST(req: Request) {
         botId:    dbBot.id,
         channel:  body.channel ?? 'web',
         language: lang,
+        visitorId: body.visitorId?.slice(0, 64) ?? null,
+        metadata: {
+          pageUrl:   body.pageUrl?.slice(0, 500),
+          pageTitle: body.pageTitle?.slice(0, 200),
+          userAgent: req.headers.get('user-agent')?.slice(0, 200),
+          referer:   req.headers.get('referer')?.slice(0, 500),
+        },
       }).returning({ id: schema.conversations.id });
       conversationId = convo.id;
     }
