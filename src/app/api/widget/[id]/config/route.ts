@@ -1,7 +1,4 @@
-// GET /api/widget/[id]/config
-// Public, CORS-enabled. Returns just enough info for the widget to render.
-// Internal fields (ownerId, knowledgeChunks) are NEVER exposed.
-// FAQ questions are exposed as suggestions (the answers stay server-side).
+// GET /api/widget/[id]/config — public, CORS-enabled.
 
 import { eq, asc } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
@@ -9,16 +6,16 @@ import { CORS_HEADERS, corsPreflight, corsJson, corsError } from '@/lib/widget-c
 
 export const runtime = 'nodejs';
 
-export async function OPTIONS() {
-  return corsPreflight();
-}
+export async function OPTIONS() { return corsPreflight(); }
 
-export async function GET(req: Request) {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const db = getDb();
   if (!db) return corsError(503, 'DB_NOT_CONFIGURED');
 
-  const segments = new URL(req.url).pathname.split('/');
-  const id = segments[segments.indexOf('widget') + 1] ?? '';
+  const { id } = await params;
   if (!id) return corsError(400, 'MISSING_ID');
 
   const bot = await db.query.bots.findFirst({

@@ -106,7 +106,11 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
 
   async function handleDelete() {
     if (!bot) return;
-    await deleteBot(bot.id);
+    try {
+      await deleteBot(bot.id);
+    } catch (e) {
+      console.error('[bot-details] delete failed:', e);
+    }
     router.push('/dashboard');
   }
 

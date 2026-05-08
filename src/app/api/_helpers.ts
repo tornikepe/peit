@@ -1,4 +1,4 @@
-// Shared helpers for API routes — auth, error mapping, JSON responses.
+// Shared helpers for API routes — auth, params, error handling.
 
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
@@ -9,16 +9,36 @@ export function jsonError(status: number, code: string, message?: string) {
   return NextResponse.json({ error: code, message }, { status });
 }
 
+export type RouteParams = Record<string, string>;
+
+interface RouteCtx<P extends RouteParams> {
+  params: Promise<P>;
+}
+
+interface HandlerCtx<P extends RouteParams> {
+  user:   DbUser;
+  req:    Request;
+  params: P;
+}
+
 /**
- * Wrap a route handler so all the boilerplate (auth check, DB check,
- * exception → JSON) lives in one place.
+ * Wrap a route handler with: DB-availability check, Clerk auth +
+ * lazy-provisioning, route params resolution (Next.js 16 promise form),
+ * and exception → JSON mapping. All in one place.
  *
- *   export const GET = withAuth(async ({ user }) => { ... });
+ *   export const DELETE = withAuth<{ id: string }>(async ({ user, params }) => {
+ *     const ok = await deleteBotForUser(user.id, params.id);
+ *     if (!ok) return jsonError(404, 'NOT_FOUND');
+ *     return { ok: true };
+ *   });
  */
-export function withAuth<T>(
-  handler: (ctx: { user: DbUser; req: Request }) => Promise<T> | T,
+export function withAuth<
+  P extends RouteParams = RouteParams,
+  T = unknown,
+>(
+  handler: (ctx: HandlerCtx<P>) => Promise<T> | T,
 ) {
-  return async (req: Request): Promise<Response> => {
+  return async (req: Request, ctx?: RouteCtx<P>): Promise<Response> => {
     if (!getDb()) return jsonError(503, 'DB_NOT_CONFIGURED', 'DATABASE_URL is not set');
 
     let user: DbUser;
@@ -26,17 +46,24 @@ export function withAuth<T>(
       user = await getCurrentUserOrThrow();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unauthorized';
-      if (msg === 'UNAUTHORIZED') return jsonError(401, 'UNAUTHORIZED');
+      if (msg === 'UNAUTHORIZED')           return jsonError(401, 'UNAUTHORIZED');
       if (msg === 'DATABASE_NOT_CONFIGURED') return jsonError(503, 'DB_NOT_CONFIGURED');
       return jsonError(500, 'AUTH_ERROR', msg);
     }
 
+    let params = {} as P;
     try {
-      const result = await handler({ user, req });
+      if (ctx?.params) params = await ctx.params;
+    } catch (e) {
+      console.error('[api] params resolution failed:', e);
+    }
+
+    try {
+      const result = await handler({ user, req, params });
       if (result instanceof Response) return result;
       return NextResponse.json(result);
     } catch (e) {
-      console.error('[api]', e);
+      console.error('[api] handler error:', e);
       const msg = e instanceof Error ? e.message : 'Internal error';
       return jsonError(500, 'INTERNAL', msg);
     }

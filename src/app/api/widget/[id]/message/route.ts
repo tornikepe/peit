@@ -1,6 +1,5 @@
-// POST /api/widget/[id]/message
+// POST /api/widget/[id]/message — public, CORS-enabled.
 // Body: { text, lang?, conversationId?, channel?, visitorId?, pageUrl?, pageTitle? }
-// Returns: { ok, reply, source, conversationId }
 
 import { eq, desc } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
@@ -23,31 +22,33 @@ interface MessageBody {
   pageTitle?: string;
 }
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const db = getDb();
   if (!db) return corsError(503, 'DB_NOT_CONFIGURED');
 
-  const id = new URL(req.url).pathname.split('/').at(-2) ?? '';
+  const { id } = await params;
   if (!id) return corsError(400, 'MISSING_ID');
 
   let body: MessageBody;
-  try { body = await req.json(); } catch { return corsError(400, 'INVALID_JSON'); }
+  try { body = await req.json(); }
+  catch { return corsError(400, 'INVALID_JSON'); }
 
   const text = (body.text ?? '').trim();
   if (!text)              return corsError(400, 'EMPTY_TEXT');
   if (text.length > 2000) return corsError(400, 'TEXT_TOO_LONG');
 
-  // Load bot + faqs + chunks (needed for FAQ matching and fallback retrieval)
   const dbBot = await db.query.bots.findFirst({
     where: eq(schema.bots.id, id),
     with: { faqs: true, chunks: true },
   });
-  if (!dbBot)                     return corsError(404, 'BOT_NOT_FOUND');
-  if (dbBot.status !== 'active')  return corsError(403, 'BOT_NOT_ACTIVE');
+  if (!dbBot)                    return corsError(404, 'BOT_NOT_FOUND');
+  if (dbBot.status !== 'active') return corsError(403, 'BOT_NOT_ACTIVE');
 
   const lang: BotLang = (body.lang ?? dbBot.primaryLang) as BotLang;
 
-  // Re-shape to the in-memory Bot type the engine expects
   const bot: Bot = {
     id:           dbBot.id,
     name:         dbBot.name,
@@ -70,24 +71,37 @@ export async function POST(req: Request) {
     })),
   };
 
-  // Pull the last few turns of conversation history for follow-up context
+  // Pull recent conversation history for follow-up context
   let history: { role: 'user' | 'assistant'; content: string }[] | undefined;
   if (body.conversationId) {
-    const past = await db.query.messages.findMany({
-      where: eq(schema.messages.conversationId, body.conversationId),
-      orderBy: [desc(schema.messages.createdAt)],
-      limit: 6,
-    });
-    history = past.reverse().map(m => ({
-      role: (m.fromUser ? 'user' : 'assistant') as 'user' | 'assistant',
-      content: m.content,
-    }));
+    try {
+      const past = await db.query.messages.findMany({
+        where: eq(schema.messages.conversationId, body.conversationId),
+        orderBy: [desc(schema.messages.createdAt)],
+        limit: 6,
+      });
+      history = past.reverse().map(m => ({
+        role: (m.fromUser ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: m.content,
+      }));
+    } catch (e) {
+      console.error('[widget/message] history fetch failed:', e);
+    }
   }
 
-  // ── Run the answer engine (FAQ → RAG → keyword → fallback) ────────────
-  const result = await answer({ query: text, bot, lang, history });
+  // Run the answer engine — never throws (catches everything internally)
+  let result;
+  try {
+    result = await answer({ query: text, bot, lang, history });
+  } catch (e) {
+    console.error('[widget/message] answer engine failed:', e);
+    result = {
+      text: bot.fallback[lang] ?? bot.fallback[bot.primaryLang] ?? 'სამწუხაროდ ვერ ვიპოვე პასუხი.',
+      source: 'fallback' as const,
+    };
+  }
 
-  // ── Persist conversation + messages (best-effort) ─────────────────────
+  // Persist conversation + messages (best-effort)
   let conversationId = body.conversationId;
   try {
     if (!conversationId) {
@@ -108,13 +122,9 @@ export async function POST(req: Request) {
 
     await db.insert(schema.messages).values([
       { conversationId, fromUser: true,  content: text },
-      {
-        conversationId, fromUser: false, content: result.text,
-        source: result.source,
-      },
+      { conversationId, fromUser: false, content: result.text, source: result.source },
     ]);
 
-    // Bump message stats
     await db.update(schema.bots)
       .set({
         statsCache: {

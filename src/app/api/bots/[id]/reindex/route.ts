@@ -1,6 +1,5 @@
 // POST /api/bots/[id]/reindex
-// Re-embed all knowledge chunks for a bot (user owns it).
-// Idempotent — safe to call repeatedly.
+// Re-embeds all knowledge chunks for a bot. Idempotent.
 
 import { eq, and } from 'drizzle-orm';
 import { withAuth, jsonError } from '@/app/api/_helpers';
@@ -11,19 +10,16 @@ import { setChunkEmbeddings } from '@/db/queries/chunks';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-export const POST = withAuth(async ({ user, req }) => {
+export const POST = withAuth<{ id: string }>(async ({ user, params }) => {
+  if (!params.id) return jsonError(400, 'MISSING_ID');
   if (!isEmbeddingsAvailable()) {
     return jsonError(503, 'EMBEDDINGS_NOT_CONFIGURED', 'Set VOYAGE_API_KEY in env');
   }
 
-  const id = new URL(req.url).pathname.split('/').at(-2) ?? '';
-  if (!id) return jsonError(400, 'MISSING_ID');
-
   const db = requireDb();
 
-  // Confirm ownership
   const bot = await db.query.bots.findFirst({
-    where: and(eq(schema.bots.id, id), eq(schema.bots.ownerId, user.id)),
+    where: and(eq(schema.bots.id, params.id), eq(schema.bots.ownerId, user.id)),
     columns: { id: true },
   });
   if (!bot) return jsonError(404, 'NOT_FOUND');
@@ -34,7 +30,7 @@ export const POST = withAuth(async ({ user, req }) => {
   });
 
   if (chunks.length === 0) {
-    return { ok: true, indexed: 0, skipped: 0 };
+    return { ok: true, indexed: 0 };
   }
 
   const texts = chunks.map(c => `${c.heading}\n${c.content}`.slice(0, 8000));

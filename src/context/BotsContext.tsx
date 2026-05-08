@@ -138,8 +138,18 @@ export function BotsProvider({ children }: { children: React.ReactNode }) {
 
   const updateBot = useCallback(async (id: string, patch: Partial<Bot>): Promise<void> => {
     if (mode === 'cloud') {
-      const updated = await apiUpdateBot(id, patch);
-      setBots(prev => prev.map(b => b.id === id ? updated : b));
+      try {
+        const updated = await apiUpdateBot(id, patch);
+        setBots(prev => prev.map(b => b.id === id ? updated : b));
+      } catch (e) {
+        // 404 → bot vanished server-side; re-sync silently and continue.
+        if (e instanceof ApiError && e.status === 404) {
+          console.warn('[bots] PATCH returned 404, re-syncing list', id);
+          try { setBots(await apiListBots()); } catch { /* ignore */ }
+          return;
+        }
+        throw e;
+      }
       return;
     }
     setBots(prev =>
@@ -153,7 +163,20 @@ export function BotsProvider({ children }: { children: React.ReactNode }) {
 
   const deleteBot = useCallback(async (id: string): Promise<void> => {
     if (mode === 'cloud') {
-      await apiDeleteBot(id);
+      try {
+        await apiDeleteBot(id);
+      } catch (e) {
+        // 404 → bot is already gone server-side; just drop it from local state
+        // and refresh to re-sync. Don't bubble the error since the desired
+        // outcome (bot is gone) is achieved either way.
+        if (e instanceof ApiError && e.status === 404) {
+          console.warn('[bots] DELETE returned 404, removing from local state', id);
+          setBots(prev => prev.filter(b => b.id !== id));
+          try { setBots(await apiListBots()); } catch { /* ignore */ }
+          return;
+        }
+        throw e;
+      }
       setBots(prev => prev.filter(b => b.id !== id));
       return;
     }
