@@ -3,9 +3,12 @@
 
 import {
   pgTable, pgEnum, text, timestamp, integer, jsonb, boolean,
-  uuid, varchar, index, uniqueIndex,
+  uuid, varchar, index, uniqueIndex, vector,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// Voyage AI embedding dimensions (voyage-3, voyage-3-lite — both 1024)
+export const EMBEDDING_DIMS = 1024;
 
 // ─── Enums ─────────────────────────────────────────────────────────────────
 
@@ -91,11 +94,12 @@ export const knowledgeChunks = pgTable('knowledge_chunks', {
   heading:   text('heading').notNull(),
   content:   text('content').notNull(),
   keywords:  jsonb('keywords').$type<string[]>().notNull().default([]),
-  // Reserved for future pgvector embedding column
-  // embedding: vector('embedding', { dimensions: 1536 }),
+  /** Voyage AI embedding vector — null until indexed. */
+  embedding: vector('embedding', { dimensions: EMBEDDING_DIMS }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, t => ({
   botIdx: index('knowledge_chunks_bot_idx').on(t.botId),
+  // HNSW index for fast cosine-similarity retrieval. Created via SQL in migration.
 }));
 
 // ─── conversations ─────────────────────────────────────────────────────────

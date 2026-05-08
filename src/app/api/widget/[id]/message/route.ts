@@ -1,14 +1,15 @@
 // POST /api/widget/[id]/message
-// Body: { text: string, lang?: BotLang, conversationId?: string, channel?: string }
-// Returns: { reply, source, conversationId }
+// Body: { text, lang?, conversationId?, channel?, visitorId?, pageUrl?, pageTitle? }
+// Returns: { ok, reply, source, conversationId }
 
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
-import { botReply, type Bot, type BotLang } from '@/lib/bots';
+import { answer } from '@/lib/answer-engine';
+import { type Bot, type BotLang } from '@/lib/bots';
 
 export const runtime = 'nodejs';
-export const maxDuration = 15;
+export const maxDuration = 30;
 
 export async function OPTIONS() { return corsPreflight(); }
 
@@ -33,21 +34,21 @@ export async function POST(req: Request) {
   try { body = await req.json(); } catch { return corsError(400, 'INVALID_JSON'); }
 
   const text = (body.text ?? '').trim();
-  if (!text)                return corsError(400, 'EMPTY_TEXT');
-  if (text.length > 2000)   return corsError(400, 'TEXT_TOO_LONG');
+  if (!text)              return corsError(400, 'EMPTY_TEXT');
+  if (text.length > 2000) return corsError(400, 'TEXT_TOO_LONG');
 
-  // Load bot + faqs + chunks (everything answer engine needs)
+  // Load bot + faqs + chunks (needed for FAQ matching and fallback retrieval)
   const dbBot = await db.query.bots.findFirst({
     where: eq(schema.bots.id, id),
     with: { faqs: true, chunks: true },
   });
-  if (!dbBot)                       return corsError(404, 'BOT_NOT_FOUND');
-  if (dbBot.status !== 'active')    return corsError(403, 'BOT_NOT_ACTIVE');
+  if (!dbBot)                     return corsError(404, 'BOT_NOT_FOUND');
+  if (dbBot.status !== 'active')  return corsError(403, 'BOT_NOT_ACTIVE');
 
   const lang: BotLang = (body.lang ?? dbBot.primaryLang) as BotLang;
 
-  // Re-shape DB rows into the Bot interface that botReply() expects
-  const botForEngine: Bot = {
+  // Re-shape to the in-memory Bot type the engine expects
+  const bot: Bot = {
     id:           dbBot.id,
     name:         dbBot.name,
     industry:     dbBot.industry,
@@ -69,16 +70,31 @@ export async function POST(req: Request) {
     })),
   };
 
-  const { text: reply, source } = botReply(text, botForEngine, lang);
+  // Pull the last few turns of conversation history for follow-up context
+  let history: { role: 'user' | 'assistant'; content: string }[] | undefined;
+  if (body.conversationId) {
+    const past = await db.query.messages.findMany({
+      where: eq(schema.messages.conversationId, body.conversationId),
+      orderBy: [desc(schema.messages.createdAt)],
+      limit: 6,
+    });
+    history = past.reverse().map(m => ({
+      role: (m.fromUser ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: m.content,
+    }));
+  }
 
-  // ── Persist conversation + messages (best-effort; don't fail the reply on DB error) ──
+  // ── Run the answer engine (FAQ → RAG → keyword → fallback) ────────────
+  const result = await answer({ query: text, bot, lang, history });
+
+  // ── Persist conversation + messages (best-effort) ─────────────────────
   let conversationId = body.conversationId;
   try {
     if (!conversationId) {
       const [convo] = await db.insert(schema.conversations).values({
-        botId:    dbBot.id,
-        channel:  body.channel ?? 'web',
-        language: lang,
+        botId:     dbBot.id,
+        channel:   body.channel ?? 'web',
+        language:  lang,
         visitorId: body.visitorId?.slice(0, 64) ?? null,
         metadata: {
           pageUrl:   body.pageUrl?.slice(0, 500),
@@ -92,10 +108,13 @@ export async function POST(req: Request) {
 
     await db.insert(schema.messages).values([
       { conversationId, fromUser: true,  content: text },
-      { conversationId, fromUser: false, content: reply, source },
+      {
+        conversationId, fromUser: false, content: result.text,
+        source: result.source,
+      },
     ]);
 
-    // Bump bot stats cache
+    // Bump message stats
     await db.update(schema.bots)
       .set({
         statsCache: {
@@ -108,5 +127,10 @@ export async function POST(req: Request) {
     console.error('[widget/message] logging failed:', e);
   }
 
-  return corsJson({ ok: true, reply, source, conversationId });
+  return corsJson({
+    ok: true,
+    reply: result.text,
+    source: result.source,
+    conversationId,
+  });
 }

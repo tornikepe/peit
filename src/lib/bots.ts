@@ -231,20 +231,23 @@ export function searchKnowledge(input: string, bot: Bot): string | null {
  * 2. Knowledge chunk search (scraped website content)
  * 3. Fallback message
  */
+/**
+ * Synchronous keyword-only reply. Kept for client-side previews that don't
+ * have access to the AI engine (e.g. local-mode fallback). The real reply
+ * path used by the widget API is `answer()` in `lib/answer-engine.ts`,
+ * which adds RAG on top of these tiers.
+ */
 export function botReply(
   input: string,
   bot: Bot,
   lang: BotLang,
-): { text: string; source: 'faq' | 'knowledge' | 'fallback' } {
-  // Tier 1: FAQ
+): { text: string; source: 'faq' | 'knowledge' | 'ai' | 'fallback' } {
   const faqAnswer = matchFaq(input, bot);
   if (faqAnswer) return { text: faqAnswer, source: 'faq' };
 
-  // Tier 2: Knowledge base
   const knowledgeAnswer = searchKnowledge(input, bot);
   if (knowledgeAnswer) return { text: knowledgeAnswer, source: 'knowledge' };
 
-  // Tier 3: Fallback
   const fallback =
     bot.fallback[lang] ??
     bot.fallback[bot.primaryLang] ??

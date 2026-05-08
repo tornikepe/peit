@@ -3,6 +3,27 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { requireDb, schema } from '@/db';
 import type { Bot, BotLang, BotStatus, BotTone, FAQItem, KnowledgeChunk } from '@/lib/bots';
+import { embedBatch, isEmbeddingsAvailable } from '@/lib/embeddings';
+import { setChunkEmbeddings } from './chunks';
+
+/**
+ * Embed all chunks for a bot via Voyage and persist them.
+ * Best-effort: silently skips if Voyage is unavailable.
+ */
+async function indexChunkEmbeddings(
+  rows: { id: string; heading: string; content: string }[],
+): Promise<void> {
+  if (rows.length === 0 || !isEmbeddingsAvailable()) return;
+  try {
+    const texts = rows.map(r => `${r.heading}\n${r.content}`.slice(0, 8000));
+    const embeddings = await embedBatch(texts, 'document');
+    if (!embeddings) return;
+    const pairs = rows.map((r, i) => ({ id: r.id, embedding: embeddings[i] }));
+    await setChunkEmbeddings(pairs);
+  } catch (e) {
+    console.error('[bots] indexChunkEmbeddings failed:', e);
+  }
+}
 
 /** Convert a DB bot + child rows into the front-end Bot shape. */
 function rowToBot(
@@ -140,6 +161,13 @@ export async function createBotForUser(
         ).returning()
       : [];
 
+    return { bot, faqRows, chunkRows };
+  }).then(async ({ bot, faqRows, chunkRows }) => {
+    // Embed chunks AFTER the transaction commits — embeddings call an
+    // external API and we don't want to hold a DB transaction open for it.
+    if (chunkRows.length > 0) {
+      await indexChunkEmbeddings(chunkRows);
+    }
     return rowToBot(bot, faqRows, chunkRows);
   });
 }
@@ -169,8 +197,10 @@ export async function updateBotForUser(
   patch: UpdateBotInput,
 ): Promise<Bot | null> {
   const db = requireDb();
+  // Captured inside the transaction, embedded AFTER commit.
+  let chunksToEmbed: { id: string; heading: string; content: string }[] = [];
 
-  return await db.transaction(async tx => {
+  const result = await db.transaction(async tx => {
     // Verify ownership
     const owner = await tx.query.bots.findFirst({
       where: and(eq(schema.bots.id, botId), eq(schema.bots.ownerId, userDbId)),
@@ -210,11 +240,13 @@ export async function updateBotForUser(
     if (patch.knowledgeChunks !== undefined) {
       await tx.delete(schema.knowledgeChunks).where(eq(schema.knowledgeChunks.botId, botId));
       if (patch.knowledgeChunks.length) {
-        await tx.insert(schema.knowledgeChunks).values(
+        const inserted = await tx.insert(schema.knowledgeChunks).values(
           patch.knowledgeChunks.map(c => ({
             botId, heading: c.heading, content: c.content, keywords: c.keywords,
           })),
-        );
+        ).returning();
+        // Track for post-commit embedding
+        chunksToEmbed = inserted;
       }
     }
 
@@ -233,6 +265,13 @@ export async function updateBotForUser(
       fresh.chunks as (typeof schema.knowledgeChunks.$inferSelect)[],
     );
   });
+
+  // Embed any new chunks AFTER the transaction commits (slow external call)
+  if (chunksToEmbed.length > 0) {
+    await indexChunkEmbeddings(chunksToEmbed);
+  }
+
+  return result;
 }
 
 export async function deleteBotForUser(

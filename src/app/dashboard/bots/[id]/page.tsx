@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Zap, ArrowLeft, Bot as BotIcon, Play, Pause, Trash2,
   Copy, Check, Code2, MessageSquare, Settings, Globe,
-  TrendingUp, Plus,
+  TrendingUp, Plus, Sparkles, Loader2,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
@@ -24,6 +24,34 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     if (bot) setEditFaqs(bot.faqs);
   }, [bot?.id, bot?.updatedAt]); // re-sync when bot changes
+
+  // Rebuild AI index state
+  const [reindexing, setReindexing] = useState(false);
+  const [reindexResult, setReindexResult] = useState<string | null>(null);
+
+  async function rebuildIndex() {
+    if (!bot) return;
+    setReindexing(true);
+    setReindexResult(null);
+    try {
+      const res = await fetch(`/api/bots/${bot.id}/reindex`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setReindexResult(
+          data.error === 'EMBEDDINGS_NOT_CONFIGURED'
+            ? '⚠ VOYAGE_API_KEY არ არის დაყენებული'
+            : `❌ ${data.error || 'შეცდომა'}`,
+        );
+      } else {
+        setReindexResult(`✅ ${data.indexed} chunk-ი indexed-ულია`);
+      }
+      setTimeout(() => setReindexResult(null), 5000);
+    } catch (e) {
+      setReindexResult(`❌ ${e instanceof Error ? e.message : 'network error'}`);
+    } finally {
+      setReindexing(false);
+    }
+  }
 
   if (!loaded) {
     return (
@@ -320,6 +348,37 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 <Globe className="w-3 h-3" />
                 ცალკე ფანჯარაში ნახვა
               </a>
+            </div>
+
+            {/* AI Index */}
+            <div className="glass rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-violet-400" />
+                <h2 className="text-white font-semibold">AI Index</h2>
+              </div>
+              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                ცოდნის ბაზის Vector embeddings — საშუალებას აძლევს ბოტს გაიგოს კითხვა ბუნებრივად, არა მხოლოდ keyword-ებით.
+              </p>
+              <button
+                onClick={rebuildIndex}
+                disabled={reindexing}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-violet-600/15 border border-violet-500/30 text-violet-300 hover:bg-violet-600/25 transition-colors disabled:opacity-50"
+              >
+                {reindexing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    ინდექსაცია...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    AI Index-ის გადაშენება
+                  </>
+                )}
+              </button>
+              {reindexResult && (
+                <p className="mt-2 text-xs text-gray-300">{reindexResult}</p>
+              )}
             </div>
 
             {/* Bot ID */}

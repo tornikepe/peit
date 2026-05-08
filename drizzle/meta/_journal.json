@@ -8,6 +8,13 @@
       "when": 1778232312788,
       "tag": "0000_quick_ma_gnuci",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778240184862,
+      "tag": "0001_ambitious_blindfold",
+      "breakpoints": true
     }
   ]
 }
