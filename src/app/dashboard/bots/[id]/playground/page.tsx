@@ -7,7 +7,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
-import { botReply, DEFAULT_GREETINGS, type BotLang } from '@/lib/bots';
+import { DEFAULT_GREETINGS, type BotLang } from '@/lib/bots';
 
 interface Msg {
   id: number;
@@ -33,6 +33,7 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [counter, setCounter] = useState(1);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Initialize lang to bot's primary, and seed greeting
@@ -50,6 +51,7 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
       const greet = bot.greeting[activeLang] ?? DEFAULT_GREETINGS[activeLang];
       setMsgs([{ id: counter, from: 'bot', text: greet }]);
       setCounter(c => c + 1);
+      setConversationId(null); // start a fresh conversation per language
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeLang]);
@@ -77,8 +79,8 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  function send() {
-    if (!input.trim() || !bot) return;
+  async function send() {
+    if (!input.trim() || !bot || typing) return;
     const msg = input.trim();
     const uid = counter;
     setCounter(c => c + 2);
@@ -86,13 +88,33 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
     setMsgs(prev => [...prev, { id: uid, from: 'user', text: msg }]);
     setTyping(true);
 
-    setTimeout(() => {
-      const { text: replyText, source } = botReply(msg, bot, activeLang);
-      const matched = source !== 'fallback';
-      setTyping(false);
-      setMsgs(prev => [...prev, { id: uid + 1, from: 'bot', text: replyText, matched, source }]);
+    try {
+      // Use the same public widget API the embed uses — keeps the answer
+      // engine and DB logging in one place. channel=playground lets us tell
+      // these conversations apart in analytics.
+      const res = await fetch(`/api/widget/${bot.id}/message`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          text: msg,
+          lang: activeLang,
+          conversationId,
+          channel: 'playground',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'SEND_FAILED');
 
-      // Bump mock stats (fire-and-forget)
+      if (data.conversationId) setConversationId(data.conversationId);
+
+      const replyText: string = data.reply;
+      const source: 'faq' | 'knowledge' | 'fallback' = data.source ?? 'fallback';
+      setMsgs(prev => [
+        ...prev,
+        { id: uid + 1, from: 'bot', text: replyText, matched: source !== 'fallback', source },
+      ]);
+
+      // Refresh bot stats from API (it bumped them server-side)
       void updateBot(bot.id, {
         stats: {
           ...bot.stats,
@@ -100,7 +122,19 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
           conversations: bot.stats.conversations + (msgs.length <= 1 ? 1 : 0),
         },
       });
-    }, 600 + Math.random() * 400);
+    } catch (e) {
+      setMsgs(prev => [
+        ...prev,
+        {
+          id: uid + 1,
+          from: 'bot',
+          text: e instanceof Error ? `⚠ ${e.message}` : '⚠ შეცდომა',
+          source: 'fallback',
+        },
+      ]);
+    } finally {
+      setTyping(false);
+    }
   }
 
   function reset() {
@@ -108,6 +142,7 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
     const greet = bot.greeting[activeLang] ?? DEFAULT_GREETINGS[activeLang];
     setMsgs([{ id: counter, from: 'bot', text: greet }]);
     setCounter(c => c + 1);
+    setConversationId(null);
   }
 
   const ui = LANG_LABELS[activeLang];
