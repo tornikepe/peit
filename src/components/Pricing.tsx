@@ -3,6 +3,16 @@
 import Link from "next/link";
 import { Check, Zap, ShieldCheck, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import PricingCheckoutButton from "./PricingCheckoutButton";
+
+/** Plan name (i18n) → internal slug used by Stripe checkout. */
+function planSlug(name: string): 'starter' | 'pro' | 'business' | null {
+  const n = name.toLowerCase();
+  if (n.includes('starter')) return 'starter';
+  if (n.includes('pro'))     return 'pro';
+  if (n.includes('business')) return 'business';
+  return null;
+}
 
 export default function Pricing() {
   const { t } = useLanguage();
@@ -82,16 +92,27 @@ export default function Pricing() {
               </ul>
 
               <div className="flex flex-col gap-2">
-                <Link
-                  href={plan.href}
-                  className={`w-full text-center py-3.5 rounded-xl text-sm font-semibold transition-all ${
-                    plan.highlight
-                      ? 'btn-primary text-white'
-                      : 'border border-white/10 text-white hover:bg-white/[0.06] hover:border-white/20'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+                {(() => {
+                  const slug = planSlug(plan.name);
+                  return slug ? (
+                    <PricingCheckoutButton
+                      plan={slug}
+                      label={plan.cta}
+                      highlight={plan.highlight}
+                    />
+                  ) : (
+                    <Link
+                      href={plan.href}
+                      className={`w-full text-center py-3.5 rounded-xl text-sm font-semibold transition-all ${
+                        plan.highlight
+                          ? 'btn-primary text-white'
+                          : 'border border-white/10 text-white hover:bg-white/[0.06] hover:border-white/20'
+                      }`}
+                    >
+                      {plan.cta}
+                    </Link>
+                  );
+                })()}
                 <p className="text-center text-xs text-gray-600 flex items-center justify-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-gray-600" />
                   {p.cancel}

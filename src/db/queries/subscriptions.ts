@@ -125,3 +125,112 @@ export async function getSubscriptionForBot(
   if (!bot) return null;
   return getOrCreateSubscription(bot.ownerId);
 }
+
+// ─── Stripe sync ────────────────────────────────────────────────────────────
+
+export interface StripeSubSnapshot {
+  /** Stripe Customer ID */
+  stripeCustomerId:     string;
+  /** Stripe Subscription ID */
+  stripeSubscriptionId: string;
+  plan:                 PlanSlug;
+  status:               SubStatus;
+  currentPeriodStart:   Date;
+  currentPeriodEnd:     Date;
+  trialEndsAt:          Date | null;
+  cancelAtPeriodEnd:    boolean;
+}
+
+/**
+ * Idempotently mirror a Stripe subscription into our DB.
+ * Identifies the local row by (a) stripeSubscriptionId, then (b) userId.
+ * Resets messagesThisPeriod when the period changes.
+ */
+export async function syncStripeSubscription(
+  userId: string,
+  snapshot: StripeSubSnapshot,
+): Promise<void> {
+  const db = requireDb();
+
+  const existing = await db.query.subscriptions.findFirst({
+    where: eq(schema.subscriptions.userId, userId),
+  });
+
+  // Reset usage counter when the billing period rolls over.
+  const periodChanged = !existing
+    || !existing.currentPeriodEnd
+    || existing.currentPeriodEnd.getTime() !== snapshot.currentPeriodEnd.getTime();
+
+  if (existing) {
+    await db.update(schema.subscriptions)
+      .set({
+        plan:                 snapshot.plan,
+        status:               snapshot.status,
+        stripeCustomerId:     snapshot.stripeCustomerId,
+        stripeSubscriptionId: snapshot.stripeSubscriptionId,
+        currentPeriodStart:   snapshot.currentPeriodStart,
+        currentPeriodEnd:     snapshot.currentPeriodEnd,
+        trialEndsAt:          snapshot.trialEndsAt,
+        cancelAtPeriodEnd:    snapshot.cancelAtPeriodEnd,
+        messagesThisPeriod:   periodChanged ? 0 : existing.messagesThisPeriod,
+        updatedAt:            new Date(),
+      })
+      .where(eq(schema.subscriptions.id, existing.id));
+  } else {
+    await db.insert(schema.subscriptions).values({
+      userId,
+      plan:                 snapshot.plan,
+      status:               snapshot.status,
+      stripeCustomerId:     snapshot.stripeCustomerId,
+      stripeSubscriptionId: snapshot.stripeSubscriptionId,
+      currentPeriodStart:   snapshot.currentPeriodStart,
+      currentPeriodEnd:     snapshot.currentPeriodEnd,
+      trialEndsAt:          snapshot.trialEndsAt,
+      cancelAtPeriodEnd:    snapshot.cancelAtPeriodEnd,
+      messagesThisPeriod:   0,
+    });
+  }
+}
+
+/** Mark subscription as canceled (subscription.deleted webhook). */
+export async function markSubscriptionCanceled(
+  stripeSubscriptionId: string,
+): Promise<void> {
+  const db = requireDb();
+  await db.update(schema.subscriptions)
+    .set({ status: 'canceled', updatedAt: new Date() })
+    .where(eq(schema.subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+}
+
+/** Mark a subscription past_due after a failed payment. */
+export async function markSubscriptionPastDue(
+  stripeSubscriptionId: string,
+): Promise<void> {
+  const db = requireDb();
+  await db.update(schema.subscriptions)
+    .set({ status: 'past_due', updatedAt: new Date() })
+    .where(eq(schema.subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+}
+
+/** Find a user by their Stripe customer ID. */
+export async function findUserByStripeCustomer(
+  stripeCustomerId: string,
+): Promise<string | null> {
+  const db = requireDb();
+  const sub = await db.query.subscriptions.findFirst({
+    where: eq(schema.subscriptions.stripeCustomerId, stripeCustomerId),
+    columns: { userId: true },
+  });
+  return sub?.userId ?? null;
+}
+
+/** Persist the Stripe Customer ID on first checkout (before subscription exists). */
+export async function setStripeCustomerId(
+  userId: string,
+  stripeCustomerId: string,
+): Promise<void> {
+  const db = requireDb();
+  await db.update(schema.subscriptions)
+    .set({ stripeCustomerId, updatedAt: new Date() })
+    .where(eq(schema.subscriptions.userId, userId));
+}

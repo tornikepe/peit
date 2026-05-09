@@ -104,10 +104,10 @@ export default function UsagePanel() {
         </div>
 
         <Link
-          href="/pricing"
+          href="/dashboard/billing"
           className="text-violet-400 hover:text-violet-300 text-xs font-medium transition-colors"
         >
-          {sub.plan === 'enterprise' ? 'მართვა' : 'პლანის შეცვლა →'}
+          Billing →
         </Link>
       </div>
 
