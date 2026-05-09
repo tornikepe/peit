@@ -63,6 +63,8 @@ export const bots = pgTable('bots', {
                   .notNull().default({ enabled: true, fields: ['name', 'email'] }),
   /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
   allowedOrigins: jsonb('allowed_origins').$type<string[]>().notNull().default([]),
+  /** When the website was last crawled to refresh knowledge chunks. */
+  lastCrawledAt: timestamp('last_crawled_at'),
   status:       botStatusEnum('status').notNull().default('draft'),
   statsCache:   jsonb('stats_cache').$type<{ messages: number; leads: number; conversations: number }>()
                   .notNull().default({ messages: 0, leads: 0, conversations: 0 }),

@@ -357,9 +357,13 @@ export default function NewBotPage() {
             <div className="flex flex-col gap-7">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">ცოდნის ბაზა</h2>
-                <p className="text-gray-400 text-sm">
-                  ბოტი ისწავლის ამ ინფორმაციით — რაც უფრო მეტი FAQ, მით უკეთესი პასუხები.
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  ჩაწერე საიტის URL და ბოტი ავტომატურად ისწავლის — FAQ-ები სავალდებულო არ არის.
                 </p>
+                <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 px-2.5 py-1 rounded-full">
+                  <Sparkles className="w-3 h-3" />
+                  URL-ით საკმარისია — Sitemap + 12 გვერდი + AI-grounded პასუხები
+                </div>
               </div>
 
               {/* Website URL + Analyze */}
@@ -476,6 +480,7 @@ export default function NewBotPage() {
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-medium text-gray-300">
                     ხშირად დასმული კითხვები
+                    <span className="ml-2 text-xs font-normal text-gray-600">(არჩევითი)</span>
                   </label>
                   <button
                     type="button"

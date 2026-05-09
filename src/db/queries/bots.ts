@@ -44,6 +44,7 @@ function rowToBot(
     brandColor:   row.brandColor,
     leadCapture:  row.leadCapture as Bot['leadCapture'],
     allowedOrigins: (row.allowedOrigins as string[]) ?? [],
+    lastCrawledAt: row.lastCrawledAt?.toISOString() ?? null,
     status:       row.status as BotStatus,
     createdAt:    row.createdAt.toISOString(),
     updatedAt:    row.updatedAt.toISOString(),

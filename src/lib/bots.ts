@@ -38,6 +38,8 @@ export interface Bot {
   };
   /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
   allowedOrigins: string[];
+  /** ISO timestamp when the website was last crawled (null = never re-crawled). */
+  lastCrawledAt?: string | null;
   status: BotStatus;
   createdAt: string;
   updatedAt: string;

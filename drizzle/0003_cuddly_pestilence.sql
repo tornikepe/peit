@@ -1,0 +1,1 @@
+ALTER TABLE "bots" ADD COLUMN "last_crawled_at" timestamp;

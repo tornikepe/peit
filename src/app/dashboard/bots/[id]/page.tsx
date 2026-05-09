@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Zap, ArrowLeft, Bot as BotIcon, Play, Pause, Trash2,
   Copy, Check, Code2, MessageSquare, Settings, Globe,
-  TrendingUp, Plus, Sparkles, Loader2,
+  TrendingUp, Plus, Sparkles, Loader2, RefreshCw,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
@@ -25,6 +25,37 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     if (bot) setEditFaqs(bot.faqs);
   }, [bot?.id, bot?.updatedAt]); // re-sync when bot changes
+
+  // Re-crawl state
+  const [recrawling, setRecrawling] = useState(false);
+  const [recrawlResult, setRecrawlResult] = useState<string | null>(null);
+
+  async function recrawlSite() {
+    if (!bot) return;
+    setRecrawling(true);
+    setRecrawlResult(null);
+    try {
+      const res = await fetch(`/api/bots/${bot.id}/recrawl`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setRecrawlResult(`❌ ${data.message || data.error || 'შეცდომა'}`);
+      } else {
+        const parts = [
+          `${data.pagesScraped} გვერდი`,
+          data.sitemapPages > 0 && `📍 ${data.sitemapPages} sitemap-დან`,
+          `${data.chunksCreated} chunk`,
+          data.embedded > 0 && `🧠 ${data.embedded} embedded`,
+        ].filter(Boolean);
+        setRecrawlResult(`✅ ${parts.join(' · ')}`);
+      }
+      // Refresh bot data so lastCrawledAt updates in UI
+      setTimeout(() => setRecrawlResult(null), 8000);
+    } catch (e) {
+      setRecrawlResult(`❌ ${e instanceof Error ? e.message : 'network error'}`);
+    } finally {
+      setRecrawling(false);
+    }
+  }
 
   // Rebuild AI index state
   const [reindexing, setReindexing] = useState(false);
@@ -362,6 +393,47 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 await updateBot(bot.id, { allowedOrigins: next });
               }}
             />
+
+            {/* Website Sync */}
+            {bot.websiteUrl && (
+              <div className="glass rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="w-4 h-4 text-blue-400" />
+                  <h2 className="text-white font-semibold">საიტიდან განახლება</h2>
+                </div>
+                <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                  წაიკითხავს {bot.websiteUrl?.replace(/^https?:\/\//, '')}-ს ხელახლა, ჩაანაცვლებს ყველა chunk-ს და დააინდექსებს AI-სთვის.
+                </p>
+
+                <button
+                  onClick={recrawlSite}
+                  disabled={recrawling}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-600/15 border border-blue-500/30 text-blue-300 hover:bg-blue-600/25 transition-colors disabled:opacity-50"
+                >
+                  {recrawling ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Crawling...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      ხელახლა წაკითხვა
+                    </>
+                  )}
+                </button>
+
+                {recrawlResult && (
+                  <p className="mt-2 text-xs text-gray-300">{recrawlResult}</p>
+                )}
+
+                {bot.lastCrawledAt && (
+                  <p className="mt-3 text-[11px] text-gray-600 text-center">
+                    ბოლო წაკითხვა: {new Date(bot.lastCrawledAt).toLocaleString('ka-GE')}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* AI Index */}
             <div className="glass rounded-2xl p-6">
