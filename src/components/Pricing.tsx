@@ -37,12 +37,12 @@ export default function Pricing() {
         <div className="glass rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 mb-10">
           <div className="text-center sm:text-left">
             <p className="text-gray-500 text-sm">{p.compLeftLabel}</p>
-            <p className="text-2xl font-bold text-white">₾4,500/თვეში</p>
+            <p className="text-2xl font-bold text-white">~₾4,500/თვე</p>
           </div>
           <div className="text-3xl font-bold text-gray-700">vs</div>
           <div className="text-center sm:text-right">
             <p className="text-gray-500 text-sm">{p.compRightLabel}</p>
-            <p className="text-2xl font-bold gradient-text">₾349/თვეში</p>
+            <p className="text-2xl font-bold gradient-text">$49/თვე <span className="text-base font-normal text-gray-500">(~₾135)</span></p>
           </div>
         </div>
 
@@ -67,19 +67,22 @@ export default function Pricing() {
 
               <div>
                 <p className="text-sm font-semibold text-violet-400 mb-1">{plan.name}</p>
-                <div className="flex items-baseline gap-1 mb-1">
+                <div className="flex items-baseline gap-1 mb-0.5">
                   <span className="text-4xl font-bold text-white">{plan.price}</span>
                   <span className="text-gray-400 text-sm">{plan.period}</span>
                 </div>
+                {'priceGel' in plan && plan.priceGel && (
+                  <p className="text-gray-500 text-xs">{plan.priceGel} GEL</p>
+                )}
                 {/* Trial badge on Starter */}
                 {!plan.highlight && plan.name === 'Starter' && (
-                  <div className="mt-2 mb-2">
+                  <div className="mt-3 mb-2">
                     <span className="text-xs font-bold text-amber-400 border border-amber-400/30 bg-amber-400/10 px-3 py-1 rounded-full uppercase tracking-wide">
                       {p.trialBadge}
                     </span>
                   </div>
                 )}
-                <p className="text-gray-400 text-sm mt-1">{plan.desc}</p>
+                <p className="text-gray-400 text-sm mt-3">{plan.desc}</p>
               </div>
 
               <ul className="flex flex-col gap-3 flex-1">
