@@ -15,9 +15,9 @@ interface Message {
 
 const responses: Record<string, Record<Lang, string>> = {
   pricing: {
-    ka: 'ჩვენ გვაქვს 4 პლანი: Basic ($19/თვე ~₾52), Pro ($49/თვე ~₾135), Ultimate ($99/თვე ~₾273) და Enterprise. ყველა იწყება 7-დღიანი უფასო ტრიალით! 💜',
-    en: 'We have 4 plans: Basic ($19/mo ~₾52), Pro ($49/mo ~₾135), Ultimate ($99/mo ~₾273) and Enterprise. All start with a 7-day free trial! 💜',
-    ru: 'У нас 4 плана: Basic ($19/мес ~₾52), Pro ($49/мес ~₾135), Ultimate ($99/мес ~₾273) и Enterprise. Все начинаются с 7-дневного бесплатного триала! 💜',
+    ka: 'ჩვენ გვაქვს 4 პლანი: Basic (₾45/თვე), Pro (₾65/თვე), Ultimate (₾155/თვე) და Enterprise. ყველა იწყება 7-დღიანი უფასო ტრიალით! 💜',
+    en: 'We have 4 plans: Basic (₾45/mo), Pro (₾65/mo), Ultimate (₾155/mo) and Enterprise. All start with a 7-day free trial! 💜',
+    ru: 'У нас 4 плана: Basic (₾45/мес), Pro (₾65/мес), Ultimate (₾155/мес) и Enterprise. Все начинаются с 7-дневного бесплатного триала! 💜',
   },
   setup: {
     ka: 'Setup ძალიან მარტივია! ატვირთე FAQ ფაილი ან შეიყვანე ვებსაიტის URL — ბოტი 10 წუთში მზადაა. კოდის ცოდნა საჭირო არ არის. 🚀',

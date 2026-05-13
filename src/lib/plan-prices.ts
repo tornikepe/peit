@@ -16,34 +16,29 @@ import type { PlanSlug } from './plan-limits';
 
 export const PLAN_DISPLAY: Record<PlanSlug, {
   name:        string;
-  priceUsd:    number;     // monthly USD
-  priceGel:    number;     // approx GEL (display only — LS handles FX)
+  priceGel:    number;     // monthly GEL — matches LS variant price
   trialDays:   number;
   popularBadge?: boolean;
 }> = {
   basic: {
     name:      'Basic',
-    priceUsd:  19,
-    priceGel:  52,
+    priceGel:  45,
     trialDays: 7,
   },
   pro: {
     name:      'Pro',
-    priceUsd:  49,
-    priceGel:  135,
+    priceGel:  65,
     trialDays: 7,
     popularBadge: true,
   },
   ultimate: {
     name:      'Ultimate',
-    priceUsd:  99,
-    priceGel:  273,
+    priceGel:  155,
     trialDays: 7,
   },
   enterprise: {
     name:      'Enterprise',
-    priceUsd:  0,    // custom pricing
-    priceGel:  0,
+    priceGel:  0,    // custom pricing
     trialDays: 0,
   },
 };

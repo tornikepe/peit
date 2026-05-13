@@ -22,7 +22,7 @@ const alternatives: Record<string, AlternativeData> = {
     subheadline:
       "Tidio ბევრ ფუნქციაზე ითხოვს premium-ს. Peit იძლევა ყველაფერს ნახევარ ფასად — ქართულ ენაზე.",
     theirPrice: "$29/თვე+",
-    ourPrice: "$49/თვე",
+    ourPrice: "₾65/თვე",
     theirWeaknesses: [
       "ქართული ენა არ აქვს",
       "Setup-ი რთული და ძვირი",
@@ -50,7 +50,7 @@ const alternatives: Record<string, AlternativeData> = {
     subheadline:
       "Drift-ი enterprise-სთვისაა და ძვირი. Peit-ს აქვს enterprise დონის AI — SMB ფასად, ქართულ ენაზე.",
     theirPrice: "$2,500/თვე+",
-    ourPrice: "$49/თვე",
+    ourPrice: "₾65/თვე",
     theirWeaknesses: [
       "ფასი $2,500+/თვე — SMB-ისთვის მიუწვდომელი",
       "ქართული ენა არ არის",
@@ -76,9 +76,9 @@ const alternatives: Record<string, AlternativeData> = {
     name: "Intercom",
     headline: "Peit — Intercom-ის ბიუჯეტური ალტერნატივა",
     subheadline:
-      "Intercom-ი საშუალო ბიზნესს $300-1000/თვეს ართმევს. Peit — იგივე AI ხარისხი $49-ად (~₾135), ქართულ ენაზე.",
+      "Intercom-ი საშუალო ბიზნესს $300-1000/თვეს ართმევს. Peit — იგივე AI ხარისხი ₾65-ად, ქართულ ენაზე.",
     theirPrice: "$300–1,000/თვე",
-    ourPrice: "$49/თვე",
+    ourPrice: "₾65/თვე",
     theirWeaknesses: [
       "ფასი გამოიყენებულ seat-ებზე მიხედვით იზრდება",
       "ქართული ენა არ არის",

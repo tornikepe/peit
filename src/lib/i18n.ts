@@ -95,8 +95,8 @@ const ka = {
     plans: [
       {
         name: 'Basic',
-        price: '$19',
-        priceGel: '~₾52',
+        price: '₾45',
+        priceGel: '',
         period: '/თვე',
         desc: 'პატარა ბიზნესებისთვის რომლებიც იწყებენ',
         features: ['1,000 შეტყობინება/თვეში', '1 ბოტი', '50 chunk თითო ბოტზე', 'ვებსაიტის widget', 'ქართული + ინგლისური + რუსული', 'Email support'],
@@ -106,8 +106,8 @@ const ka = {
       },
       {
         name: 'Pro',
-        price: '$49',
-        priceGel: '~₾135',
+        price: '₾65',
+        priceGel: '',
         period: '/თვე',
         desc: 'AI ძალა თქვენი ბიზნესისთვის',
         badge: 'ყველაზე პოპულარული',
@@ -118,8 +118,8 @@ const ka = {
       },
       {
         name: 'Ultimate',
-        price: '$99',
-        priceGel: '~₾273',
+        price: '₾155',
+        priceGel: '',
         period: '/თვე',
         desc: 'სრული AI გუნდი, მაქსიმალური მასშტაბი',
         features: ['100,000 შეტყობინება/თვეში', '20 ბოტი', '1,000 chunk თითო ბოტზე', '"Powered by Peit"-ის მოშორება', '24/7 priority support', 'Advanced analytics', 'პირადი onboarding'],
@@ -267,8 +267,8 @@ const en: typeof ka = {
     plans: [
       {
         name: 'Basic',
-        price: '$19',
-        priceGel: '~₾52',
+        price: '₾45',
+        priceGel: '',
         period: '/mo',
         desc: 'For small businesses just getting started',
         features: ['1,000 messages/month', '1 bot', '50 chunks per bot', 'Website widget', 'Georgian + English + Russian', 'Email support'],
@@ -278,8 +278,8 @@ const en: typeof ka = {
       },
       {
         name: 'Pro',
-        price: '$49',
-        priceGel: '~₾135',
+        price: '₾65',
+        priceGel: '',
         period: '/mo',
         desc: 'AI power for your business',
         badge: 'Most Popular',
@@ -290,8 +290,8 @@ const en: typeof ka = {
       },
       {
         name: 'Ultimate',
-        price: '$99',
-        priceGel: '~₾273',
+        price: '₾155',
+        priceGel: '',
         period: '/mo',
         desc: 'Full AI team, maximum scale',
         features: ['100,000 messages/month', '20 bots', '1,000 chunks per bot', 'Remove "Powered by Peit"', '24/7 priority support', 'Advanced analytics', 'Personal onboarding'],
@@ -439,8 +439,8 @@ const ru: typeof ka = {
     plans: [
       {
         name: 'Basic',
-        price: '$19',
-        priceGel: '~₾52',
+        price: '₾45',
+        priceGel: '',
         period: '/мес',
         desc: 'Для малого бизнеса, только начинающего',
         features: ['1 000 сообщений/месяц', '1 бот', '50 чанков на бота', 'Виджет для сайта', 'Груз. + Англ. + Рус.', 'Email поддержка'],
@@ -450,8 +450,8 @@ const ru: typeof ka = {
       },
       {
         name: 'Pro',
-        price: '$49',
-        priceGel: '~₾135',
+        price: '₾65',
+        priceGel: '',
         period: '/мес',
         desc: 'Мощь AI для вашего бизнеса',
         badge: 'Самый популярный',
@@ -462,8 +462,8 @@ const ru: typeof ka = {
       },
       {
         name: 'Ultimate',
-        price: '$99',
-        priceGel: '~₾273',
+        price: '₾155',
+        priceGel: '',
         period: '/мес',
         desc: 'Полная AI команда, максимальный масштаб',
         features: ['100 000 сообщений/месяц', '20 ботов', '1 000 чанков на бота', 'Убрать "Powered by Peit"', 'Поддержка 24/7', 'Расширенная аналитика', 'Личный онбординг'],

@@ -39,3 +39,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local AI assistant tooling — installed via `uipro init`, not source.
+# Re-installable on any machine via `npm i -g uipro-cli && uipro init --ai claude`
+.claude/skills/
+.claude/worktrees/
+.claude/launch.json
+.agent/
+.codebuddy/
+.codex/
+.continue/
+.cursor/
+.gemini/
+.github/prompts/
+.kiro/
+.opencode/
+.qoder/
+.roo/
+.trae/
+.windsurf/

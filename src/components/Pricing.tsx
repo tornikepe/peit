@@ -42,7 +42,7 @@ export default function Pricing() {
           <div className="text-3xl font-bold text-gray-700">vs</div>
           <div className="text-center sm:text-right">
             <p className="text-gray-500 text-sm">{p.compRightLabel}</p>
-            <p className="text-2xl font-bold gradient-text">$49/თვე <span className="text-base font-normal text-gray-500">(~₾135)</span></p>
+            <p className="text-2xl font-bold gradient-text">₾65/თვე</p>
           </div>
         </div>
 
