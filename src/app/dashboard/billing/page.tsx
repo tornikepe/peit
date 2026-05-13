@@ -53,7 +53,7 @@ function BillingInner() {
   const [portalBusy, setPortalBusy] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
 
-  // Show checkout-success banner if redirected from Stripe
+  // Show checkout-success banner if redirected from Lemon Squeezy
   const checkoutOutcome = sp.get('checkout');
 
   useEffect(() => {
@@ -69,7 +69,7 @@ function BillingInner() {
     setPortalBusy(true);
     setPortalError(null);
     try {
-      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const res = await fetch('/api/lemon/portal', { method: 'POST' });
       const d = await res.json();
       if (!res.ok || !d.url) {
         setPortalError(d.message || d.error || 'Portal-ი ვერ გაიხსნა');

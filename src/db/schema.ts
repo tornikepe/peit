@@ -153,7 +153,7 @@ export const leads = pgTable('leads', {
 }));
 
 // ─── subscriptions ─────────────────────────────────────────────────────────
-// Stripe will populate the customer/sub IDs in a later phase.
+// Lemon Squeezy populates customer/sub IDs after first checkout.
 
 export const subscriptions = pgTable('subscriptions', {
   id:                   uuid('id').primaryKey().defaultRandom(),
@@ -166,13 +166,19 @@ export const subscriptions = pgTable('subscriptions', {
   currentPeriodEnd:     timestamp('current_period_end'),
   /** Messages used this billing period — reset on rollover. */
   messagesThisPeriod:   integer('messages_this_period').notNull().default(0),
-  stripeCustomerId:     varchar('stripe_customer_id', { length: 64 }),
-  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 64 }),
+  /** Lemon Squeezy customer ID (numeric, stored as string). */
+  lsCustomerId:         varchar('ls_customer_id', { length: 32 }),
+  /** Lemon Squeezy subscription ID. */
+  lsSubscriptionId:     varchar('ls_subscription_id', { length: 32 }),
+  /** Lemon Squeezy variant ID currently active (so we can detect plan changes). */
+  lsVariantId:          varchar('ls_variant_id', { length: 32 }),
   cancelAtPeriodEnd:    boolean('cancel_at_period_end').notNull().default(false),
   createdAt:            timestamp('created_at').defaultNow().notNull(),
   updatedAt:            timestamp('updated_at').defaultNow().notNull(),
 }, t => ({
-  userIdx: uniqueIndex('subscriptions_user_idx').on(t.userId),
+  userIdx:     uniqueIndex('subscriptions_user_idx').on(t.userId),
+  lsCustIdx:   index('subscriptions_ls_customer_idx').on(t.lsCustomerId),
+  lsSubIdx:    index('subscriptions_ls_subscription_idx').on(t.lsSubscriptionId),
 }));
 
 // ─── rate_limits ───────────────────────────────────────────────────────────

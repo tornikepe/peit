@@ -2,8 +2,8 @@
 
 // Drop-in CTA button used by the Pricing page. Handles three cases:
 //   1. Not signed in → goes to /signup?plan=<slug>
-//   2. Signed in, billing not yet configured → /pricing fallback
-//   3. Signed in + Stripe ready → POST /api/stripe/checkout, redirect
+//   2. Signed in, billing not yet configured → error message
+//   3. Signed in + LS ready → POST /api/lemon/checkout, redirect
 //
 // Renders a spinner while the checkout session is being created.
 
@@ -38,7 +38,7 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
 
     setBusy(true);
     try {
-      const res = await fetch('/api/stripe/checkout', {
+      const res = await fetch('/api/lemon/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ plan }),
@@ -83,10 +83,11 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
 
 function humanizeError(code?: string, msg?: string): string {
   switch (code) {
-    case 'STRIPE_NOT_CONFIGURED':  return 'გადახდის სისტემა ჯერ არ არის დაყენებული. შეგიძლია დაუკავშირდე ჩვენს გუნდს.';
-    case 'PRICE_NOT_CONFIGURED':   return 'ეს პლანი ჯერ არაა აქტიური. სცადე მოგვიანებით.';
-    case 'UNAUTHORIZED':           return 'შესვლა გჭირდება გასაგრძელებლად.';
-    case 'INVALID_PLAN':           return 'არასწორი პლანი.';
-    default:                       return msg || 'შეცდომა გადახდის გაშვებისას.';
+    case 'LEMON_NOT_CONFIGURED':    return 'გადახდის სისტემა ჯერ არ არის დაყენებული. შეგიძლია დაუკავშირდე ჩვენს გუნდს.';
+    case 'VARIANT_NOT_CONFIGURED':  return 'ეს პლანი ჯერ არაა აქტიური. სცადე მოგვიანებით.';
+    case 'LEMON_API_ERROR':         return 'გადახდის სერვისი დროებით მიუწვდომელია. სცადე მოგვიანებით.';
+    case 'UNAUTHORIZED':            return 'შესვლა გჭირდება გასაგრძელებლად.';
+    case 'INVALID_PLAN':            return 'არასწორი პლანი.';
+    default:                        return msg || 'შეცდომა გადახდის გაშვებისას.';
   }
 }

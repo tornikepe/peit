@@ -1,6 +1,7 @@
 // Subscription provisioning + usage tracking.
-// Until Stripe is wired up, every user gets a 7-day Starter trial on first
-// touch. The counter rolls over every 30 days (no Stripe needed for MVP).
+// Until Lemon Squeezy is wired up, every user gets a 7-day Starter trial on
+// first touch. The counter rolls over every 30 days. Once LS webhooks arrive,
+// state is fully derived from the LS subscription object.
 
 import { eq, sql } from 'drizzle-orm';
 import { requireDb, schema } from '@/db';
@@ -59,7 +60,7 @@ export async function getOrCreateSubscription(
 
   // Period rollover: when current_period_end has passed and the user is
   // still on a paid status, advance to next 30 days and reset the counter.
-  // (Stripe webhooks will replace this once integrated.)
+  // (LS webhooks will replace this once integrated.)
   if (
     shouldRolloverPeriod(sub.currentPeriodEnd) &&
     (sub.status === 'active' || sub.status === 'trialing')
@@ -126,29 +127,31 @@ export async function getSubscriptionForBot(
   return getOrCreateSubscription(bot.ownerId);
 }
 
-// ─── Stripe sync ────────────────────────────────────────────────────────────
+// ─── Lemon Squeezy sync ────────────────────────────────────────────────────
 
-export interface StripeSubSnapshot {
-  /** Stripe Customer ID */
-  stripeCustomerId:     string;
-  /** Stripe Subscription ID */
-  stripeSubscriptionId: string;
-  plan:                 PlanSlug;
-  status:               SubStatus;
-  currentPeriodStart:   Date;
-  currentPeriodEnd:     Date;
-  trialEndsAt:          Date | null;
-  cancelAtPeriodEnd:    boolean;
+export interface LsSubSnapshot {
+  /** LS Customer ID (numeric, as string). */
+  lsCustomerId:        string;
+  /** LS Subscription ID (numeric, as string). */
+  lsSubscriptionId:    string;
+  /** LS Variant ID currently active (lets us detect plan switch). */
+  lsVariantId:         string;
+  plan:                PlanSlug;
+  status:              SubStatus;
+  currentPeriodStart:  Date;
+  currentPeriodEnd:    Date;
+  trialEndsAt:         Date | null;
+  cancelAtPeriodEnd:   boolean;
 }
 
 /**
- * Idempotently mirror a Stripe subscription into our DB.
- * Identifies the local row by (a) stripeSubscriptionId, then (b) userId.
+ * Idempotently mirror an LS subscription into our DB.
+ * Identifies the local row by userId.
  * Resets messagesThisPeriod when the period changes.
  */
-export async function syncStripeSubscription(
+export async function syncLsSubscription(
   userId: string,
-  snapshot: StripeSubSnapshot,
+  snapshot: LsSubSnapshot,
 ): Promise<void> {
   const db = requireDb();
 
@@ -164,73 +167,76 @@ export async function syncStripeSubscription(
   if (existing) {
     await db.update(schema.subscriptions)
       .set({
-        plan:                 snapshot.plan,
-        status:               snapshot.status,
-        stripeCustomerId:     snapshot.stripeCustomerId,
-        stripeSubscriptionId: snapshot.stripeSubscriptionId,
-        currentPeriodStart:   snapshot.currentPeriodStart,
-        currentPeriodEnd:     snapshot.currentPeriodEnd,
-        trialEndsAt:          snapshot.trialEndsAt,
-        cancelAtPeriodEnd:    snapshot.cancelAtPeriodEnd,
-        messagesThisPeriod:   periodChanged ? 0 : existing.messagesThisPeriod,
-        updatedAt:            new Date(),
+        plan:               snapshot.plan,
+        status:             snapshot.status,
+        lsCustomerId:       snapshot.lsCustomerId,
+        lsSubscriptionId:   snapshot.lsSubscriptionId,
+        lsVariantId:        snapshot.lsVariantId,
+        currentPeriodStart: snapshot.currentPeriodStart,
+        currentPeriodEnd:   snapshot.currentPeriodEnd,
+        trialEndsAt:        snapshot.trialEndsAt,
+        cancelAtPeriodEnd:  snapshot.cancelAtPeriodEnd,
+        messagesThisPeriod: periodChanged ? 0 : existing.messagesThisPeriod,
+        updatedAt:          new Date(),
       })
       .where(eq(schema.subscriptions.id, existing.id));
   } else {
     await db.insert(schema.subscriptions).values({
       userId,
-      plan:                 snapshot.plan,
-      status:               snapshot.status,
-      stripeCustomerId:     snapshot.stripeCustomerId,
-      stripeSubscriptionId: snapshot.stripeSubscriptionId,
-      currentPeriodStart:   snapshot.currentPeriodStart,
-      currentPeriodEnd:     snapshot.currentPeriodEnd,
-      trialEndsAt:          snapshot.trialEndsAt,
-      cancelAtPeriodEnd:    snapshot.cancelAtPeriodEnd,
-      messagesThisPeriod:   0,
+      plan:               snapshot.plan,
+      status:             snapshot.status,
+      lsCustomerId:       snapshot.lsCustomerId,
+      lsSubscriptionId:   snapshot.lsSubscriptionId,
+      lsVariantId:        snapshot.lsVariantId,
+      currentPeriodStart: snapshot.currentPeriodStart,
+      currentPeriodEnd:   snapshot.currentPeriodEnd,
+      trialEndsAt:        snapshot.trialEndsAt,
+      cancelAtPeriodEnd:  snapshot.cancelAtPeriodEnd,
+      messagesThisPeriod: 0,
     });
   }
 }
 
-/** Mark subscription as canceled (subscription.deleted webhook). */
+/** Mark a subscription canceled (subscription_expired event). */
 export async function markSubscriptionCanceled(
-  stripeSubscriptionId: string,
+  lsSubscriptionId: string,
 ): Promise<void> {
   const db = requireDb();
   await db.update(schema.subscriptions)
     .set({ status: 'canceled', updatedAt: new Date() })
-    .where(eq(schema.subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+    .where(eq(schema.subscriptions.lsSubscriptionId, lsSubscriptionId));
 }
 
 /** Mark a subscription past_due after a failed payment. */
 export async function markSubscriptionPastDue(
-  stripeSubscriptionId: string,
+  lsSubscriptionId: string,
 ): Promise<void> {
   const db = requireDb();
   await db.update(schema.subscriptions)
     .set({ status: 'past_due', updatedAt: new Date() })
-    .where(eq(schema.subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+    .where(eq(schema.subscriptions.lsSubscriptionId, lsSubscriptionId));
 }
 
-/** Find a user by their Stripe customer ID. */
-export async function findUserByStripeCustomer(
-  stripeCustomerId: string,
+/** Find a user by their LS customer ID. */
+export async function findUserByLsCustomer(
+  lsCustomerId: string,
 ): Promise<string | null> {
   const db = requireDb();
   const sub = await db.query.subscriptions.findFirst({
-    where: eq(schema.subscriptions.stripeCustomerId, stripeCustomerId),
+    where: eq(schema.subscriptions.lsCustomerId, lsCustomerId),
     columns: { userId: true },
   });
   return sub?.userId ?? null;
 }
 
-/** Persist the Stripe Customer ID on first checkout (before subscription exists). */
-export async function setStripeCustomerId(
-  userId: string,
-  stripeCustomerId: string,
-): Promise<void> {
+/** Look up the previous period_end so the mapper can derive period_start on rollover. */
+export async function getPrevPeriodEnd(
+  lsSubscriptionId: string,
+): Promise<Date | null> {
   const db = requireDb();
-  await db.update(schema.subscriptions)
-    .set({ stripeCustomerId, updatedAt: new Date() })
-    .where(eq(schema.subscriptions.userId, userId));
+  const sub = await db.query.subscriptions.findFirst({
+    where: eq(schema.subscriptions.lsSubscriptionId, lsSubscriptionId),
+    columns: { currentPeriodEnd: true },
+  });
+  return sub?.currentPeriodEnd ?? null;
 }

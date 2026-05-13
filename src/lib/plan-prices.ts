@@ -1,18 +1,23 @@
-// Map between our internal plan slugs and the Stripe Price IDs.
-// The Price IDs come from your Stripe dashboard — set them in .env.local:
+// Map between our internal plan slugs and Lemon Squeezy Variant IDs.
+// The variant IDs come from your LS dashboard → Store → Products → click a
+// product → each price tier is a "Variant" with a numeric ID. Set them in
+// .env.local:
 //
-//   STRIPE_PRICE_STARTER=price_...
-//   STRIPE_PRICE_PRO=price_...
-//   STRIPE_PRICE_BUSINESS=price_...
+//   LEMONSQUEEZY_VARIANT_STARTER=123456
+//   LEMONSQUEEZY_VARIANT_PRO=123457
+//   LEMONSQUEEZY_VARIANT_BUSINESS=123458
 //
-// Enterprise has no Price ID — it's "contact sales" only.
+// Enterprise has no variant — it's "contact sales" only.
+//
+// Trial days are configured per-variant inside the LS dashboard, NOT here —
+// the value in PLAN_DISPLAY below is for marketing copy only.
 
 import type { PlanSlug } from './plan-limits';
 
 export const PLAN_DISPLAY: Record<PlanSlug, {
   name:        string;
   priceUsd:    number;     // monthly USD
-  priceGel:    number;     // approx GEL
+  priceGel:    number;     // approx GEL (display only — LS handles FX)
   trialDays:   number;
   popularBadge?: boolean;
 }> = {
@@ -43,29 +48,30 @@ export const PLAN_DISPLAY: Record<PlanSlug, {
   },
 };
 
-/** Returns the configured Stripe Price ID for a plan, or null if unset. */
-export function priceIdFor(plan: PlanSlug): string | null {
+/** Returns the configured LS variant ID for a plan, or null if unset. */
+export function variantIdFor(plan: PlanSlug): string | null {
   switch (plan) {
-    case 'starter':    return process.env.STRIPE_PRICE_STARTER  ?? null;
-    case 'pro':        return process.env.STRIPE_PRICE_PRO      ?? null;
-    case 'business':   return process.env.STRIPE_PRICE_BUSINESS ?? null;
+    case 'starter':    return process.env.LEMONSQUEEZY_VARIANT_STARTER  ?? null;
+    case 'pro':        return process.env.LEMONSQUEEZY_VARIANT_PRO      ?? null;
+    case 'business':   return process.env.LEMONSQUEEZY_VARIANT_BUSINESS ?? null;
     case 'enterprise': return null;  // contact sales
   }
 }
 
-/** Reverse lookup: which plan does this Stripe Price ID belong to? */
-export function planForPriceId(priceId: string): PlanSlug | null {
-  if (priceId === process.env.STRIPE_PRICE_STARTER)  return 'starter';
-  if (priceId === process.env.STRIPE_PRICE_PRO)      return 'pro';
-  if (priceId === process.env.STRIPE_PRICE_BUSINESS) return 'business';
+/** Reverse lookup: which plan does this LS variant ID belong to? */
+export function planForVariantId(variantId: string | number): PlanSlug | null {
+  const v = String(variantId);
+  if (v === process.env.LEMONSQUEEZY_VARIANT_STARTER)  return 'starter';
+  if (v === process.env.LEMONSQUEEZY_VARIANT_PRO)      return 'pro';
+  if (v === process.env.LEMONSQUEEZY_VARIANT_BUSINESS) return 'business';
   return null;
 }
 
-/** True if all required Stripe price IDs are configured. */
-export function arePricesConfigured(): boolean {
+/** True if all required LS variant IDs are configured. */
+export function areVariantsConfigured(): boolean {
   return !!(
-    process.env.STRIPE_PRICE_STARTER &&
-    process.env.STRIPE_PRICE_PRO &&
-    process.env.STRIPE_PRICE_BUSINESS
+    process.env.LEMONSQUEEZY_VARIANT_STARTER &&
+    process.env.LEMONSQUEEZY_VARIANT_PRO &&
+    process.env.LEMONSQUEEZY_VARIANT_BUSINESS
   );
 }

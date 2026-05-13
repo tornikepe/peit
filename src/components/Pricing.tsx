@@ -5,7 +5,7 @@ import { Check, Zap, ShieldCheck, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import PricingCheckoutButton from "./PricingCheckoutButton";
 
-/** Plan name (i18n) → internal slug used by Stripe checkout. */
+/** Plan name (i18n) → internal slug used by Lemon Squeezy checkout. */
 function planSlug(name: string): 'starter' | 'pro' | 'business' | null {
   const n = name.toLowerCase();
   if (n.includes('starter')) return 'starter';

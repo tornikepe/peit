@@ -78,7 +78,7 @@ export function isSubscriptionUsable(
 }
 
 /**
- * Bills are 30-day cycles for free trial; Stripe sets actual periods on paid.
+ * Bills are 30-day cycles for free trial; LS sets actual periods on paid.
  * If period_end is in the past, advance to next 30-day window and reset counter.
  */
 export function shouldRolloverPeriod(currentPeriodEnd: Date | null): boolean {
