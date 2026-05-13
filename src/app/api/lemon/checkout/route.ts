@@ -18,6 +18,15 @@ import type { PlanSlug } from '@/lib/plan-limits';
 export const runtime = 'nodejs';
 
 export const POST = withAuth(async ({ user, req }) => {
+  // Specific missing-var diagnostics so the UI can pinpoint what's wrong.
+  const missing: string[] = [];
+  if (!process.env.LEMONSQUEEZY_API_KEY)  missing.push('LEMONSQUEEZY_API_KEY');
+  if (!process.env.LEMONSQUEEZY_STORE_ID) missing.push('LEMONSQUEEZY_STORE_ID');
+  if (missing.length) {
+    console.error('[lemon/checkout] missing env:', missing.join(', '));
+    return jsonError(503, 'LEMON_NOT_CONFIGURED',
+      `Missing env vars on the server: ${missing.join(', ')}`);
+  }
   if (!isLemonAvailable()) return jsonError(503, 'LEMON_NOT_CONFIGURED');
 
   let body: { plan?: string };
@@ -31,8 +40,9 @@ export const POST = withAuth(async ({ user, req }) => {
 
   const variantId = variantIdFor(plan);
   if (!variantId) {
+    console.error('[lemon/checkout] variant missing for plan:', plan);
     return jsonError(503, 'VARIANT_NOT_CONFIGURED',
-      `Set LEMONSQUEEZY_VARIANT_${plan.toUpperCase()} in env`);
+      `Set LEMONSQUEEZY_VARIANT_${plan.toUpperCase()} on the server`);
   }
 
   // Ensure the user has a local subscription row (creates a trial on first call).

@@ -83,8 +83,15 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
 
 function humanizeError(code?: string, msg?: string): string {
   switch (code) {
-    case 'LEMON_NOT_CONFIGURED':    return 'გადახდის სისტემა ჯერ არ არის დაყენებული. შეგიძლია დაუკავშირდე ჩვენს გუნდს.';
-    case 'VARIANT_NOT_CONFIGURED':  return 'ეს პლანი ჯერ არაა აქტიური. სცადე მოგვიანებით.';
+    case 'LEMON_NOT_CONFIGURED':
+      // Append the diagnostic message from the server when present.
+      return msg
+        ? `გადახდის სისტემა ჯერ არ არის დაყენებული — ${msg}`
+        : 'გადახდის სისტემა ჯერ არ არის დაყენებული. შეგიძლია დაუკავშირდე ჩვენს გუნდს.';
+    case 'VARIANT_NOT_CONFIGURED':
+      return msg
+        ? `ეს პლანი ჯერ არაა აქტიური — ${msg}`
+        : 'ეს პლანი ჯერ არაა აქტიური. სცადე მოგვიანებით.';
     case 'LEMON_API_ERROR':         return 'გადახდის სერვისი დროებით მიუწვდომელია. სცადე მოგვიანებით.';
     case 'UNAUTHORIZED':            return 'შესვლა გჭირდება გასაგრძელებლად.';
     case 'INVALID_PLAN':            return 'არასწორი პლანი.';
