@@ -7,7 +7,7 @@ import { Crown, MessageSquare, Bot as BotIcon, Clock, AlertCircle } from 'lucide
 interface SubscriptionData {
   ok: true;
   subscription: {
-    plan:               'starter' | 'pro' | 'business' | 'enterprise';
+    plan:               'basic' | 'pro' | 'ultimate' | 'enterprise';
     status:             'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
     usable:             boolean;
     trialEndsAt:        string | null;
@@ -26,9 +26,9 @@ interface SubscriptionData {
 }
 
 const PLAN_LABELS = {
-  starter:    { name: 'Starter',    color: 'text-blue-400' },
+  basic:      { name: 'Basic',      color: 'text-blue-400' },
   pro:        { name: 'Pro',        color: 'text-violet-400' },
-  business:   { name: 'Business',   color: 'text-amber-400' },
+  ultimate:   { name: 'Ultimate',   color: 'text-amber-400' },
   enterprise: { name: 'Enterprise', color: 'text-emerald-400' },
 };
 

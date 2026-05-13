@@ -1,5 +1,5 @@
 // POST /api/lemon/checkout
-// Body: { plan: 'starter' | 'pro' | 'business' }
+// Body: { plan: 'basic' | 'pro' | 'ultimate' }
 // Returns: { url: string } — Lemon Squeezy-hosted checkout URL.
 //
 // LS handles the trial period itself (configure on the variant in dashboard).
@@ -25,7 +25,7 @@ export const POST = withAuth(async ({ user, req }) => {
   catch { return jsonError(400, 'INVALID_JSON'); }
 
   const plan = body.plan as PlanSlug;
-  if (!plan || !['starter', 'pro', 'business'].includes(plan)) {
+  if (!plan || !['basic', 'pro', 'ultimate'].includes(plan)) {
     return jsonError(400, 'INVALID_PLAN');
   }
 

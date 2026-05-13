@@ -3,9 +3,9 @@
 // product → each price tier is a "Variant" with a numeric ID. Set them in
 // .env.local:
 //
-//   LEMONSQUEEZY_VARIANT_STARTER=123456
+//   LEMONSQUEEZY_VARIANT_BASIC=123456
 //   LEMONSQUEEZY_VARIANT_PRO=123457
-//   LEMONSQUEEZY_VARIANT_BUSINESS=123458
+//   LEMONSQUEEZY_VARIANT_ULTIMATE=123458
 //
 // Enterprise has no variant — it's "contact sales" only.
 //
@@ -21,8 +21,8 @@ export const PLAN_DISPLAY: Record<PlanSlug, {
   trialDays:   number;
   popularBadge?: boolean;
 }> = {
-  starter: {
-    name:      'Starter',
+  basic: {
+    name:      'Basic',
     priceUsd:  19,
     priceGel:  52,
     trialDays: 7,
@@ -34,8 +34,8 @@ export const PLAN_DISPLAY: Record<PlanSlug, {
     trialDays: 7,
     popularBadge: true,
   },
-  business: {
-    name:      'Business',
+  ultimate: {
+    name:      'Ultimate',
     priceUsd:  99,
     priceGel:  273,
     trialDays: 7,
@@ -51,9 +51,9 @@ export const PLAN_DISPLAY: Record<PlanSlug, {
 /** Returns the configured LS variant ID for a plan, or null if unset. */
 export function variantIdFor(plan: PlanSlug): string | null {
   switch (plan) {
-    case 'starter':    return process.env.LEMONSQUEEZY_VARIANT_STARTER  ?? null;
+    case 'basic':      return process.env.LEMONSQUEEZY_VARIANT_BASIC    ?? null;
     case 'pro':        return process.env.LEMONSQUEEZY_VARIANT_PRO      ?? null;
-    case 'business':   return process.env.LEMONSQUEEZY_VARIANT_BUSINESS ?? null;
+    case 'ultimate':   return process.env.LEMONSQUEEZY_VARIANT_ULTIMATE ?? null;
     case 'enterprise': return null;  // contact sales
   }
 }
@@ -61,17 +61,17 @@ export function variantIdFor(plan: PlanSlug): string | null {
 /** Reverse lookup: which plan does this LS variant ID belong to? */
 export function planForVariantId(variantId: string | number): PlanSlug | null {
   const v = String(variantId);
-  if (v === process.env.LEMONSQUEEZY_VARIANT_STARTER)  return 'starter';
+  if (v === process.env.LEMONSQUEEZY_VARIANT_BASIC)    return 'basic';
   if (v === process.env.LEMONSQUEEZY_VARIANT_PRO)      return 'pro';
-  if (v === process.env.LEMONSQUEEZY_VARIANT_BUSINESS) return 'business';
+  if (v === process.env.LEMONSQUEEZY_VARIANT_ULTIMATE) return 'ultimate';
   return null;
 }
 
 /** True if all required LS variant IDs are configured. */
 export function areVariantsConfigured(): boolean {
   return !!(
-    process.env.LEMONSQUEEZY_VARIANT_STARTER &&
+    process.env.LEMONSQUEEZY_VARIANT_BASIC &&
     process.env.LEMONSQUEEZY_VARIANT_PRO &&
-    process.env.LEMONSQUEEZY_VARIANT_BUSINESS
+    process.env.LEMONSQUEEZY_VARIANT_ULTIMATE
   );
 }

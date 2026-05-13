@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "ფასები — Peit",
-  description: "7-დღიანი უფასო ტრიალი. გაუქმება ნებისმიერ დროს. Starter $19/თვე, Pro $49/თვე, Business $99/თვე.",
+  description: "7-დღიანი უფასო ტრიალი. გაუქმება ნებისმიერ დროს. Basic $19/თვე, Pro $49/თვე, Ultimate $99/თვე.",
 };
 
 export default function PricingPage() {

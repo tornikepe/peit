@@ -17,7 +17,7 @@ export const subStatusEnum = pgEnum('subscription_status', [
   'trialing', 'active', 'past_due', 'canceled', 'incomplete',
 ]);
 export const subPlanEnum   = pgEnum('subscription_plan', [
-  'starter', 'pro', 'business', 'enterprise',
+  'basic', 'pro', 'ultimate', 'enterprise',
 ]);
 export const messageSourceEnum = pgEnum('message_source', [
   'faq', 'knowledge', 'fallback', 'ai', 'human',
@@ -159,7 +159,7 @@ export const subscriptions = pgTable('subscriptions', {
   id:                   uuid('id').primaryKey().defaultRandom(),
   userId:               uuid('user_id').notNull()
                           .references(() => users.id, { onDelete: 'cascade' }),
-  plan:                 subPlanEnum('plan').notNull().default('starter'),
+  plan:                 subPlanEnum('plan').notNull().default('basic'),
   status:               subStatusEnum('status').notNull().default('trialing'),
   trialEndsAt:          timestamp('trial_ends_at'),
   currentPeriodStart:   timestamp('current_period_start').defaultNow().notNull(),

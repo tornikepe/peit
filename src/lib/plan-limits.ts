@@ -1,7 +1,7 @@
 // Plan limits — single source of truth for what each tier can do.
 // These match the pricing card on the landing page.
 
-export type PlanSlug = 'starter' | 'pro' | 'business' | 'enterprise';
+export type PlanSlug = 'basic' | 'pro' | 'ultimate' | 'enterprise';
 export type SubStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
 
 export interface PlanLimits {
@@ -20,7 +20,7 @@ export interface PlanLimits {
 }
 
 export const PLAN_LIMITS: Record<PlanSlug, PlanLimits> = {
-  starter: {
+  basic: {
     bots:            1,
     messagesPerMonth: 1_000,
     chunksPerBot:    50,
@@ -36,7 +36,7 @@ export const PLAN_LIMITS: Record<PlanSlug, PlanLimits> = {
     domainAllowlist: true,
     removeBranding:  false,
   },
-  business: {
+  ultimate: {
     bots:            20,
     messagesPerMonth: 100_000,
     chunksPerBot:    1_000,
@@ -55,10 +55,10 @@ export const PLAN_LIMITS: Record<PlanSlug, PlanLimits> = {
 };
 
 export function getLimits(plan: PlanSlug): PlanLimits {
-  return PLAN_LIMITS[plan] ?? PLAN_LIMITS.starter;
+  return PLAN_LIMITS[plan] ?? PLAN_LIMITS.basic;
 }
 
-/** Trial = Starter limits, time-boxed. */
+/** Trial = Basic limits, time-boxed. */
 export const TRIAL_DAYS = 7;
 
 /**

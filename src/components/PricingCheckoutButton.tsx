@@ -13,8 +13,8 @@ import { useAuth } from '@clerk/nextjs';
 import { Loader2 } from 'lucide-react';
 
 interface Props {
-  /** Internal plan slug — must match priceIdFor() in plan-prices.ts */
-  plan: 'starter' | 'pro' | 'business';
+  /** Internal plan slug — must match variantIdFor() in plan-prices.ts */
+  plan: 'basic' | 'pro' | 'ultimate';
   label: string;
   highlight?: boolean;
 }

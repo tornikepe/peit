@@ -11,7 +11,7 @@ import {
 interface SubscriptionData {
   ok: true;
   subscription: {
-    plan:               'starter' | 'pro' | 'business' | 'enterprise';
+    plan:               'basic' | 'pro' | 'ultimate' | 'enterprise';
     status:             'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
     usable:             boolean;
     trialEndsAt:        string | null;
@@ -27,9 +27,9 @@ interface SubscriptionData {
 }
 
 const PLAN_META = {
-  starter:    { label: 'Starter',    color: 'text-blue-400',    bg: 'bg-blue-500/10 border-blue-500/20' },
+  basic:      { label: 'Basic',      color: 'text-blue-400',    bg: 'bg-blue-500/10 border-blue-500/20' },
   pro:        { label: 'Pro',        color: 'text-violet-400',  bg: 'bg-violet-500/10 border-violet-500/20' },
-  business:   { label: 'Business',   color: 'text-amber-400',   bg: 'bg-amber-500/10 border-amber-500/20' },
+  ultimate:   { label: 'Ultimate',   color: 'text-amber-400',   bg: 'bg-amber-500/10 border-amber-500/20' },
   enterprise: { label: 'Enterprise', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
 };
 

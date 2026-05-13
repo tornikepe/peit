@@ -1,5 +1,5 @@
 // Subscription provisioning + usage tracking.
-// Until Lemon Squeezy is wired up, every user gets a 7-day Starter trial on
+// Until Lemon Squeezy is wired up, every user gets a 7-day Basic trial on
 // first touch. The counter rolls over every 30 days. Once LS webhooks arrive,
 // state is fully derived from the LS subscription object.
 
@@ -30,7 +30,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 /**
- * Get the user's subscription, creating a Starter trial on first call,
+ * Get the user's subscription, creating a Basic trial on first call,
  * and rolling over the billing period if it's stale.
  */
 export async function getOrCreateSubscription(
@@ -48,7 +48,7 @@ export async function getOrCreateSubscription(
     const trialEnd = addDays(now, TRIAL_DAYS);
     const [created] = await db.insert(schema.subscriptions).values({
       userId,
-      plan:               'starter',
+      plan:               'basic',
       status:             'trialing',
       trialEndsAt:        trialEnd,
       currentPeriodStart: now,

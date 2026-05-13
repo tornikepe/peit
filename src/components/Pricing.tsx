@@ -6,11 +6,11 @@ import { useLanguage } from "@/context/LanguageContext";
 import PricingCheckoutButton from "./PricingCheckoutButton";
 
 /** Plan name (i18n) → internal slug used by Lemon Squeezy checkout. */
-function planSlug(name: string): 'starter' | 'pro' | 'business' | null {
+function planSlug(name: string): 'basic' | 'pro' | 'ultimate' | null {
   const n = name.toLowerCase();
-  if (n.includes('starter')) return 'starter';
-  if (n.includes('pro'))     return 'pro';
-  if (n.includes('business')) return 'business';
+  if (n.includes('basic'))    return 'basic';
+  if (n.includes('ultimate')) return 'ultimate';
+  if (n.includes('pro'))      return 'pro';
   return null;
 }
 
@@ -74,8 +74,8 @@ export default function Pricing() {
                 {'priceGel' in plan && plan.priceGel && (
                   <p className="text-gray-500 text-xs">{plan.priceGel} GEL</p>
                 )}
-                {/* Trial badge on Starter */}
-                {!plan.highlight && plan.name === 'Starter' && (
+                {/* Trial badge on Basic */}
+                {!plan.highlight && plan.name === 'Basic' && (
                   <div className="mt-3 mb-2">
                     <span className="text-xs font-bold text-amber-400 border border-amber-400/30 bg-amber-400/10 px-3 py-1 rounded-full uppercase tracking-wide">
                       {p.trialBadge}
