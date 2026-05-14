@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { Zap, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { industries } from "./Industries";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -50,11 +50,12 @@ export default function Footer() {
 
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
-              <Link href="/" className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="font-semibold text-white text-lg">Peit</span>
+              <Link
+                href="/"
+                className="inline-block font-extrabold text-white text-2xl tracking-[-0.04em] leading-none mb-4"
+                aria-label="Peit"
+              >
+                pe<span className="gradient-text">i</span>t
               </Link>
               <p className="text-gray-500 text-sm leading-relaxed mb-4">{f.tagline}</p>
               <a href={`mailto:${f.email}`}
