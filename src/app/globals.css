@@ -2,9 +2,13 @@
 
 :root {
   --bg: #07070f;
+  --bg-soft: #0d0d1a;
   --border: rgba(255, 255, 255, 0.08);
   --primary: #7c3aed;
-  --accent: #a855f7;
+  --primary-soft: #a855f7;
+  --accent: #06b6d4;
+  --text: #f9fafb;
+  --text-muted: #9ca3af;
 }
 
 * {
@@ -13,64 +17,117 @@
 
 html {
   scroll-behavior: smooth;
+  /* Slightly larger base lets Georgian descenders breathe; Latin compensates via Geist metrics. */
+  font-size: 16px;
 }
 
 body {
-  background-color: #07070f;
-  color: #f9fafb;
-  font-family: var(--font-geist-sans), "Inter", system-ui, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  /* Noto Sans Georgian first — renders ქართული glyphs beautifully — falls
+     back to Geist for Latin/Cyrillic. Both load via next/font with swap. */
+  font-family: var(--font-noto-georgian), var(--font-geist-sans), "Inter",
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Tighten headings — Georgian + Latin both render well at these values. */
+h1, h2, h3, h4 {
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-weight: 700;
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .glass:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.06);
   border-color: rgba(124, 58, 237, 0.3);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #c084fc 0%, #a855f7 40%, #7c3aed 100%);
+  background: linear-gradient(135deg, #e0d4ff 0%, #c084fc 40%, #7c3aed 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  /* Slightly thicker stroke for Georgian glyphs that gradient can wash out. */
+  -webkit-text-stroke: 0.4px transparent;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  box-shadow: 0 0 24px rgba(124, 58, 237, 0.35);
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.3) inset,
+    0 8px 24px -8px rgba(124, 58, 237, 0.55),
+    0 0 32px rgba(124, 58, 237, 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btn-primary:hover {
-  box-shadow: 0 0 36px rgba(124, 58, 237, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.4) inset,
+    0 10px 28px -8px rgba(124, 58, 237, 0.7),
+    0 0 40px rgba(124, 58, 237, 0.35);
   transform: translateY(-1px);
 }
 
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Accent CTA — used sparingly for secondary primary actions (cyan complements violet). */
+.btn-accent {
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  color: #06203a;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.4) inset,
+    0 8px 24px -8px rgba(6, 182, 212, 0.5);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-accent:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.5) inset,
+    0 10px 28px -8px rgba(6, 182, 212, 0.65);
+}
+
 .hero-glow {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(124, 58, 237, 0.25) 0%,
-    transparent 60%
-  );
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 20%,  rgba(6, 182, 212, 0.15) 0%, transparent 60%);
 }
 
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #07070f;
+  background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
   background: rgba(124, 58, 237, 0.4);
   border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.6);
+}
+
+/* Visible focus for keyboard navigation — accessibility requirement. */
+:focus-visible {
+  outline: 2px solid rgba(167, 139, 250, 0.8);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 /* Animations */
@@ -103,3 +160,12 @@ body {
 .reveal-delay-1 { transition-delay: 0.1s; }
 .reveal-delay-2 { transition-delay: 0.2s; }
 .reveal-delay-3 { transition-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

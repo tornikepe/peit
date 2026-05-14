@@ -58,3 +58,6 @@ next-env.d.ts
 .roo/
 .trae/
 .windsurf/
+
+# clerk configuration (can include secrets)
+/.clerk/

@@ -131,41 +131,47 @@ export default function Hero() {
 
           {/* LEFT */}
           <div>
-            <p className="text-amber-400 text-xs font-bold uppercase tracking-widest mb-6">
-              {t.hero.badge}
-            </p>
-            <h1 className="text-5xl sm:text-6xl font-bold text-white leading-[1.08] tracking-tight mb-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.06] px-3 py-1.5 mb-6">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+              </span>
+              <p className="text-amber-300 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                {t.hero.badge}
+              </p>
+            </div>
+            <h1 className="text-[2.75rem] sm:text-5xl lg:text-[3.5rem] font-bold text-white leading-[1.12] tracking-[-0.02em] mb-6 max-w-xl">
               {t.hero.h1a}{" "}
               <span className="gradient-text">{t.hero.h1b}</span>
             </h1>
-            <p className="text-lg text-gray-400 leading-relaxed mb-8 max-w-lg">
+            <p className="text-[1.0625rem] sm:text-lg text-gray-400 leading-[1.65] mb-8 max-w-lg">
               {t.hero.sub}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <Link href="/signup"
-                className="btn-primary inline-flex items-center justify-center gap-2 text-white font-semibold px-7 py-3.5 rounded-xl text-base">
+                className="btn-primary group inline-flex items-center justify-center gap-2 text-white font-semibold px-7 py-3.5 rounded-xl text-[0.95rem] cursor-pointer">
                 {t.hero.cta1}
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link href="/how-it-works"
-                className="inline-flex items-center justify-center gap-2 text-gray-300 hover:text-white font-medium px-7 py-3.5 rounded-xl text-base border border-white/10 hover:border-white/20 hover:bg-white/[0.04] transition-all">
+                className="inline-flex items-center justify-center gap-2 text-gray-300 hover:text-white font-medium px-7 py-3.5 rounded-xl text-[0.95rem] border border-white/10 hover:border-white/20 hover:bg-white/[0.04] transition-all cursor-pointer">
                 {t.hero.cta2}
               </Link>
             </div>
 
-            <p className="text-sm text-gray-600 mb-10">{t.hero.trust}</p>
+            <p className="text-sm text-gray-500 mb-10">{t.hero.trust}</p>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-6 max-w-md">
               {[
                 { v: t.hero.stat1v, l: t.hero.stat1l },
                 { v: t.hero.stat2v, l: t.hero.stat2l },
                 { v: t.hero.stat3v, l: t.hero.stat3l },
               ].map(({ v, l }) => (
-                <div key={l}>
-                  <p className="text-3xl font-bold text-white">{v}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{l}</p>
+                <div key={l} className="relative">
+                  <p className="text-[1.75rem] sm:text-3xl font-bold text-white leading-none mb-1.5">{v}</p>
+                  <p className="text-xs text-gray-500 leading-snug">{l}</p>
                 </div>
               ))}
             </div>
