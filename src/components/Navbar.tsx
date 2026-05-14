@@ -131,15 +131,15 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu — sits inside the same pill, looks continuous */}
       {open && (
-        <div className="md:hidden border-t border-white/[0.06] bg-[#07070f] px-4 py-4 flex flex-col gap-2">
+        <div className="md:hidden mt-2 rounded-2xl border border-white/[0.08] bg-[#07070f]/95 backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.5)] px-3 py-3 flex flex-col gap-1.5">
           {navLinks.map(link => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="px-4 py-3 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-white/[0.05] transition-all"
+              className="px-4 py-3 text-sm text-gray-300 hover:text-white rounded-xl hover:bg-white/[0.05] transition-all"
             >
               {link.label}
             </Link>

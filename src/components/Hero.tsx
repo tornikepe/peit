@@ -165,13 +165,17 @@ export default function Hero() {
               </p>
             </div>
 
-            {/* Headline — big and gradient */}
-            <h1 className="text-[2.75rem] sm:text-[3.5rem] lg:text-[4rem] font-bold text-white leading-[1.05] tracking-[-0.025em] mb-6">
-              {t.hero.h1a}{" "}
+            {/* Headline — fluid scale so it never overflows on mobile */}
+            <h1
+              className="font-bold text-white leading-[1.06] tracking-[-0.025em] mb-6 break-words"
+              style={{ fontSize: 'clamp(2.125rem, 6.5vw, 4rem)' }}
+            >
+              {t.hero.h1a}
+              <br />
               <span className="gradient-text">{t.hero.h1b}</span>
             </h1>
 
-            <p className="text-[1.0625rem] sm:text-lg text-gray-300/80 leading-[1.65] mb-8 max-w-lg">
+            <p className="text-[1rem] sm:text-lg text-gray-300/80 leading-[1.65] mb-8 max-w-lg">
               {t.hero.sub}
             </p>
 
