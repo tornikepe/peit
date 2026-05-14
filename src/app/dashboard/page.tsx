@@ -38,15 +38,12 @@ export default async function DashboardPage() {
             <Link href="/dashboard" className="px-4 py-2 text-sm text-white bg-white/[0.05] rounded-lg">
               Overview
             </Link>
-            <Link href="/dashboard" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
-              Bots
+            <Link href="/dashboard/leads" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
+              ლიდები
             </Link>
-            <button className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
-              Analytics
-            </button>
-            <button className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
-              Integrations
-            </button>
+            <Link href="/dashboard/billing" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
+              Billing
+            </Link>
           </nav>
 
           <div className="flex items-center gap-3">
