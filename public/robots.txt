@@ -1,0 +1,40 @@
+# Robots.txt for Peit — peit.vercel.app
+# AI search bots explicitly allowed so we can be cited in ChatGPT,
+# Perplexity, Google AI Overviews, Claude.ai and Copilot answers.
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /signin
+Disallow: /signup
+
+# OpenAI — ChatGPT search + browsing
+User-agent: GPTBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+# Anthropic — Claude.ai with search
+User-agent: ClaudeBot
+Allow: /
+User-agent: anthropic-ai
+Allow: /
+
+# Google — Gemini + AI Overviews
+User-agent: Google-Extended
+Allow: /
+
+# Microsoft Copilot (via Bing)
+User-agent: Bingbot
+Allow: /
+
+# Block Common Crawl from training-only crawling, keep search bots
+User-agent: CCBot
+Disallow: /
+
+Sitemap: https://peit.vercel.app/sitemap.xml

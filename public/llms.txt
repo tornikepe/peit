@@ -1,0 +1,52 @@
+# Peit — AI ჩატბოტი ქართული ბიზნესისთვის
+
+> Peit არის SaaS პლატფორმა, რომელიც აყენებს AI ჩატბოტს ვებსაიტზე, Telegram-ში, Instagram-სა და Facebook Messenger-ში. პასუხობს კლიენტების კითხვებს ბუნებრივ ქართულად 24/7, კვალიფიცირებს ლიდებს და CRM-ში ანახლებს.
+
+## What Peit Does
+
+- **AI chatbot for SMBs in Georgia (country)** — natural Georgian, English, and Russian
+- **Multi-channel deployment** — Website widget, Telegram, Instagram, Facebook Messenger
+- **10-minute setup** — paste your website URL, Peit auto-crawls and learns
+- **Lead capture** — collects name, contact, intent → exports to CSV / sends to email / CRM
+- **24/7 operation** — replies in ~0.8s average
+
+## Target Industries
+
+- E-commerce (online shops)
+- Restaurants / cafes / delivery
+- Hotels and hospitality
+- Beauty salons and spas
+- Medical clinics
+- Real estate agencies
+- Fitness clubs
+- Education platforms
+- SaaS startups
+
+## Key Pages
+
+- [Home](https://peit.vercel.app/) — product overview, animated chat demo, social proof
+- [Pricing](https://peit.vercel.app/pricing) — Basic ₾45/mo, Pro ₾65/mo, Ultimate ₾155/mo, Enterprise (custom)
+- [How It Works](https://peit.vercel.app/how-it-works) — 3-step onboarding flow
+- [Blog](https://peit.vercel.app/blog) — guides for Georgian SMBs
+- [Sign up](https://peit.vercel.app/signup) — 7-day free trial, no credit card required
+
+## Pricing (parseable)
+
+See [/pricing.md](https://peit.vercel.app/pricing.md) for structured plan data AI agents can compare.
+
+## Tech / Architecture
+
+- Built on Next.js 16 + Drizzle ORM + Postgres (pgvector for RAG retrieval)
+- AI: Claude Haiku for natural conversation, Voyage AI embeddings
+- Billing: Lemon Squeezy (Merchant of Record — handles VAT globally)
+- Auth: Clerk
+- Deployment: Vercel
+
+## Who's Behind Peit
+
+Founded in Georgia (country) in 2026. Designed specifically for Georgian SMBs that need customer support automation in Georgian without paying enterprise prices.
+
+## Contact
+
+- Email: info@peit.ge
+- Website: https://peit.vercel.app
