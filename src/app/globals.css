@@ -7,6 +7,7 @@
   --primary: #7c3aed;
   --primary-soft: #a855f7;
   --accent: #06b6d4;
+  --accent-bright: #22d3ee;
   --text: #f9fafb;
   --text-muted: #9ca3af;
 }
@@ -17,15 +18,12 @@
 
 html {
   scroll-behavior: smooth;
-  /* Slightly larger base lets Georgian descenders breathe; Latin compensates via Geist metrics. */
   font-size: 16px;
 }
 
 body {
   background-color: var(--bg);
   color: var(--text);
-  /* Noto Sans Georgian first — renders ქართული glyphs beautifully — falls
-     back to Geist for Latin/Cyrillic. Both load via next/font with swap. */
   font-family: var(--font-noto-georgian), var(--font-geist-sans), "Inter",
     system-ui, -apple-system, "Segoe UI", sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -34,14 +32,16 @@ body {
   text-rendering: optimizeLegibility;
   min-height: 100vh;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
-/* Tighten headings — Georgian + Latin both render well at these values. */
 h1, h2, h3, h4 {
-  line-height: 1.15;
-  letter-spacing: -0.015em;
+  line-height: 1.12;
+  letter-spacing: -0.022em;
   font-weight: 700;
 }
+
+/* ─── Glass surfaces ────────────────────────────────────────────────── */
 
 .glass {
   background: rgba(255, 255, 255, 0.035);
@@ -56,37 +56,80 @@ h1, h2, h3, h4 {
   border-color: rgba(124, 58, 237, 0.3);
 }
 
+.glass-strong {
+  background: rgba(13, 13, 26, 0.6);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Gradients & accents ───────────────────────────────────────────── */
+
 .gradient-text {
-  background: linear-gradient(135deg, #e0d4ff 0%, #c084fc 40%, #7c3aed 100%);
+  background: linear-gradient(135deg, #f5e8ff 0%, #c084fc 35%, #7c3aed 70%, #22d3ee 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  /* Slightly thicker stroke for Georgian glyphs that gradient can wash out. */
   -webkit-text-stroke: 0.4px transparent;
 }
 
+.gradient-text-cyan {
+  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated mesh-gradient background — used by Hero */
+.mesh-bg {
+  background:
+    radial-gradient(at 18% 22%,  rgba(124, 58, 237, 0.35) 0px, transparent 50%),
+    radial-gradient(at 82% 15%,  rgba(34, 211, 238, 0.18) 0px, transparent 45%),
+    radial-gradient(at 50% 90%,  rgba(168, 85, 247, 0.22) 0px, transparent 55%),
+    radial-gradient(at 90% 75%,  rgba(99, 102, 241, 0.2)  0px, transparent 50%);
+  animation: mesh-shift 18s ease-in-out infinite;
+}
+
+@keyframes mesh-shift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-2%, 1%) scale(1.04); }
+}
+
+/* Subtle dot grid — used by Hero background */
+.dot-grid {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0);
+  background-size: 32px 32px;
+  mask-image:
+    radial-gradient(ellipse 60% 60% at 50% 30%, black 30%, transparent 100%);
+  -webkit-mask-image:
+    radial-gradient(ellipse 60% 60% at 50% 30%, black 30%, transparent 100%);
+}
+
+/* ─── Buttons ──────────────────────────────────────────────────────── */
+
 .btn-primary {
+  position: relative;
   background: linear-gradient(135deg, #8b5cf6, #6d28d9);
   box-shadow:
     0 0 0 1px rgba(167, 139, 250, 0.3) inset,
-    0 8px 24px -8px rgba(124, 58, 237, 0.55),
-    0 0 32px rgba(124, 58, 237, 0.25);
+    0 10px 32px -10px rgba(124, 58, 237, 0.65),
+    0 0 40px rgba(124, 58, 237, 0.3);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btn-primary:hover {
   box-shadow:
-    0 0 0 1px rgba(167, 139, 250, 0.4) inset,
-    0 10px 28px -8px rgba(124, 58, 237, 0.7),
-    0 0 40px rgba(124, 58, 237, 0.35);
-  transform: translateY(-1px);
+    0 0 0 1px rgba(167, 139, 250, 0.45) inset,
+    0 14px 36px -10px rgba(124, 58, 237, 0.8),
+    0 0 56px rgba(124, 58, 237, 0.45);
+  transform: translateY(-2px);
 }
 
 .btn-primary:active {
   transform: translateY(0);
 }
 
-/* Accent CTA — used sparingly for secondary primary actions (cyan complements violet). */
 .btn-accent {
   background: linear-gradient(135deg, #22d3ee, #06b6d4);
   color: #06203a;
@@ -97,17 +140,20 @@ h1, h2, h3, h4 {
 }
 
 .btn-accent:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow:
     0 0 0 1px rgba(34, 211, 238, 0.5) inset,
-    0 10px 28px -8px rgba(6, 182, 212, 0.65);
+    0 12px 32px -8px rgba(6, 182, 212, 0.7);
 }
 
+/* Hero glow — replaces older flat radial-gradient */
 .hero-glow {
   background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.3) 0%, transparent 60%),
     radial-gradient(ellipse 40% 30% at 80% 20%,  rgba(6, 182, 212, 0.15) 0%, transparent 60%);
 }
+
+/* ─── Scrollbar ───────────────────────────────────────────────────── */
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -123,14 +169,16 @@ h1, h2, h3, h4 {
   background: rgba(124, 58, 237, 0.6);
 }
 
-/* Visible focus for keyboard navigation — accessibility requirement. */
+/* ─── Accessibility ───────────────────────────────────────────────── */
+
 :focus-visible {
   outline: 2px solid rgba(167, 139, 250, 0.8);
   outline-offset: 3px;
   border-radius: 4px;
 }
 
-/* Animations */
+/* ─── Animations ──────────────────────────────────────────────────── */
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -141,11 +189,32 @@ h1, h2, h3, h4 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.35s ease forwards;
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(20px, -30px); }
 }
 
-/* Scroll-reveal: sections start hidden, JS adds .revealed */
+@keyframes float-slower {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(-30px, 20px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.7; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in        { animation: fadeIn 0.35s ease forwards; }
+.animate-float-slow     { animation: float-slow 14s ease-in-out infinite; }
+.animate-float-slower   { animation: float-slower 18s ease-in-out infinite; }
+.animate-glow-pulse     { animation: glow-pulse 4s ease-in-out infinite; }
+
+/* Scroll-reveal */
 .reveal {
   opacity: 0;
   transform: translateY(28px);

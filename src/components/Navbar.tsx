@@ -29,12 +29,12 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#07070f]/80 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+    <header className="fixed top-3 left-3 right-3 sm:top-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 w-auto sm:w-[min(72rem,calc(100%-2rem))]">
+      <div className="rounded-2xl border border-white/[0.08] bg-[#07070f]/75 backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.5)] px-4 sm:px-6 flex items-center justify-between h-14">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-shadow">
+        <Link href="/" className="flex items-center gap-2 group cursor-pointer">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:shadow-violet-500/60 group-hover:scale-105 transition-all">
             <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
           <span className="font-semibold text-white text-lg tracking-tight">Peit</span>
