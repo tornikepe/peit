@@ -12,6 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:init": "node scripts/db-init.mjs",
     "db:migrate-lemon": "node scripts/db-migrate-lemon.mjs",
+    "db:migrate-lead-score": "node scripts/db-migrate-lead-score.mjs",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

@@ -43,8 +43,11 @@ const I18N: Record<Lang, {
   leadSkip:      string;
   leadThanks:    string;
   leaveContact:  string;
+  gdprLabel:     string;
+  gdprRequired:  string;
   errorLoad:     string;
   errorSend:     string;
+  errorInvalidPhone: string;
   retry:         string;
   morningHi:     string;
   afternoonHi:   string;
@@ -66,8 +69,11 @@ const I18N: Record<Lang, {
     leadSkip:     'მოგვიანებით',
     leadThanks:   'მადლობა! ჩვენი გუნდი მალე დაგიკავშირდება.',
     leaveContact: 'კონტაქტის დატოვება',
+    gdprLabel:    'ვეთანხმები ჩემი მონაცემების დამუშავებას ამ ბიზნესთან კონტაქტისთვის',
+    gdprRequired: 'მონაცემთა დამუშავებაზე თანხმობა აუცილებელია',
     errorLoad:    'ჩატის ჩატვირთვა ვერ მოხერხდა.',
     errorSend:    'ვერ გავგზავნე. ცადე ისევ.',
+    errorInvalidPhone: 'ნომრის ფორმატი არასწორია',
     retry:        'სცადე ისევ',
     morningHi:    'დილა მშვიდობისა',
     afternoonHi:  'გამარჯობა',
@@ -89,8 +95,11 @@ const I18N: Record<Lang, {
     leadSkip:     'Maybe later',
     leadThanks:   'Thanks! Our team will reach out shortly.',
     leaveContact: 'Leave contact',
+    gdprLabel:    'I consent to my data being processed so this business can contact me',
+    gdprRequired: 'Consent is required',
     errorLoad:    'Failed to load chat.',
     errorSend:    'Couldn\'t send. Try again.',
+    errorInvalidPhone: 'Invalid phone format',
     retry:        'Retry',
     morningHi:    'Good morning',
     afternoonHi:  'Hi there',
@@ -112,8 +121,11 @@ const I18N: Record<Lang, {
     leadSkip:     'Позже',
     leadThanks:   'Спасибо! Команда скоро свяжется с вами.',
     leaveContact: 'Оставить контакт',
+    gdprLabel:    'Я согласен на обработку моих данных, чтобы этот бизнес связался со мной',
+    gdprRequired: 'Согласие обязательно',
     errorLoad:    'Не удалось загрузить чат.',
     errorSend:    'Не удалось отправить. Попробуйте снова.',
+    errorInvalidPhone: 'Неверный формат телефона',
     retry:        'Повторить',
     morningHi:    'Доброе утро',
     afternoonHi:  'Здравствуйте',
@@ -181,6 +193,7 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [leadEmail, setLeadEmail] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
   const [leadMsg, setLeadMsg]     = useState('');
+  const [leadGdpr, setLeadGdpr]   = useState(false); // GDPR consent — required
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState<string | null>(null);
 
@@ -398,8 +411,13 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   // ─── Submit lead ────────────────────────────────────────────────────────
   async function submitLead() {
     if (!bot) return;
+    const ui = I18N[activeLang];
     if (!leadEmail.trim() && !leadPhone.trim()) {
-      setLeadError(I18N[activeLang].leadEmail);
+      setLeadError(ui.leadEmail);
+      return;
+    }
+    if (!leadGdpr) {
+      setLeadError(ui.gdprRequired);
       return;
     }
     setLeadSubmitting(true);
@@ -414,22 +432,32 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           phone:          leadPhone.trim() || undefined,
           message:        leadMsg.trim()   || undefined,
           conversationId: conversationId   ?? undefined,
+          gdprConsent:    true,
+          gdprText:       ui.gdprLabel,
         }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'LEAD_FAILED');
+      if (!res.ok || !data.ok) {
+        // Surface specific validation errors with translated copy.
+        const code = data.error;
+        if (code === 'INVALID_PHONE')          setLeadError(ui.errorInvalidPhone);
+        else if (code === 'INVALID_EMAIL')     setLeadError(ui.leadEmail);
+        else if (code === 'GDPR_CONSENT_REQUIRED') setLeadError(ui.gdprRequired);
+        else                                   setLeadError(ui.errorSend);
+        return;
+      }
       setLeadSubmitted(true);
       setLeadOpen(false);
 
       const thanksMsg: Msg = {
         id: newMsgId(),
         from: 'bot',
-        text: I18N[activeLang].leadThanks,
+        text: ui.leadThanks,
         timestamp: Date.now(),
       };
       setMsgs(prev => [...prev, thanksMsg]);
     } catch (e) {
-      setLeadError(e instanceof Error ? e.message : 'LEAD_FAILED');
+      setLeadError(e instanceof Error ? e.message : ui.errorSend);
     } finally {
       setLeadSubmitting(false);
     }
@@ -705,6 +733,7 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           email={leadEmail} setEmail={setLeadEmail}
           phone={leadPhone} setPhone={setLeadPhone}
           msg={leadMsg} setMsg={setLeadMsg}
+          gdpr={leadGdpr} setGdpr={setLeadGdpr}
           submitting={leadSubmitting}
           error={leadError}
           onSubmit={submitLead}
@@ -732,6 +761,7 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
 function LeadDrawer({
   bot, color, ui,
   name, setName, email, setEmail, phone, setPhone, msg, setMsg,
+  gdpr, setGdpr,
   submitting, error, onSubmit, onClose,
 }: {
   bot: PublicBot;
@@ -741,14 +771,15 @@ function LeadDrawer({
   email: string; setEmail: (v: string) => void;
   phone: string; setPhone: (v: string) => void;
   msg: string;   setMsg:   (v: string) => void;
+  gdpr: boolean; setGdpr:  (v: boolean) => void;
   submitting: boolean;
   error: string | null;
   onSubmit: () => void;
   onClose: () => void;
 }) {
   const fields = bot.leadCapture.fields;
-  const canSubmit = (fields.includes('email') ? email.trim() : true)
-                 && (email.trim() || phone.trim());
+  const hasContact = email.trim() || phone.trim();
+  const canSubmit = hasContact && gdpr;
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col bg-[#0d0d1a]/98 backdrop-blur-sm animate-drawer">
@@ -786,6 +817,29 @@ function LeadDrawer({
           rows={3}
           className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/50 resize-none"
         />
+
+        {/* GDPR consent — required to submit */}
+        <label className="flex items-start gap-2.5 cursor-pointer select-none mt-1 group">
+          <span className="relative shrink-0 mt-0.5">
+            <input
+              type="checkbox"
+              checked={gdpr}
+              onChange={e => setGdpr(e.target.checked)}
+              className="peer sr-only"
+              required
+            />
+            <span className="block w-4 h-4 rounded border border-white/15 bg-white/[0.05] peer-checked:bg-violet-600 peer-checked:border-violet-500 transition-colors" />
+            <svg
+              className="absolute top-0 left-0 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
+              viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="3"
+            >
+              <path d="M3 8 L6.5 11.5 L13 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span className="text-[11px] text-gray-400 leading-[1.45] group-hover:text-gray-300 transition-colors">
+            {ui.gdprLabel}
+          </span>
+        </label>
 
         {error && (
           <p className="flex items-center gap-1 text-red-400 text-xs">

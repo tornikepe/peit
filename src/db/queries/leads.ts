@@ -9,6 +9,7 @@ import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { requireDb, schema } from '@/db';
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'won' | 'lost';
+export type LeadScore  = 'cold' | 'warm' | 'hot';
 
 export interface DashboardLead {
   id:        string;
@@ -19,12 +20,14 @@ export interface DashboardLead {
   phone:     string | null;
   message:   string | null;
   status:    LeadStatus;
+  score:     LeadScore;
   createdAt: Date;
 }
 
 export interface LeadFilters {
   botId?:  string;       // restrict to a single bot
   status?: LeadStatus;   // restrict by lifecycle status
+  score?:  LeadScore;    // restrict by hot/warm/cold
   search?: string;       // ILIKE over name / email / phone / message
   limit?:  number;       // pagination
   offset?: number;
@@ -48,6 +51,9 @@ function buildWhere(userId: string, filters: LeadFilters) {
   }
   if (filters.status) {
     clauses.push(sql`${schema.leads.status} = ${filters.status}`);
+  }
+  if (filters.score) {
+    clauses.push(sql`${schema.leads.score} = ${filters.score}`);
   }
   if (filters.search) {
     const term = `%${filters.search}%`;
@@ -87,6 +93,7 @@ export async function listLeadsForUser(
       phone:     schema.leads.phone,
       message:   schema.leads.message,
       status:    schema.leads.status,
+      score:     schema.leads.score,
       createdAt: schema.leads.createdAt,
     })
     .from(schema.leads)
@@ -105,6 +112,7 @@ export async function listLeadsForUser(
     phone:     r.phone,
     message:   r.message,
     status:    r.status as LeadStatus,
+    score:     r.score as LeadScore,
     createdAt: r.createdAt,
   }));
 }
@@ -185,5 +193,25 @@ export async function countLeadsByStatus(
     result[r.status as LeadStatus] = r.count;
     result.total += r.count;
   }
+  return result;
+}
+
+/** Aggregate counts per score — for cold/warm/hot filter chips. */
+export async function countLeadsByScore(
+  userId: string,
+): Promise<Record<LeadScore, number>> {
+  const db = requireDb();
+  const rows = await db
+    .select({
+      score: schema.leads.score,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(schema.leads)
+    .innerJoin(schema.bots, eq(schema.bots.id, schema.leads.botId))
+    .where(eq(schema.bots.ownerId, userId))
+    .groupBy(schema.leads.score);
+
+  const result: Record<LeadScore, number> = { cold: 0, warm: 0, hot: 0 };
+  for (const r of rows) result[r.score as LeadScore] = r.count;
   return result;
 }

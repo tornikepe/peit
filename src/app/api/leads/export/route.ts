@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { getCurrentUserOrThrow } from '@/db/queries/users';
 import {
-  exportLeadsForUser, type LeadStatus, type LeadFilters,
+  exportLeadsForUser, type LeadStatus, type LeadScore, type LeadFilters,
 } from '@/db/queries/leads';
 
 export const runtime = 'nodejs';
@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 const VALID_STATUSES = new Set<LeadStatus>([
   'new', 'contacted', 'qualified', 'won', 'lost',
 ]);
+const VALID_SCORES = new Set<LeadScore>(['cold', 'warm', 'hot']);
 
 /** RFC 4180 quote — wrap in "..." and double internal quotes when needed. */
 function csvField(v: string | null | undefined): string {
@@ -35,19 +36,24 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const statusParam = url.searchParams.get('status');
+  const scoreParam  = url.searchParams.get('score');
   if (statusParam && !VALID_STATUSES.has(statusParam as LeadStatus)) {
     return NextResponse.json({ error: 'INVALID_STATUS' }, { status: 400 });
+  }
+  if (scoreParam && !VALID_SCORES.has(scoreParam as LeadScore)) {
+    return NextResponse.json({ error: 'INVALID_SCORE' }, { status: 400 });
   }
 
   const filters: Omit<LeadFilters, 'limit' | 'offset'> = {
     botId:  url.searchParams.get('botId')  ?? undefined,
     status: (statusParam as LeadStatus | null) ?? undefined,
+    score:  (scoreParam  as LeadScore  | null) ?? undefined,
     search: url.searchParams.get('search')?.trim() || undefined,
   };
 
   const leads = await exportLeadsForUser(user.id, filters);
 
-  const header = ['date', 'bot', 'name', 'email', 'phone', 'message', 'status'];
+  const header = ['date', 'bot', 'name', 'email', 'phone', 'message', 'status', 'score'];
   const rows = leads.map(l => [
     l.createdAt.toISOString(),
     l.botName,
@@ -56,6 +62,7 @@ export async function GET(req: Request) {
     l.phone ?? '',
     l.message ?? '',
     l.status,
+    l.score,
   ].map(csvField).join(','));
 
   // BOM so Excel auto-detects UTF-8 for Georgian glyphs.

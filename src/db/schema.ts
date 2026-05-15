@@ -28,6 +28,10 @@ export const channelEnum = pgEnum('channel', [
 export const leadStatusEnum = pgEnum('lead_status', [
   'new', 'contacted', 'qualified', 'won', 'lost',
 ]);
+// Hot = high-intent (email+phone + buying-signal keywords),
+// Warm = solid contact (email or phone present),
+// Cold = name-only or anonymous.
+export const leadScoreEnum = pgEnum('lead_score', ['cold', 'warm', 'hot']);
 
 // ─── users ─────────────────────────────────────────────────────────────────
 // Synced from Clerk via lazy provisioning (see src/db/queries/users.ts).
@@ -146,10 +150,14 @@ export const leads = pgTable('leads', {
   phone:          varchar('phone', { length: 32 }),
   message:        text('message'),
   status:         leadStatusEnum('status').notNull().default('new'),
+  /** Auto-computed at insert time — see scoreLead() in src/lib/lead-score.ts */
+  score:          leadScoreEnum('score').notNull().default('cold'),
+  /** Free-form bag for { gdprConsent, gdprAt, source, utm, ... }. */
   metadata:       jsonb('metadata').$type<Record<string, unknown>>().default({}),
   createdAt:      timestamp('created_at').defaultNow().notNull(),
 }, t => ({
-  botIdx: index('leads_bot_idx').on(t.botId),
+  botIdx:   index('leads_bot_idx').on(t.botId),
+  scoreIdx: index('leads_score_idx').on(t.score),
 }));
 
 // ─── subscriptions ─────────────────────────────────────────────────────────

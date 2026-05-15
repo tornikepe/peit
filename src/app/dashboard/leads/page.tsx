@@ -4,11 +4,12 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, Download, Search, Filter, Loader2, AlertCircle,
-  Mail, Phone, MessageSquare, CheckCircle2, ChevronDown, Inbox,
+  Mail, Phone, MessageSquare, CheckCircle2, ChevronDown, Inbox, Flame,
 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 
 type LeadStatus = 'new' | 'contacted' | 'qualified' | 'won' | 'lost';
+type LeadScore  = 'cold' | 'warm' | 'hot';
 
 interface Lead {
   id:        string;
@@ -19,6 +20,7 @@ interface Lead {
   phone:     string | null;
   message:   string | null;
   status:    LeadStatus;
+  score:     LeadScore;
   createdAt: string;
 }
 
@@ -27,6 +29,7 @@ interface ListResponse {
   leads:  Lead[];
   total:  number;
   counts: Record<LeadStatus | 'total', number>;
+  scoreCounts: Record<LeadScore, number>;
 }
 
 const STATUS_META: Record<LeadStatus, { label: string; color: string; ring: string }> = {
@@ -38,6 +41,13 @@ const STATUS_META: Record<LeadStatus, { label: string; color: string; ring: stri
 };
 
 const STATUS_ORDER: LeadStatus[] = ['new', 'contacted', 'qualified', 'won', 'lost'];
+
+const SCORE_META: Record<LeadScore, { label: string; color: string; ring: string; emoji: string }> = {
+  hot:  { label: 'ცხელი', color: 'text-red-300 bg-red-500/15',     ring: 'ring-red-500/30',     emoji: '🔥' },
+  warm: { label: 'თბილი', color: 'text-amber-300 bg-amber-500/15', ring: 'ring-amber-500/30', emoji: '🌤️' },
+  cold: { label: 'ცივი',  color: 'text-gray-400 bg-white/[0.04]',  ring: 'ring-white/[0.08]',  emoji: '❄️' },
+};
+const SCORE_ORDER: LeadScore[] = ['hot', 'warm', 'cold'];
 
 export default function LeadsPage() {
   return (
@@ -57,6 +67,7 @@ function LeadsInner() {
   const [error, setError]     = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
+  const [scoreFilter, setScoreFilter]   = useState<LeadScore | 'all'>('all');
   const [search, setSearch]             = useState('');
   const [busyId, setBusyId]             = useState<string | null>(null);
 
@@ -70,10 +81,11 @@ function LeadsInner() {
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
     if (statusFilter !== 'all') p.set('status', statusFilter);
+    if (scoreFilter  !== 'all') p.set('score',  scoreFilter);
     if (debouncedSearch)        p.set('search', debouncedSearch);
     p.set('limit', '100');
     return p.toString();
-  }, [statusFilter, debouncedSearch]);
+  }, [statusFilter, scoreFilter, debouncedSearch]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -123,6 +135,7 @@ function LeadsInner() {
   function exportCsv() {
     const p = new URLSearchParams();
     if (statusFilter !== 'all') p.set('status', statusFilter);
+    if (scoreFilter  !== 'all') p.set('score',  scoreFilter);
     if (debouncedSearch)        p.set('search', debouncedSearch);
     window.location.href = `/api/leads/export?${p.toString()}`;
   }
@@ -177,37 +190,72 @@ function LeadsInner() {
           </button>
         </div>
 
-        {/* Filter pills + search */}
-        <div className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center mb-6">
-          <div className="flex items-center gap-2 flex-wrap flex-1">
-            <Filter className="w-4 h-4 text-gray-500 shrink-0" />
-            <FilterPill
-              label="ყველა"
-              count={data?.counts.total ?? 0}
-              active={statusFilter === 'all'}
-              onClick={() => setStatusFilter('all')}
-              colorClass="text-white bg-white/[0.06]"
-            />
-            {STATUS_ORDER.map(s => (
+        {/* Filter pills + score chips + search */}
+        <div className="glass rounded-2xl p-4 flex flex-col gap-3 mb-6">
+          {/* Status filter row */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div className="flex items-center gap-2 flex-wrap flex-1">
+              <Filter className="w-4 h-4 text-gray-500 shrink-0" />
               <FilterPill
-                key={s}
-                label={STATUS_META[s].label}
-                count={data?.counts[s] ?? 0}
-                active={statusFilter === s}
-                onClick={() => setStatusFilter(s)}
-                colorClass={STATUS_META[s].color}
+                label="ყველა"
+                count={data?.counts.total ?? 0}
+                active={statusFilter === 'all'}
+                onClick={() => setStatusFilter('all')}
+                colorClass="text-white bg-white/[0.06]"
               />
-            ))}
+              {STATUS_ORDER.map(s => (
+                <FilterPill
+                  key={s}
+                  label={STATUS_META[s].label}
+                  count={data?.counts[s] ?? 0}
+                  active={statusFilter === s}
+                  onClick={() => setStatusFilter(s)}
+                  colorClass={STATUS_META[s].color}
+                />
+              ))}
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="სახელი, email, ნომერი..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-violet-500/40 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none transition-colors"
+              />
+            </div>
           </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="სახელი, email, ნომერი..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-violet-500/40 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none transition-colors"
-            />
+
+          {/* Score (cold/warm/hot) filter row */}
+          <div className="flex items-center gap-2 flex-wrap pl-6 border-t border-white/[0.04] pt-3 -ml-4 -mr-4 px-4">
+            <Flame className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+            <button
+              onClick={() => setScoreFilter('all')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                scoreFilter === 'all'
+                  ? 'text-white bg-white/[0.06] ring-1 ring-white/10'
+                  : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'
+              }`}
+            >
+              ყველა ხარისხი
+            </button>
+            {SCORE_ORDER.map(s => (
+              <button
+                key={s}
+                onClick={() => setScoreFilter(s)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                  scoreFilter === s
+                    ? `${SCORE_META[s].color} ring-1 ${SCORE_META[s].ring}`
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                <span>{SCORE_META[s].emoji}</span>
+                {SCORE_META[s].label}
+                <span className="text-[10px] font-mono opacity-70">
+                  {data?.scoreCounts[s] ?? 0}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -250,6 +298,7 @@ function LeadsInner() {
                 <thead className="bg-white/[0.02] border-b border-white/[0.06]">
                   <tr className="text-left text-gray-500 text-xs uppercase tracking-wider">
                     <th className="px-5 py-3 font-medium">თარიღი</th>
+                    <th className="px-5 py-3 font-medium">ხარისხი</th>
                     <th className="px-5 py-3 font-medium">კონტაქტი</th>
                     <th className="px-5 py-3 font-medium">ბოტი</th>
                     <th className="px-5 py-3 font-medium">შეტყობინება</th>
@@ -356,10 +405,20 @@ function StatusSelect({
 function LeadRow({
   lead, busy, onStatus,
 }: { lead: Lead; busy: boolean; onStatus: (s: LeadStatus) => void }) {
+  const s = SCORE_META[lead.score];
   return (
     <tr className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
       <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
         {formatDate(lead.createdAt)}
+      </td>
+      <td className="px-5 py-4">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${s.color} ${s.ring}`}
+          title={`Lead score: ${s.label}`}
+        >
+          <span>{s.emoji}</span>
+          {s.label}
+        </span>
       </td>
       <td className="px-5 py-4">
         <div className="flex flex-col gap-0.5">
@@ -400,11 +459,19 @@ function LeadRow({
 function LeadCardMobile({
   lead, busy, onStatus,
 }: { lead: Lead; busy: boolean; onStatus: (s: LeadStatus) => void }) {
+  const s = SCORE_META[lead.score];
   return (
     <div className="p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          {lead.name && <p className="text-white font-medium truncate">{lead.name}</p>}
+          <div className="flex items-center gap-2 mb-0.5">
+            {lead.name && <p className="text-white font-medium truncate">{lead.name}</p>}
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${s.color} ${s.ring} shrink-0`}
+            >
+              {s.emoji} {s.label}
+            </span>
+          </div>
           <p className="text-gray-500 text-[11px]">{formatDate(lead.createdAt)} · {lead.botName}</p>
         </div>
         <StatusSelect value={lead.status} busy={busy} onChange={onStatus} />
