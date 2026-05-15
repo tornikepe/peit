@@ -48,6 +48,7 @@ const I18N: Record<Lang, {
   errorLoad:     string;
   errorSend:     string;
   errorInvalidPhone: string;
+  errorRateLimited: string;
   retry:         string;
   morningHi:     string;
   afternoonHi:   string;
@@ -74,6 +75,7 @@ const I18N: Record<Lang, {
     errorLoad:    'ჩატის ჩატვირთვა ვერ მოხერხდა.',
     errorSend:    'ვერ გავგზავნე. ცადე ისევ.',
     errorInvalidPhone: 'ნომრის ფორმატი არასწორია',
+    errorRateLimited: 'ძალიან ბევრი მცდელობა — სცადე 10 წუთში ისევ',
     retry:        'სცადე ისევ',
     morningHi:    'დილა მშვიდობისა',
     afternoonHi:  'გამარჯობა',
@@ -99,6 +101,7 @@ const I18N: Record<Lang, {
     gdprRequired: 'Consent is required',
     errorLoad:    'Failed to load chat.',
     errorSend:    'Couldn\'t send. Try again.',
+    errorRateLimited: 'Too many attempts — try again in 10 minutes',
     errorInvalidPhone: 'Invalid phone format',
     retry:        'Retry',
     morningHi:    'Good morning',
@@ -125,6 +128,7 @@ const I18N: Record<Lang, {
     gdprRequired: 'Согласие обязательно',
     errorLoad:    'Не удалось загрузить чат.',
     errorSend:    'Не удалось отправить. Попробуйте снова.',
+    errorRateLimited: 'Слишком много попыток — попробуйте через 10 минут',
     errorInvalidPhone: 'Неверный формат телефона',
     retry:        'Повторить',
     morningHi:    'Доброе утро',
@@ -443,6 +447,7 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         if (code === 'INVALID_PHONE')          setLeadError(ui.errorInvalidPhone);
         else if (code === 'INVALID_EMAIL')     setLeadError(ui.leadEmail);
         else if (code === 'GDPR_CONSENT_REQUIRED') setLeadError(ui.gdprRequired);
+        else if (code === 'RATE_LIMITED')      setLeadError(ui.errorRateLimited);
         else                                   setLeadError(ui.errorSend);
         return;
       }
