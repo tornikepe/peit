@@ -13,7 +13,7 @@ import { eq, sql } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
 import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
-import { scoreLead, isValidPhone } from '@/lib/lead-score';
+import { scoreLead, isValidPhone, isValidEmail } from '@/lib/lead-score';
 import { sendNewLeadEmail, isEmailAvailable } from '@/lib/email';
 
 export const runtime = 'nodejs';
@@ -67,7 +67,7 @@ export async function POST(
 
   // ── Field validation ──────────────────────────────────────────────────
   if (!email && !phone) return corsError(400, 'EMAIL_OR_PHONE_REQUIRED');
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (email && !isValidEmail(email)) {
     return corsError(400, 'INVALID_EMAIL');
   }
   if (phone && !isValidPhone(phone)) {

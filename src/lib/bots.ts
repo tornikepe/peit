@@ -112,10 +112,6 @@ export function createFaqId(): string {
   return 'faq_' + Math.random().toString(36).slice(2, 8);
 }
 
-export function createChunkId(): string {
-  return 'ck_' + Math.random().toString(36).slice(2, 8);
-}
-
 export function makeNewBot(partial: Partial<Bot> = {}): Bot {
   const now = new Date().toISOString();
   return {
@@ -230,32 +226,3 @@ export function searchKnowledge(input: string, bot: Bot): string | null {
   return heading ? `**${heading}**\n${trimmed}` : trimmed;
 }
 
-/**
- * Main reply function — 3-tier lookup:
- * 1. FAQ exact/keyword match
- * 2. Knowledge chunk search (scraped website content)
- * 3. Fallback message
- */
-/**
- * Synchronous keyword-only reply. Kept for client-side previews that don't
- * have access to the AI engine (e.g. local-mode fallback). The real reply
- * path used by the widget API is `answer()` in `lib/answer-engine.ts`,
- * which adds RAG on top of these tiers.
- */
-export function botReply(
-  input: string,
-  bot: Bot,
-  lang: BotLang,
-): { text: string; source: 'faq' | 'knowledge' | 'ai' | 'fallback' } {
-  const faqAnswer = matchFaq(input, bot);
-  if (faqAnswer) return { text: faqAnswer, source: 'faq' };
-
-  const knowledgeAnswer = searchKnowledge(input, bot);
-  if (knowledgeAnswer) return { text: knowledgeAnswer, source: 'knowledge' };
-
-  const fallback =
-    bot.fallback[lang] ??
-    bot.fallback[bot.primaryLang] ??
-    DEFAULT_FALLBACKS[lang];
-  return { text: fallback, source: 'fallback' };
-}
