@@ -61,3 +61,17 @@ export function isValidPhone(raw: string): boolean {
   if (trimmed.length < 7 || trimmed.length > 20) return false;
   return /^[+]?[\d\s\-()]+$/.test(trimmed);
 }
+
+/**
+ * RFC-5322-lite email validation. Rejects consecutive dots, leading/trailing
+ * dots in local-part, and bare-domain hostnames. Caps total length at 254
+ * (SMTP-compliant). Intentionally stricter than the previous one-liner so
+ * we don't accept `foo..bar@example.com` or `foo@bar`.
+ */
+export function isValidEmail(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (trimmed.length < 5 || trimmed.length > 254) return false;
+  // local-part: no leading/trailing dot, no consecutive dots
+  // domain: at least one dot, TLD ≥ 2 chars, no consecutive dots
+  return /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/.test(trimmed);
+}
