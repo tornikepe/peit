@@ -9,6 +9,9 @@ export interface PlanLimits {
   bots: number;
   /** Max messages handled per billing period (per user). */
   messagesPerMonth: number;
+  /** Hard ceiling on Claude tokens billed per period (input + output, excluding
+   *  cached reads). Acts as cost shield against runaway prompts. */
+  tokensPerMonth: number;
   /** Max chunks per bot (controls AI Index cost). */
   chunksPerBot: number;
   /** Max FAQ entries per bot. */
@@ -19,10 +22,13 @@ export interface PlanLimits {
   removeBranding: boolean;
 }
 
+// Token caps sized to comfortably exceed `messagesPerMonth × ~600 tokens/reply`
+// with headroom for system-prompt + chunk grounding. Enterprise stays unbounded.
 export const PLAN_LIMITS: Record<PlanSlug, PlanLimits> = {
   basic: {
     bots:            1,
     messagesPerMonth: 1_000,
+    tokensPerMonth:  2_000_000,
     chunksPerBot:    50,
     faqsPerBot:      20,
     domainAllowlist: false,
@@ -31,6 +37,7 @@ export const PLAN_LIMITS: Record<PlanSlug, PlanLimits> = {
   pro: {
     bots:            5,
     messagesPerMonth: 10_000,
+    tokensPerMonth:  20_000_000,
     chunksPerBot:    200,
     faqsPerBot:      100,
     domainAllowlist: true,
@@ -39,6 +46,7 @@ export const PLAN_LIMITS: Record<PlanSlug, PlanLimits> = {
   ultimate: {
     bots:            20,
     messagesPerMonth: 100_000,
+    tokensPerMonth:  200_000_000,
     chunksPerBot:    1_000,
     faqsPerBot:      500,
     domainAllowlist: true,
@@ -47,6 +55,7 @@ export const PLAN_LIMITS: Record<PlanSlug, PlanLimits> = {
   enterprise: {
     bots:            Number.POSITIVE_INFINITY,
     messagesPerMonth: Number.POSITIVE_INFINITY,
+    tokensPerMonth:  Number.POSITIVE_INFINITY,
     chunksPerBot:    Number.POSITIVE_INFINITY,
     faqsPerBot:      Number.POSITIVE_INFINITY,
     domainAllowlist: true,

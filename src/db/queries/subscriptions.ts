@@ -19,6 +19,9 @@ export interface EffectiveSubscription {
   currentPeriodStart: Date;
   currentPeriodEnd:   Date | null;
   messagesThisPeriod: number;
+  tokensInputThisPeriod:  number;
+  tokensOutputThisPeriod: number;
+  tokensCachedThisPeriod: number;
   /** True when the bot is allowed to respond. */
   usable:             boolean;
 }
@@ -79,6 +82,9 @@ export async function getOrCreateSubscription(
         currentPeriodStart: newStart,
         currentPeriodEnd:   newEnd,
         messagesThisPeriod: 0,
+        tokensInputThisPeriod:  0,
+        tokensOutputThisPeriod: 0,
+        tokensCachedThisPeriod: 0,
         status:             nextStatus,
         updatedAt:          new Date(),
       })
@@ -96,6 +102,9 @@ export async function getOrCreateSubscription(
     currentPeriodStart: sub.currentPeriodStart,
     currentPeriodEnd:   sub.currentPeriodEnd,
     messagesThisPeriod: sub.messagesThisPeriod,
+    tokensInputThisPeriod:  sub.tokensInputThisPeriod,
+    tokensOutputThisPeriod: sub.tokensOutputThisPeriod,
+    tokensCachedThisPeriod: sub.tokensCachedThisPeriod,
     usable:             isSubscriptionUsable(sub.status as SubStatus, sub.trialEndsAt),
   };
 }
@@ -109,6 +118,30 @@ export async function incrementMessageCount(userId: string): Promise<void> {
       updatedAt:          new Date(),
     })
     .where(eq(schema.subscriptions.userId, userId));
+}
+
+/**
+ * Bump Claude token usage counters. Best-effort — never throws.
+ * `inputTokens` is billed tokens (already excludes cached reads in the SDK
+ * response shape); `cachedTokens` is stored separately for analytics.
+ */
+export async function incrementTokenUsage(
+  userId: string,
+  delta: { inputTokens: number; outputTokens: number; cachedTokens: number },
+): Promise<void> {
+  try {
+    const db = requireDb();
+    await db.update(schema.subscriptions)
+      .set({
+        tokensInputThisPeriod:  sql`${schema.subscriptions.tokensInputThisPeriod}  + ${delta.inputTokens}`,
+        tokensOutputThisPeriod: sql`${schema.subscriptions.tokensOutputThisPeriod} + ${delta.outputTokens}`,
+        tokensCachedThisPeriod: sql`${schema.subscriptions.tokensCachedThisPeriod} + ${delta.cachedTokens}`,
+        updatedAt:              new Date(),
+      })
+      .where(eq(schema.subscriptions.userId, userId));
+  } catch (e) {
+    console.error('[subscriptions] incrementTokenUsage failed:', e);
+  }
 }
 
 /**
@@ -177,6 +210,9 @@ export async function syncLsSubscription(
         trialEndsAt:        snapshot.trialEndsAt,
         cancelAtPeriodEnd:  snapshot.cancelAtPeriodEnd,
         messagesThisPeriod: periodChanged ? 0 : existing.messagesThisPeriod,
+        tokensInputThisPeriod:  periodChanged ? 0 : existing.tokensInputThisPeriod,
+        tokensOutputThisPeriod: periodChanged ? 0 : existing.tokensOutputThisPeriod,
+        tokensCachedThisPeriod: periodChanged ? 0 : existing.tokensCachedThisPeriod,
         updatedAt:          new Date(),
       })
       .where(eq(schema.subscriptions.id, existing.id));

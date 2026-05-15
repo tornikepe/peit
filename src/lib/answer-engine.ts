@@ -15,7 +15,7 @@ import {
   type Bot, type BotLang,
 } from './bots';
 import { embedOne, isEmbeddingsAvailable } from './embeddings';
-import { generateAnswer, isClaudeAvailable, type RetrievedChunk } from './claude';
+import { generateAnswer, isClaudeAvailable, type RetrievedChunk, type ClaudeUsage } from './claude';
 import {
   searchChunksByVector, type RetrievedChunk as DbChunk,
 } from '@/db/queries/chunks';
@@ -29,6 +29,8 @@ export interface AnswerResult {
   groundedChunkIds?: string[];
   /** Top retrieval scores for debugging/analytics. */
   retrievalScores?: number[];
+  /** Token usage when source is 'ai'. */
+  usage?: ClaudeUsage;
 }
 
 interface EngineInput {
@@ -89,7 +91,7 @@ export async function answer(input: EngineInput): Promise<AnswerResult> {
       ];
     }
 
-    const aiText = await generateAnswer({
+    const ai = await generateAnswer({
       question:   query,
       chunks,
       botName:    bot.name,
@@ -100,12 +102,13 @@ export async function answer(input: EngineInput): Promise<AnswerResult> {
       history,
     });
 
-    if (aiText) {
+    if (ai) {
       return {
-        text: aiText,
+        text: ai.text,
         source: 'ai',
         groundedChunkIds,
         retrievalScores,
+        usage: ai.usage,
       };
     }
   }

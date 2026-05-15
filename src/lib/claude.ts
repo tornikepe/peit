@@ -1,11 +1,23 @@
 // Anthropic Claude client for grounded answer generation.
-// Returns null when ANTHROPIC_API_KEY is not set so callers can fall back.
+// Uses the official SDK with prompt caching on the system prompt + retrieved
+// chunks. Returns null when ANTHROPIC_API_KEY is not set so the answer engine
+// can fall back to keyword search.
+//
+// Model: claude-haiku-4-5 — replacement for the retired claude-3-5-haiku.
+// Cheap + fast (1$/5$ per 1M tokens, 200K context), well-suited for a
+// customer-support chatbot SaaS at our price tier.
 
+import Anthropic from '@anthropic-ai/sdk';
 import type { BotLang, BotTone } from './bots';
 
-const API     = 'https://api.anthropic.com/v1/messages';
-const MODEL   = 'claude-3-5-haiku-20241022'; // cheap, fast, good for FAQ-style answers
-const VERSION = '2023-06-01';
+const MODEL = 'claude-haiku-4-5';
+
+let cached: Anthropic | null = null;
+function getClient(): Anthropic | null {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!cached) cached = new Anthropic();
+  return cached;
+}
 
 export function isClaudeAvailable(): boolean {
   return !!process.env.ANTHROPIC_API_KEY;
@@ -16,6 +28,17 @@ export interface RetrievedChunk {
   content: string;
   /** Higher = more relevant (cosine similarity score, 0..1). */
   score?: number;
+}
+
+export interface ClaudeUsage {
+  inputTokens:  number;
+  outputTokens: number;
+  cachedTokens: number;
+}
+
+export interface AnswerResultAi {
+  text:  string;
+  usage: ClaudeUsage;
 }
 
 const TONE_DESC: Record<BotTone, string> = {
@@ -42,73 +65,144 @@ interface AnswerInput {
   history?:     { role: 'user' | 'assistant'; content: string }[];
 }
 
-interface ClaudeResponse {
-  content: { type: string; text?: string }[];
-  stop_reason?: string;
-  usage?: { input_tokens: number; output_tokens: number };
+/**
+ * Build the system-prompt blocks. The frozen instructions block is cached
+ * (5-min TTL) so repeated requests for the same bot pay ~0.1× input cost.
+ * The retrieved-chunks block is volatile and intentionally placed AFTER the
+ * cache breakpoint — it changes per question so it'd never cache anyway.
+ */
+function buildSystem(input: AnswerInput): Anthropic.TextBlockParam[] {
+  const frozen =
+    `You are an AI assistant for "${input.botName}"${input.industry ? ` (${input.industry})` : ''}.\n` +
+    `Tone: ${TONE_DESC[input.tone]}\n` +
+    `Language: reply in ${LANG_DESC[input.lang]}.\n\n` +
+    `INSTRUCTIONS:\n` +
+    `- Answer ONLY using the CONTEXT below. Do not invent facts.\n` +
+    `- If the answer is not in the context, politely say so and suggest contacting the team.\n` +
+    `- Keep answers concise: 2–4 sentences unless the user asks for detail.\n` +
+    `- Use markdown sparingly (**bold**, bullet lists, links). No code blocks.\n` +
+    `- Do not mention "context", "knowledge base", or "I was given documents".\n` +
+    (input.websiteUrl ? `- For more info, you may direct users to ${input.websiteUrl}.\n` : '');
+
+  const contextBlocks = input.chunks.length
+    ? 'CONTEXT:\n' + input.chunks
+        .map((c, i) => `### [${i + 1}] ${c.heading}\n${c.content.slice(0, 1500)}`)
+        .join('\n\n')
+    : 'CONTEXT: (no information found — politely tell the user to contact the team.)';
+
+  // Cache the frozen block; leave the volatile context uncached.
+  // Min cacheable prefix on Haiku 4.5 is 4096 tokens — short prompts silently
+  // won't cache (no error, just zero `cache_read_input_tokens`).
+  return [
+    { type: 'text', text: frozen, cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: contextBlocks },
+  ];
+}
+
+function buildMessages(input: AnswerInput): Anthropic.MessageParam[] {
+  return [
+    ...(input.history ?? []).slice(-6),
+    { role: 'user', content: input.question },
+  ];
 }
 
 /**
- * Build a grounded answer from retrieved chunks using Claude.
- * Returns null when Claude is not configured or the call fails —
- * the caller should fall back to a deterministic strategy.
+ * Non-streaming answer generation. Returns null on missing key / API failure
+ * so the caller can fall back to keyword search.
  */
-export async function generateAnswer(input: AnswerInput): Promise<string | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-
-  const contextBlocks = input.chunks
-    .map((c, i) => `### [${i + 1}] ${c.heading}\n${c.content.slice(0, 1500)}`)
-    .join('\n\n');
-
-  const system = [
-    `You are an AI assistant for "${input.botName}"${input.industry ? ` (${input.industry})` : ''}.`,
-    `Tone: ${TONE_DESC[input.tone]}`,
-    `Language: reply in ${LANG_DESC[input.lang]}.`,
-    '',
-    'INSTRUCTIONS:',
-    '- Answer ONLY using the CONTEXT below. Do not invent facts.',
-    '- If the answer is not in the context, politely say so and suggest contacting the team.',
-    '- Keep answers concise: 2–4 sentences unless the user asks for detail.',
-    '- Use markdown sparingly (**bold**, bullet lists, links). No code blocks.',
-    '- Do not mention "context", "knowledge base", or "I was given documents".',
-    input.websiteUrl ? `- For more info, you may direct users to ${input.websiteUrl}.` : '',
-    '',
-    contextBlocks ? 'CONTEXT:\n' + contextBlocks : 'CONTEXT: (no information found)',
-  ].filter(Boolean).join('\n');
-
-  const messages = [
-    ...(input.history ?? []).slice(-6),
-    { role: 'user', content: input.question } as const,
-  ];
+export async function generateAnswer(input: AnswerInput): Promise<AnswerResultAi | null> {
+  const client = getClient();
+  if (!client) return null;
 
   try {
-    const res = await fetch(API, {
-      method: 'POST',
-      headers: {
-        'x-api-key':         apiKey,
-        'anthropic-version': VERSION,
-        'content-type':      'application/json',
-      },
-      body: JSON.stringify({
-        model:       MODEL,
-        max_tokens:  600,
-        temperature: 0.4,
-        system,
-        messages,
-      }),
+    const res = await client.messages.create({
+      model:       MODEL,
+      max_tokens:  600,
+      system:      buildSystem(input),
+      messages:    buildMessages(input),
     });
 
-    if (!res.ok) {
-      console.error('[claude] error:', res.status, (await res.text()).slice(0, 500));
-      return null;
+    const text = res.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map(b => b.text)
+      .join('')
+      .trim();
+
+    if (!text) return null;
+
+    return {
+      text,
+      usage: {
+        inputTokens:  res.usage.input_tokens ?? 0,
+        outputTokens: res.usage.output_tokens ?? 0,
+        cachedTokens: res.usage.cache_read_input_tokens ?? 0,
+      },
+    };
+  } catch (e) {
+    if (e instanceof Anthropic.APIError) {
+      console.error('[claude]', e.status, e.message);
+    } else {
+      console.error('[claude] failed:', e);
+    }
+    return null;
+  }
+}
+
+/**
+ * Streaming variant. Yields text deltas as they arrive, then resolves with
+ * the final `usage` once the stream completes. Used by the SSE endpoint to
+ * give the widget a typewriter experience.
+ */
+export async function* streamAnswer(
+  input: AnswerInput,
+): AsyncGenerator<
+  | { type: 'delta'; text: string }
+  | { type: 'done';  text: string; usage: ClaudeUsage },
+  void,
+  unknown
+> {
+  const client = getClient();
+  if (!client) return;
+
+  const stream = client.messages.stream({
+    model:       MODEL,
+    max_tokens:  600,
+    system:      buildSystem(input),
+    messages:    buildMessages(input),
+  });
+
+  try {
+    for await (const event of stream) {
+      if (
+        event.type === 'content_block_delta' &&
+        event.delta.type === 'text_delta'
+      ) {
+        yield { type: 'delta', text: event.delta.text };
+      }
     }
 
-    const data = (await res.json()) as ClaudeResponse;
-    const text = data.content?.find(c => c.type === 'text')?.text?.trim();
-    return text || null;
+    const final = await stream.finalMessage();
+    const text = final.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map(b => b.text)
+      .join('')
+      .trim();
+
+    yield {
+      type:  'done',
+      text,
+      usage: {
+        inputTokens:  final.usage.input_tokens ?? 0,
+        outputTokens: final.usage.output_tokens ?? 0,
+        cachedTokens: final.usage.cache_read_input_tokens ?? 0,
+      },
+    };
   } catch (e) {
-    console.error('[claude] failed:', e);
-    return null;
+    if (e instanceof Anthropic.APIError) {
+      console.error('[claude:stream]', e.status, e.message);
+    } else {
+      console.error('[claude:stream] failed:', e);
+    }
+    // Generator just ends — caller treats this as engine failure.
   }
 }

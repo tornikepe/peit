@@ -340,6 +340,9 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   }, [input]);
 
   // ─── Send a message ─────────────────────────────────────────────────────
+  // Posts to the SSE streaming endpoint and progressively updates the
+  // in-flight bot message as deltas arrive. Falls back to a single-shot
+  // POST to /message if streaming isn't usable (no fetch streams, etc).
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text || !bot || sending) return;
@@ -347,54 +350,110 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     const userMsg: Msg = {
       id: newMsgId(), from: 'user', text, timestamp: Date.now(), status: 'sending',
     };
+    const botMsgId = newMsgId();
+    const botMsg: Msg = {
+      id: botMsgId, from: 'bot', text: '', timestamp: Date.now(),
+    };
     setInput('');
     setSending(true);
-    setMsgs(prev => [...prev, userMsg]);
+    setMsgs(prev => [...prev, userMsg, botMsg]);
 
+    const payload = JSON.stringify({
+      text,
+      lang: activeLang,
+      conversationId,
+      visitorId: queryRef.current.vid,
+      pageUrl:   queryRef.current.page,
+      pageTitle: queryRef.current.title,
+    });
+
+    let buffered = '';
+    let gotAnyDelta = false;
     try {
-      const res = await fetch(`/api/widget/${id}/message`, {
+      const res = await fetch(`/api/widget/${id}/stream`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          lang: activeLang,
-          conversationId,
-          visitorId: queryRef.current.vid,
-          pageUrl:   queryRef.current.page,
-          pageTitle: queryRef.current.title,
-        }),
+        body: payload,
       });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'SEND_FAILED');
-      if (data.conversationId) setConversationId(data.conversationId);
+      if (!res.ok) {
+        // Parse error JSON if present, otherwise throw a generic code
+        let code = 'SEND_FAILED';
+        try {
+          const errBody = await res.json() as { error?: string };
+          if (errBody?.error) code = errBody.error;
+        } catch { /* not JSON — keep generic */ }
+        throw new Error(code);
+      }
+      if (!res.body) throw new Error('NO_STREAM_BODY');
 
-      // Mark user message as sent
-      setMsgs(prev => prev.map(m => m.id === userMsg.id ? { ...m, status: 'sent' } : m));
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
 
-      // Add bot reply
-      const botMsg: Msg = {
-        id: newMsgId(),
-        from: 'bot',
-        text: data.reply,
-        source: data.source,
-        timestamp: Date.now(),
-      };
-      setMsgs(prev => [...prev, botMsg]);
+      // SSE frames are separated by a blank line. Parse "data: …" lines
+      // and JSON-decode each frame's payload.
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
 
-      // Update parent unread badge if hidden
+        let sep: number;
+        while ((sep = sseBuffer.indexOf('\n\n')) !== -1) {
+          const frame = sseBuffer.slice(0, sep);
+          sseBuffer = sseBuffer.slice(sep + 2);
+
+          const dataLine = frame.split('\n').find(l => l.startsWith('data:'));
+          if (!dataLine) continue;
+          const raw = dataLine.slice(5).trim();
+          if (!raw) continue;
+
+          let evt: { type: string; conversationId?: string; text?: string; source?: Msg['source'] };
+          try { evt = JSON.parse(raw); } catch { continue; }
+
+          if (evt.type === 'start' && evt.conversationId) {
+            setConversationId(evt.conversationId);
+          } else if (evt.type === 'delta' && typeof evt.text === 'string') {
+            gotAnyDelta = true;
+            buffered += evt.text;
+            setMsgs(prev => prev.map(m =>
+              m.id === botMsgId ? { ...m, text: buffered } : m,
+            ));
+          } else if (evt.type === 'done') {
+            setMsgs(prev => prev.map(m =>
+              m.id === botMsgId ? { ...m, source: evt.source ?? m.source } : m,
+            ));
+          } else if (evt.type === 'error') {
+            throw new Error('STREAM_ERROR');
+          }
+        }
+      }
+
+      if (!gotAnyDelta) throw new Error('EMPTY_STREAM');
+
+      // Mark user message sent now that we got at least one delta back.
+      setMsgs(prev => prev.map(m =>
+        m.id === userMsg.id ? { ...m, status: 'sent' } : m,
+      ));
+
       if (!isVisible) {
         const next = unread + 1;
         setUnread(next);
         postToParent('unread', { count: next });
       }
     } catch (e) {
-      setMsgs(prev => prev.map(m =>
-        m.id === userMsg.id ? { ...m, status: 'failed' } : m,
-      ));
+      // Streaming failed — replace the empty bot msg with an error notice
+      // and mark the user msg failed so the user can retry.
+      setMsgs(prev => prev
+        .filter(m => m.id !== botMsgId)
+        .map(m => m.id === userMsg.id ? { ...m, status: 'failed' } : m));
+      const code = e instanceof Error ? e.message : '';
+      const errText = code === 'RATE_LIMITED'
+        ? I18N[activeLang].errorRateLimited
+        : I18N[activeLang].errorSend;
       const errMsg: Msg = {
         id: newMsgId(),
         from: 'bot',
-        text: '⚠ ' + I18N[activeLang].errorSend,
+        text: '⚠ ' + errText,
         source: 'fallback',
         timestamp: Date.now(),
       };

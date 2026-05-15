@@ -9,7 +9,7 @@ import { answer } from '@/lib/answer-engine';
 import { type Bot, type BotLang } from '@/lib/bots';
 import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
 import { isOriginAllowed } from '@/lib/origin-check';
-import { getSubscriptionForBot, incrementMessageCount } from '@/db/queries/subscriptions';
+import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
 
 export const runtime = 'nodejs';
@@ -108,6 +108,17 @@ export async function POST(
       conversationId: body.conversationId,
     });
   }
+  // Cost shield: tokens cap is a hard ceiling on Claude spend. Hits much
+  // sooner than messagesPerMonth for chatty visitors with long replies.
+  const tokensUsed = sub.tokensInputThisPeriod + sub.tokensOutputThisPeriod;
+  if (tokensUsed >= planLimits.tokensPerMonth) {
+    return corsJson({
+      ok: true,
+      reply: 'ამ ბოტმა ამ თვის AI-ლიმიტი ამოწურა. ფლობელმა უნდა გადააქციოს უფრო მაღალი პლანი.',
+      source: 'fallback' as const,
+      conversationId: body.conversationId,
+    });
+  }
 
   const lang: BotLang = (body.lang ?? dbBot.primaryLang) as BotLang;
 
@@ -200,6 +211,11 @@ export async function POST(
 
     // Bump owner subscription counter (drives monthly cap)
     await incrementMessageCount(sub.userId);
+
+    // Track Claude token spend if the AI tier was hit
+    if (result.source === 'ai' && result.usage) {
+      await incrementTokenUsage(sub.userId, result.usage);
+    }
   } catch (e) {
     console.error('[widget/message] logging failed:', e);
   }

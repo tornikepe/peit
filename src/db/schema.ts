@@ -174,6 +174,12 @@ export const subscriptions = pgTable('subscriptions', {
   currentPeriodEnd:     timestamp('current_period_end'),
   /** Messages used this billing period — reset on rollover. */
   messagesThisPeriod:   integer('messages_this_period').notNull().default(0),
+  /** Claude input tokens billed this period (excludes cached reads). */
+  tokensInputThisPeriod:  integer('tokens_input_this_period').notNull().default(0),
+  /** Claude output tokens generated this period. */
+  tokensOutputThisPeriod: integer('tokens_output_this_period').notNull().default(0),
+  /** Cached input tokens served at ~10% cost — tracked for analytics, not billed. */
+  tokensCachedThisPeriod: integer('tokens_cached_this_period').notNull().default(0),
   /** Lemon Squeezy customer ID (numeric, stored as string). */
   lsCustomerId:         varchar('ls_customer_id', { length: 32 }),
   /** Lemon Squeezy subscription ID. */
