@@ -26,7 +26,17 @@ export default function Footer() {
   const legalLinks = [
     { label: f.terms,   href: '/terms'   },
     { label: f.privacy, href: '/privacy' },
+    { label: f.gdpr,    href: '/gdpr'    },
+    { label: f.cookies, href: '/cookies' },
   ];
+
+  function openCookiePrefs() {
+    // Bridge to CookieConsent — exposed on `window` after mount.
+    const w = window as unknown as { __peit_open_cookie_prefs?: () => void };
+    if (typeof w.__peit_open_cookie_prefs === 'function') {
+      w.__peit_open_cookie_prefs();
+    }
+  }
 
   return (
     <footer className="border-t border-white/[0.06] mt-auto">
@@ -105,6 +115,14 @@ export default function Footer() {
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <button
+                    onClick={openCookiePrefs}
+                    className="text-gray-500 hover:text-gray-300 text-sm transition-colors text-left cursor-pointer"
+                  >
+                    {f.cookiePrefs}
+                  </button>
+                </li>
               </ul>
               <p className="text-white font-semibold text-sm mt-6 mb-4">{f.support}</p>
               <a href={`mailto:${f.email}`} className="text-gray-500 hover:text-gray-300 text-sm transition-colors">

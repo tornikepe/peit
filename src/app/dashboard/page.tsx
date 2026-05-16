@@ -44,6 +44,9 @@ export default async function DashboardPage() {
             <Link href="/dashboard/billing" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
               Billing
             </Link>
+            <Link href="/dashboard/privacy" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
+              Privacy
+            </Link>
           </nav>
 
           <div className="flex items-center gap-3">
