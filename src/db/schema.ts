@@ -36,12 +36,37 @@ export const leadScoreEnum = pgEnum('lead_score', ['cold', 'warm', 'hot']);
 // ─── users ─────────────────────────────────────────────────────────────────
 // Synced from Clerk via lazy provisioning (see src/db/queries/users.ts).
 
+/**
+ * Email opt-in flags. Transactional emails (billing receipt, account
+ * deletion confirmation, lead-capture confirmation to visitors) are NOT
+ * controlled by these flags — they're contractually required. Everything
+ * else is opt-out per category.
+ */
+export interface EmailPrefs {
+  /** "You have a new lead" notifications to the bot owner. */
+  leadAlerts:     boolean;
+  /** Marketing — product news, feature launches, tips. */
+  productUpdates: boolean;
+  /** Trial-ending (3 days before) and trial-ended reminders. */
+  trialReminders: boolean;
+}
+
+export const DEFAULT_EMAIL_PREFS: EmailPrefs = {
+  leadAlerts:     true,
+  productUpdates: true,
+  trialReminders: true,
+};
+
 export const users = pgTable('users', {
   id:        uuid('id').primaryKey().defaultRandom(),
   clerkId:   varchar('clerk_id', { length: 64 }).notNull(),
   email:     varchar('email', { length: 255 }).notNull(),
   name:      varchar('name', { length: 120 }),
   imageUrl:  text('image_url'),
+  /** Preferred language for emails — defaults to Georgian (the primary market). */
+  locale:    varchar('locale', { length: 4 }).notNull().default('ka'),
+  /** Per-category opt-in toggles. See EmailPrefs above. */
+  emailPrefs: jsonb('email_prefs').$type<EmailPrefs>().notNull().default(DEFAULT_EMAIL_PREFS),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, t => ({
@@ -187,6 +212,14 @@ export const subscriptions = pgTable('subscriptions', {
   /** Lemon Squeezy variant ID currently active (so we can detect plan changes). */
   lsVariantId:          varchar('ls_variant_id', { length: 32 }),
   cancelAtPeriodEnd:    boolean('cancel_at_period_end').notNull().default(false),
+  /** Set when the welcome email is sent on first provisioning. Prevents
+   *  duplicate sends if the user row is touched again before the worker has
+   *  flushed the email queue. */
+  welcomeEmailSentAt:   timestamp('welcome_email_sent_at'),
+  /** Set when the "your trial ends in 3 days" email is sent. NULL = not yet. */
+  trialReminderSentAt:  timestamp('trial_reminder_sent_at'),
+  /** Set when the "your trial ended" email is sent. NULL = not yet. */
+  trialEndedNotifiedAt: timestamp('trial_ended_notified_at'),
   createdAt:            timestamp('created_at').defaultNow().notNull(),
   updatedAt:            timestamp('updated_at').defaultNow().notNull(),
 }, t => ({

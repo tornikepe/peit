@@ -2,17 +2,24 @@
 
 // Dashboard → Privacy & Data
 // GDPR self-service: export everything we hold + permanently delete the
-// account. Cookie preferences can also be re-opened from here.
+// account. Cookie preferences and email subscription controls also live here.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import {
   ArrowLeft, Download, Trash2, AlertTriangle, Loader2, ShieldCheck,
-  Cookie, ExternalLink, CheckCircle2,
+  Cookie, ExternalLink, CheckCircle2, Mail, Globe,
 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
+
+type Locale = 'ka' | 'en' | 'ru';
+interface EmailPrefs {
+  leadAlerts:     boolean;
+  productUpdates: boolean;
+  trialReminders: boolean;
+}
 
 export default function PrivacyDataPage() {
   const router    = useRouter();
@@ -25,6 +32,62 @@ export default function PrivacyDataPage() {
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting]       = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // ── Email preferences ─────────────────────────────────────────────────
+  const [prefs, setPrefs]         = useState<EmailPrefs | null>(null);
+  const [locale, setLocale]       = useState<Locale>('ka');
+  const [prefsLoading, setPrefsLoading] = useState(true);
+  const [prefsBusy, setPrefsBusy] = useState(false);
+  const [prefsSaved, setPrefsSaved] = useState(false);
+  const [prefsError, setPrefsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/me/email-preferences')
+      .then(r => r.json())
+      .then(d => {
+        if (!alive) return;
+        if (d.ok) {
+          setPrefs(d.prefs);
+          setLocale(d.locale);
+        } else {
+          setPrefsError(d.message ?? d.error ?? 'ვერ ჩაიტვირთა');
+        }
+      })
+      .catch(e => {
+        if (alive) setPrefsError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+      })
+      .finally(() => { if (alive) setPrefsLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  async function patchPrefs(patch: Partial<EmailPrefs> & { locale?: Locale }) {
+    if (prefsBusy) return;
+    setPrefsBusy(true);
+    setPrefsSaved(false);
+    setPrefsError(null);
+    try {
+      const res = await fetch('/api/me/email-preferences', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body:    JSON.stringify(patch),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.ok) {
+        setPrefsError(d.message ?? d.error ?? `Failed (${res.status})`);
+        return;
+      }
+      setPrefs(d.prefs);
+      setLocale(d.locale);
+      setPrefsSaved(true);
+      // Hide the "saved" pill after 2s — non-blocking, never cancelled.
+      setTimeout(() => setPrefsSaved(false), 2000);
+    } catch (e) {
+      setPrefsError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+    } finally {
+      setPrefsBusy(false);
+    }
+  }
 
   async function handleExport() {
     setExporting(true);
@@ -192,6 +255,89 @@ export default function PrivacyDataPage() {
           </div>
         </section>
 
+        {/* Email preferences card */}
+        <section className="glass rounded-2xl p-6 mb-5">
+          <div className="flex items-start gap-4 mb-5">
+            <div className="w-11 h-11 rounded-xl bg-cyan-500/10 ring-1 ring-cyan-500/25 flex items-center justify-center shrink-0">
+              <Mail className="w-5 h-5 text-cyan-300" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-semibold mb-1">Email არჩევანი</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                გადაწყვიტე რომელი email-ის მიღება გინდა. ბილინგი და უსაფრთხოების შეტყობინება ყოველთვის ჩართულია.
+              </p>
+            </div>
+            {prefsSaved && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full shrink-0">
+                <CheckCircle2 className="w-3 h-3" /> შენახულია
+              </span>
+            )}
+          </div>
+
+          {prefsLoading ? (
+            <div className="py-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
+            </div>
+          ) : prefs ? (
+            <div className="flex flex-col gap-3">
+              <PrefToggle
+                label="ლიდის შეტყობინებები"
+                desc="როცა ბოტი ახალ ლიდს დააფიქსირებს — email-ი ცხელ ლიდზე ხდება."
+                value={prefs.leadAlerts}
+                disabled={prefsBusy}
+                onChange={v => patchPrefs({ leadAlerts: v })}
+              />
+              <PrefToggle
+                label="ტრიალის შეხსენებები"
+                desc="3 დღით ადრე და ტრიალის ბოლოს — რომ AI არ შეგიფერხდეს."
+                value={prefs.trialReminders}
+                disabled={prefsBusy}
+                onChange={v => patchPrefs({ trialReminders: v })}
+              />
+              <PrefToggle
+                label="პროდუქტის სიახლეები"
+                desc="ფიჩერების გამოშვება, ტიპები, წინსვლის ისტორიები — თვეში მაქს. 2-ჯერ."
+                value={prefs.productUpdates}
+                disabled={prefsBusy}
+                onChange={v => patchPrefs({ productUpdates: v })}
+              />
+
+              <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                <div className="flex items-center gap-3 mb-2">
+                  <Globe className="w-4 h-4 text-gray-500" />
+                  <p className="text-white text-sm font-medium">Email-ის ენა</p>
+                </div>
+                <p className="text-gray-500 text-xs mb-3">გადაგზავნილი email-ები ამ ენაზე იქნება.</p>
+                <div className="inline-flex rounded-xl border border-white/[0.08] bg-white/[0.02] p-1">
+                  {(['ka', 'en', 'ru'] as const).map(l => (
+                    <button
+                      key={l}
+                      onClick={() => patchPrefs({ locale: l })}
+                      disabled={prefsBusy || locale === l}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        locale === l
+                          ? 'bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {l === 'ka' ? '🇬🇪 ქართული' : l === 'en' ? '🇬🇧 English' : '🇷🇺 Русский'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {prefsError && (
+                <div className="mt-3 flex items-start gap-2 text-xs">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-red-300">{prefsError}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm">{prefsError ?? '—'}</p>
+          )}
+        </section>
+
         {/* Legal links card */}
         <section className="glass rounded-2xl p-6 mb-10">
           <h3 className="text-white font-semibold mb-3">სამართლებრივი დოკუმენტები</h3>
@@ -294,6 +440,46 @@ export default function PrivacyDataPage() {
           </p>
         </section>
       </main>
+    </div>
+  );
+}
+
+// ─── PrefToggle ───────────────────────────────────────────────────────────
+// Row with label + description + a switch on the right. Disabled state is
+// visually softer; the parent gates rapid double-clicks via `prefsBusy`.
+
+function PrefToggle({
+  label, desc, value, disabled, onChange,
+}: {
+  label:    string;
+  desc:     string;
+  value:    boolean;
+  disabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3">
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-medium mb-0.5">{label}</p>
+        <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+      </div>
+      <button
+        role="switch"
+        aria-checked={value}
+        aria-label={label}
+        onClick={() => onChange(!value)}
+        disabled={disabled}
+        className={`relative w-10 h-5.5 rounded-full transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
+          value ? 'bg-cyan-500' : 'bg-white/[0.1]'
+        }`}
+        style={{ width: '40px', height: '22px' }}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-[18px] h-[18px] rounded-full bg-white shadow transition-transform ${
+            value ? 'translate-x-[18px]' : ''
+          }`}
+        />
+      </button>
     </div>
   );
 }

@@ -30,11 +30,6 @@ interface LeadBody {
   gdprText?:       string;
 }
 
-function appUrl(req: Request): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  try { return new URL(req.url).origin; } catch { return 'http://localhost:3000'; }
-}
-
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -84,7 +79,7 @@ export async function POST(
 
   const owner = await db.query.users.findFirst({
     where: eq(schema.users.id, bot.ownerId),
-    columns: { id: true, email: true },
+    columns: { id: true, email: true, name: true, locale: true, emailPrefs: true },
   });
 
   // ── Score lead before insert ──────────────────────────────────────────
@@ -114,12 +109,18 @@ export async function POST(
       .where(eq(schema.bots.id, bot.id));
 
     // Owner notification — fire-and-forget, never blocks the response.
+    // Email module honors the owner's `leadAlerts` preference internally.
     if (owner?.email && isEmailAvailable()) {
       sendNewLeadEmail({
-        to:      owner.email,
+        to: {
+          userId:     owner.id,
+          email:      owner.email,
+          name:       owner.name,
+          locale:     owner.locale,
+          emailPrefs: owner.emailPrefs,
+        },
         botName: bot.name,
         botId:   bot.id,
-        appUrl:  appUrl(req),
         lead: {
           name, email, phone, message,
           score,

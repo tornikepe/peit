@@ -12,7 +12,8 @@
 
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
-import { getDb } from '@/db';
+import { eq } from 'drizzle-orm';
+import { getDb, schema } from '@/db';
 import { snapshotFromLsSub } from '@/lib/lemon-mapper';
 import {
   syncLsSubscription,
@@ -24,6 +25,10 @@ import {
 import type {
   LsResource, LsSubscriptionAttrs, LsSubscriptionInvoiceAttrs,
 } from '@/lib/lemon';
+import {
+  isEmailAvailable, sendPaymentFailedEmail, sendSubscriptionCancelledEmail,
+  sendSubscriptionReceiptEmail,
+} from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -118,6 +123,33 @@ function verifySignature(body: string, signature: string, secret: string): boole
   }
 }
 
+/**
+ * Look up the recipient record (email + locale + prefs) for a user.
+ * Returns null if email is unavailable or the user can't be found.
+ */
+async function loadRecipient(userId: string): Promise<{
+  userId:     string;
+  email:      string;
+  name:       string | null;
+  locale:     string;
+  emailPrefs: typeof schema.users.$inferSelect['emailPrefs'];
+} | null> {
+  const db = getDb();
+  if (!db || !isEmailAvailable()) return null;
+  const user = await db.query.users.findFirst({
+    where: eq(schema.users.id, userId),
+    columns: { id: true, email: true, name: true, locale: true, emailPrefs: true },
+  });
+  if (!user?.email) return null;
+  return {
+    userId:     user.id,
+    email:      user.email,
+    name:       user.name,
+    locale:     user.locale,
+    emailPrefs: user.emailPrefs,
+  };
+}
+
 async function handleEvent(envelope: LsWebhookEnvelope): Promise<void> {
   const event = envelope.meta.event_name;
   const customUserId = envelope.meta.custom_data?.user_id ?? null;
@@ -149,6 +181,18 @@ async function handleEvent(envelope: LsWebhookEnvelope): Promise<void> {
     const prevEnd = await getPrevPeriodEnd(subId);
     const snap = snapshotFromLsSub(resource, prevEnd);
     if (snap) await syncLsSubscription(userId, snap);
+
+    // Side-effect: notify the user once we've persisted DB state.
+    // - subscription_created   → welcome to paid plan / receipt
+    // - subscription_cancelled → confirm cancellation with end-of-access date
+    // Other events (updated/resumed/paused/unpaused) are too noisy to email
+    // — they'd spam during plan changes. LS itself sends those.
+    if (event === 'subscription_created' && snap) {
+      void dispatchReceiptEmail(userId, snap.plan, snap.status, snap.currentPeriodEnd);
+    }
+    if (event === 'subscription_cancelled' && snap) {
+      void dispatchCancelledEmail(userId, snap.currentPeriodEnd);
+    }
     return;
   }
 
@@ -158,13 +202,58 @@ async function handleEvent(envelope: LsWebhookEnvelope): Promise<void> {
     const subId = String(inv.attributes.subscription_id);
 
     if (event === 'subscription_payment_failed') {
-      // Block the bot until the customer recovers via LS dunning.
       await markSubscriptionPastDue(subId);
+      void dispatchPaymentFailedEmail(userId);
     }
-    // payment_success / payment_recovered: the corresponding
-    // subscription_updated event will sync renews_at — nothing to do here.
+    if (event === 'subscription_payment_success' || event === 'subscription_payment_recovered') {
+      // Renewal receipt — read fresh plan from our DB (it was just synced
+      // by the corresponding subscription_updated event in 99% of cases).
+      void dispatchReceiptEmailForUser(userId);
+    }
     return;
   }
 
   // Unknown / uninteresting event — silently ignore.
+}
+
+// ─── Side-effects: email helpers ──────────────────────────────────────────
+// Each runs detached from the webhook ack so a Resend hiccup never causes
+// LS to retry the whole event — that would double-count usage counters.
+
+async function dispatchReceiptEmail(
+  userId: string,
+  plan:   string,
+  status: string,
+  nextBilling: Date | null,
+): Promise<void> {
+  const to = await loadRecipient(userId);
+  if (!to) return;
+  await sendSubscriptionReceiptEmail({ to, plan, status, nextBilling })
+    .catch(e => console.error('[lemon webhook] receipt email failed:', e));
+}
+
+/** Re-read plan/status from DB and send a receipt. Used by renewal events. */
+async function dispatchReceiptEmailForUser(userId: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  const sub = await db.query.subscriptions.findFirst({
+    where: eq(schema.subscriptions.userId, userId),
+    columns: { plan: true, status: true, currentPeriodEnd: true },
+  });
+  if (!sub) return;
+  await dispatchReceiptEmail(userId, sub.plan, sub.status, sub.currentPeriodEnd);
+}
+
+async function dispatchCancelledEmail(userId: string, endsAt: Date | null): Promise<void> {
+  const to = await loadRecipient(userId);
+  if (!to) return;
+  await sendSubscriptionCancelledEmail({ to, endsAt })
+    .catch(e => console.error('[lemon webhook] cancel email failed:', e));
+}
+
+async function dispatchPaymentFailedEmail(userId: string): Promise<void> {
+  const to = await loadRecipient(userId);
+  if (!to) return;
+  await sendPaymentFailedEmail({ to })
+    .catch(e => console.error('[lemon webhook] payment-failed email failed:', e));
 }
