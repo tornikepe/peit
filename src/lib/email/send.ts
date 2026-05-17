@@ -4,16 +4,36 @@
 //
 // Env:
 //   RESEND_API_KEY    — get at https://resend.com/api-keys
-//   RESEND_FROM       — verified sender, e.g. "Peit <hi@peit.ge>".
-//                       Falls back to onboarding@resend.dev for dev testing.
+//   RESEND_FROM       — verified sender, e.g. "Peit Team <hi@peit.ge>".
+//                       Falls back to "Peit Team <onboarding@resend.dev>" for
+//                       dev testing. The display name shown in the inbox is
+//                       ALWAYS "Peit Team" — never the Resend default account
+//                       name (which would show up as "MyApplication" or
+//                       whatever was set in the Resend dashboard).
 //   NEXT_PUBLIC_APP_URL — base URL for dashboard / unsubscribe links.
 
 export function isEmailAvailable(): boolean {
   return !!process.env.RESEND_API_KEY;
 }
 
+/**
+ * Normalise the From header so the inbox always shows "Peit Team" as the
+ * sender, regardless of what env var was provided.
+ *
+ *   RESEND_FROM="legal@peit.ge"             → "Peit Team <legal@peit.ge>"
+ *   RESEND_FROM="Foo <legal@peit.ge>"       → "Peit Team <legal@peit.ge>"
+ *   RESEND_FROM unset                       → "Peit Team <onboarding@resend.dev>"
+ */
 export function fromAddress(): string {
-  return process.env.RESEND_FROM || 'Peit <onboarding@resend.dev>';
+  const DISPLAY = 'Peit Team';
+  const raw     = process.env.RESEND_FROM?.trim();
+  if (!raw) return `${DISPLAY} <onboarding@resend.dev>`;
+
+  // If the env var already has the angle-bracket form, strip the existing
+  // display name and apply ours. Otherwise treat the value as a bare address.
+  const m = raw.match(/^[^<]*<([^>]+)>\s*$/);
+  const addr = m ? m[1].trim() : raw;
+  return `${DISPLAY} <${addr}>`;
 }
 
 export function appBaseUrl(): string {

@@ -97,17 +97,27 @@ export default function ChatWidget() {
   const ui = uiText[lang];
 
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState<Message[]>([]);
+  const [msgs, setMsgs] = useState<Message[]>(() => [
+    { id: 0, from: 'bot', text: uiText[lang].greeting },
+  ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [counter, setCounter] = useState(1);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset greeting when language changes
-  useEffect(() => {
+  // Reset conversation when language changes — React 19 "derived state"
+  // pattern. Calling setState during render is the recommended replacement
+  // for the setState-in-effect anti-pattern: React detects the change,
+  // discards the pending render, and re-renders with the new state.
+  const [lastLang, setLastLang] = useState(lang);
+  if (lastLang !== lang) {
+    setLastLang(lang);
     setMsgs([{ id: 0, from: 'bot', text: uiText[lang].greeting }]);
-  }, [lang]);
+    setCounter(1);
+    setInput('');
+    setTyping(false);
+  }
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -127,11 +137,14 @@ export default function ChatWidget() {
     setInput('');
     setMsgs(prev => [...prev, { id: uid, from: 'user', text: msg }]);
     setTyping(true);
+    // Length-based typing delay — deterministic, no Math.random which the
+    // React purity linter flags. Capped so very long messages don't stall.
+    const delay = 900 + Math.min(600, msg.length * 30);
     setTimeout(() => {
       const reply = getBotResponse(msg, lang);
       setTyping(false);
       setMsgs(prev => [...prev, { id: uid + 1, from: 'bot', text: reply }]);
-    }, 900 + Math.random() * 600);
+    }, delay);
   }
 
   const quickReplyLabels: Record<string, string> = {
@@ -141,11 +154,25 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    // Positioning notes:
+    //   • bottom-24 on mobile keeps the launcher clear of the cookie-consent
+    //     banner (which spans the bottom on small viewports).
+    //   • bottom-8 on desktop sits a comfortable 32px from the edge.
+    //   • The popup uses dvh-aware max-height so it never exceeds the visible
+    //     viewport when the keyboard is open or the window is short.
+    <div className="fixed bottom-24 right-4 sm:bottom-8 sm:right-6 z-50 flex flex-col items-end gap-3">
       {/* Chat popup */}
       {open && (
-        <div className="glass rounded-2xl w-80 shadow-2xl shadow-violet-900/40 border border-white/10 overflow-hidden flex flex-col"
-          style={{ height: '460px' }}>
+        <div
+          className="rounded-2xl w-80 max-w-[calc(100vw-2rem)] shadow-2xl shadow-violet-900/40 border border-white/10 overflow-hidden flex flex-col bg-[#0d0d1a]/95 backdrop-blur-xl"
+          style={{
+            // Use dynamic viewport units so mobile browser chrome doesn't
+            // push the panel off-screen. Falls back to 100vh on browsers
+            // without dvh support.
+            height:    '480px',
+            maxHeight: 'min(480px, calc(100dvh - 8rem))',
+          }}
+        >
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-violet-600/20 border-b border-white/[0.06] shrink-0">
@@ -216,7 +243,10 @@ export default function ChatWidget() {
             </div>
           )}
 
-          {/* Input */}
+          {/* Input — width is locked to the row via flex-1 + min-w-0 so a
+              long typed string never widens the panel (the row would
+              otherwise honor the input's intrinsic min-width). text-base
+              avoids the iOS Safari auto-zoom that triggers below 16px. */}
           <div className="border-t border-white/[0.06] px-3 py-3 flex items-center gap-2 shrink-0">
             <input
               ref={inputRef}
@@ -225,12 +255,13 @@ export default function ChatWidget() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') send(); }}
               placeholder={ui.placeholder}
-              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/40"
+              className="flex-1 min-w-0 bg-white/[0.06] border border-white/[0.08] rounded-xl px-3 py-2 text-base sm:text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/40"
             />
             <button
               onClick={() => send()}
               disabled={!input.trim() || typing}
               className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 flex items-center justify-center transition-colors shrink-0"
+              aria-label="გაგზავნა"
             >
               <Send className="w-3.5 h-3.5 text-white" />
             </button>
