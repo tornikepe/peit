@@ -778,7 +778,7 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
       {/* Footer */}
       <div className="px-4 py-1.5 border-t border-white/[0.04] shrink-0">
         <a
-          href="https://peit.ge"
+          href="https://peit.vercel.app"
           target="_blank"
           rel="noopener noreferrer"
           className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors block text-center"

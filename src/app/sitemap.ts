@@ -10,7 +10,7 @@
 import type { MetadataRoute } from 'next';
 import { industries } from '@/components/Industries';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://peit.ge';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://peit.vercel.app';
 
 // Alternative-page slugs — keep in sync with the lookup table in
 // src/app/alternatives/[slug]/page.tsx.

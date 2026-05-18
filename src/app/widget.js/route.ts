@@ -1,7 +1,7 @@
 // GET /widget.js
 // Public loader script. Customers paste this into their site:
 //
-//   <script src="https://peit.ge/widget.js" data-bot-id="xxx" defer></script>
+//   <script src="https://peit.vercel.app/widget.js" data-bot-id="xxx" defer></script>
 //
 // Optional data-* attributes:
 //   data-color="#7c3aed"        — overrides launcher color

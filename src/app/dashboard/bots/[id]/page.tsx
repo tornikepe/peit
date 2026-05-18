@@ -115,7 +115,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   // in dev / staging / prod without hardcoding.
   const origin = typeof window !== 'undefined'
     ? window.location.origin
-    : 'https://peit.ge';
+    : 'https://peit.vercel.app';
 
   const embedCode = `<script
   src="${origin}/widget.js"

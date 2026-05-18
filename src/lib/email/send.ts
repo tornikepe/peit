@@ -38,7 +38,7 @@ export function fromAddress(): string {
 
 export function appBaseUrl(): string {
   // Strip trailing slash to keep concatenation predictable.
-  return (process.env.NEXT_PUBLIC_APP_URL || 'https://peit.ge').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_APP_URL || 'https://peit.vercel.app').replace(/\/$/, '');
 }
 
 export interface SendArgs {

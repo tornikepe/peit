@@ -164,7 +164,7 @@ const privacy_ka: LegalDoc = {
   tocLabel: 'შინაარსი',
   intro: [
     { kind: 'p', text: `${COMPANY} (შემდგომში — "ჩვენ") პატივს სცემს თქვენს კონფიდენციალურობას. ეს დოკუმენტი ხსნის, რა მონაცემებს ვაგროვებთ, რატომ და როგორ ვუვლით.` },
-    { kind: 'p', text: `მოქმედებს ვებსაიტ peit.ge-ის, dashboard-ის და ნებისმიერ მომხმარებლის საიტზე ჩასმული ჩატ ვიჯეტისთვის.` },
+    { kind: 'p', text: `მოქმედებს ვებსაიტ peit.vercel.app-ის, dashboard-ის და ნებისმიერ მომხმარებლის საიტზე ჩასმული ჩატ ვიჯეტისთვის.` },
   ],
   sections: [
     {
@@ -561,7 +561,7 @@ const privacy_en: LegalDoc = {
   tocLabel: 'Contents',
   intro: [
     { kind: 'p', text: `${COMPANY} ("we") respects your privacy. This document explains what data we collect, why and how we handle it.` },
-    { kind: 'p', text: `It applies to peit.ge, the dashboard, and the chat widget embedded on customer websites.` },
+    { kind: 'p', text: `It applies to peit.vercel.app, the dashboard, and the chat widget embedded on customer websites.` },
   ],
   sections: [
     { id: 'controller', title: '1. Data Controller', body: [
@@ -850,7 +850,7 @@ const privacy_ru: LegalDoc = {
   tocLabel: 'Содержание',
   intro: [
     { kind: 'p', text: `${COMPANY} ("мы") уважает вашу конфиденциальность. В этом документе описано, какие данные мы собираем, зачем и как с ними обращаемся.` },
-    { kind: 'p', text: `Распространяется на peit.ge, dashboard и чат-виджет на сайтах клиентов.` },
+    { kind: 'p', text: `Распространяется на peit.vercel.app, dashboard и чат-виджет на сайтах клиентов.` },
   ],
   sections: [
     { id: 'controller', title: '1. Контролёр данных', body: [
