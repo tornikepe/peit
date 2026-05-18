@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"]);
 const isWidgetRoute    = createRouteMatcher(["/widget(.*)", "/widget.js"]);
@@ -13,21 +13,25 @@ function withWidgetHeaders(res: NextResponse): NextResponse {
   return res;
 }
 
-export default process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-  ? clerkMiddleware(async (auth, req) => {
-      if (isProtectedRoute(req)) {
-        await auth.protect();
-      }
-      if (isWidgetRoute(req)) {
-        return withWidgetHeaders(NextResponse.next());
-      }
-    })
-  : (req: NextRequest) => {
-      if (isWidgetRoute(req)) {
-        return withWidgetHeaders(NextResponse.next());
-      }
-      return NextResponse.next();
-    };
+// ALWAYS register clerkMiddleware. The previous build had a conditional
+// (`process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? clerk : passthrough`)
+// that silently broke `auth()` in server components when the env var
+// wasn't visible to the build — Clerk's SDK then can't detect the
+// middleware and throws the cryptic "Clerk can't detect usage of
+// clerkMiddleware()" error.
+//
+// clerkMiddleware itself reads env vars at request time (not import time),
+// so registering it unconditionally is safe even in environments without
+// Clerk keys — the SDK then returns a clear "Missing publishable key"
+// error from auth() instead of the confusing middleware-missing one.
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    await auth.protect();
+  }
+  if (isWidgetRoute(req)) {
+    return withWidgetHeaders(NextResponse.next());
+  }
+});
 
 export const config = {
   matcher: [

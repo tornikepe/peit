@@ -115,8 +115,12 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
 
 function humanizeError(code?: string, msg?: string): string {
   switch (code) {
+    case 'DB_NOT_CONFIGURED':
+      // The database isn't reachable — paid features simply can't run yet.
+      // Avoid leaking the raw env-var name to end users; ops can read the
+      // server log if they need the diagnostic.
+      return 'სერვისი მომზადების პროცესშია — სცადე რამდენიმე წუთში, ან მოგვწერე info@peit.ge-ზე.';
     case 'LEMON_NOT_CONFIGURED':
-      // Append the diagnostic message from the server when present.
       return msg
         ? `გადახდის სისტემა ჯერ არ არის დაყენებული — ${msg}`
         : 'გადახდის სისტემა ჯერ არ არის დაყენებული. შეგიძლია დაუკავშირდე ჩვენს გუნდს.';
@@ -125,8 +129,10 @@ function humanizeError(code?: string, msg?: string): string {
         ? `ეს პლანი ჯერ არაა აქტიური — ${msg}`
         : 'ეს პლანი ჯერ არაა აქტიური. სცადე მოგვიანებით.';
     case 'LEMON_API_ERROR':         return 'გადახდის სერვისი დროებით მიუწვდომელია. სცადე მოგვიანებით.';
+    case 'AUTH_ERROR':              return 'შესვლა გჭირდება გასაგრძელებლად.';
     case 'UNAUTHORIZED':            return 'შესვლა გჭირდება გასაგრძელებლად.';
     case 'INVALID_PLAN':            return 'არასწორი პლანი.';
+    case 'INTERNAL':                return 'მცირე ხარვეზი — სცადე ხელახლა, ან მოგვწერე info@peit.ge-ზე.';
     default:                        return msg || 'შეცდომა გადახდის გაშვებისას.';
   }
 }
