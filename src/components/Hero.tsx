@@ -2,64 +2,43 @@
 
 import Link from "next/link";
 import { ArrowRight, Zap, Sparkles, MessageSquare, Bot } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
+// Static demo conversation for the hero preview card. Was previously
+// auto-played on a 10-second loop, but that made the card feel restless
+// (it kept "typing" by itself) AND the message stack grew vertically as
+// each new message faded in, so the whole card visibly resized.
+//
+// The product still shows the same conversation — we just render every
+// turn immediately on mount and lock the card height. No timers, no
+// re-renders, no surprise scroll jumps.
 const chatMessagesKa = [
-  { from: "bot",  text: "გამარჯობა! როგორ შეგიძლიათ დაგეხმაროთ? 👋", delay: 0 },
-  { from: "user", text: "მინდა ვიცოდე მიტანის ფასები",               delay: 1400 },
-  { from: "bot",  text: "თბილისში მიტანა ₾3, ბათუმში — ₾8. ₾100-ზე მეტი შეკვეთისას უფასოა! 🚚", delay: 3000 },
-  { from: "user", text: "რამდენ ხანს იღებს?",                         delay: 4600 },
-  { from: "bot",  text: "თბილისში 45-90 წუთი. ბათუმში მეორე დღეს. 📦", delay: 6000 },
+  { from: "bot",  text: "გამარჯობა! როგორ შეგიძლიათ დაგეხმაროთ? 👋" },
+  { from: "user", text: "მინდა ვიცოდე მიტანის ფასები" },
+  { from: "bot",  text: "თბილისში მიტანა ₾3, ბათუმში — ₾8. ₾100-ზე მეტი შეკვეთისას უფასოა! 🚚" },
+  { from: "user", text: "რამდენ ხანს იღებს?" },
+  { from: "bot",  text: "თბილისში 45-90 წუთი. ბათუმში მეორე დღეს. 📦" },
 ];
 
 const chatMessagesEn = [
-  { from: "bot",  text: "Hi! How can I help you today? 👋",           delay: 0 },
-  { from: "user", text: "What are your delivery prices?",             delay: 1400 },
-  { from: "bot",  text: "Tbilisi: ₾3, Batumi: ₾8. Free on orders over ₾100! 🚚", delay: 3000 },
-  { from: "user", text: "How long does delivery take?",               delay: 4600 },
-  { from: "bot",  text: "Tbilisi: 45-90 min. Batumi: next day. 📦",  delay: 6000 },
+  { from: "bot",  text: "Hi! How can I help you today? 👋" },
+  { from: "user", text: "What are your delivery prices?" },
+  { from: "bot",  text: "Tbilisi: ₾3, Batumi: ₾8. Free on orders over ₾100! 🚚" },
+  { from: "user", text: "How long does delivery take?" },
+  { from: "bot",  text: "Tbilisi: 45-90 min. Batumi: next day. 📦" },
 ];
 
 const chatMessagesRu = [
-  { from: "bot",  text: "Привет! Чем могу помочь? 👋",               delay: 0 },
-  { from: "user", text: "Сколько стоит доставка?",                   delay: 1400 },
-  { from: "bot",  text: "Тбилиси: ₾3, Батуми: ₾8. Бесплатно от ₾100! 🚚", delay: 3000 },
-  { from: "user", text: "Как долго ждать?",                           delay: 4600 },
-  { from: "bot",  text: "Тбилиси: 45-90 мин. Батуми: на следующий день. 📦", delay: 6000 },
+  { from: "bot",  text: "Привет! Чем могу помочь? 👋" },
+  { from: "user", text: "Сколько стоит доставка?" },
+  { from: "bot",  text: "Тбилиси: ₾3, Батуми: ₾8. Бесплатно от ₾100! 🚚" },
+  { from: "user", text: "Как долго ждать?" },
+  { from: "bot",  text: "Тбилиси: 45-90 мин. Батуми: на следующий день. 📦" },
 ];
 
 function AnimatedChat() {
   const { lang, t } = useLanguage();
   const msgs = lang === 'en' ? chatMessagesEn : lang === 'ru' ? chatMessagesRu : chatMessagesKa;
-
-  const [visible, setVisible] = useState<number[]>([]);
-  const [typing,  setTyping]  = useState(false);
-
-  const playSequence = (messages: typeof msgs) => {
-    setVisible([]);
-    setTyping(false);
-    messages.forEach((msg, i) => {
-      setTimeout(() => {
-        if (msg.from === 'bot' && i > 0) {
-          setTyping(true);
-          setTimeout(() => {
-            setTyping(false);
-            setVisible(v => [...v, i]);
-          }, 800);
-        } else {
-          setVisible(v => [...v, i]);
-        }
-      }, msg.delay);
-    });
-  };
-
-  useEffect(() => {
-    playSequence(msgs);
-    const loop = setInterval(() => playSequence(msgs), 10000);
-    return () => clearInterval(loop);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
 
   return (
     <div className="relative w-full max-w-md mx-auto lg:mx-0">
@@ -94,31 +73,20 @@ function AnimatedChat() {
           <div className="ml-auto text-[10px] text-gray-600 font-mono">{t.hero.chatAvg}</div>
         </div>
 
-        {/* Messages */}
-        <div className="p-5 space-y-3 min-h-[280px] bg-gradient-to-b from-transparent to-violet-950/10">
-          {msgs.map((msg, i) =>
-            visible.includes(i) ? (
-              <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                <div className={`rounded-2xl px-4 py-2.5 max-w-[82%] text-sm leading-relaxed shadow-sm ${
-                  msg.from === 'user'
-                    ? 'bg-gradient-to-br from-violet-600 to-violet-700 text-white rounded-tr-sm'
-                    : 'bg-white/[0.08] text-gray-200 rounded-tl-sm ring-1 ring-white/[0.04]'
-                }`}>
-                  {msg.text}
-                </div>
-              </div>
-            ) : null
-          )}
-          {typing && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="bg-white/[0.08] ring-1 ring-white/[0.04] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce"
-                    style={{ animationDelay: `${i * 0.15}s` }} />
-                ))}
+        {/* Messages — fixed height so the card never resizes when the user
+            switches language (which swaps the conversation copy). */}
+        <div className="p-5 space-y-3 h-[300px] overflow-hidden bg-gradient-to-b from-transparent to-violet-950/10">
+          {msgs.map((msg, i) => (
+            <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`rounded-2xl px-4 py-2.5 max-w-[82%] text-sm leading-relaxed shadow-sm ${
+                msg.from === 'user'
+                  ? 'bg-gradient-to-br from-violet-600 to-violet-700 text-white rounded-tr-sm'
+                  : 'bg-white/[0.08] text-gray-200 rounded-tl-sm ring-1 ring-white/[0.04]'
+              }`}>
+                {msg.text}
               </div>
             </div>
-          )}
+          ))}
         </div>
 
         {/* Input */}

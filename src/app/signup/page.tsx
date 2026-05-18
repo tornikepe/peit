@@ -8,6 +8,22 @@ export const metadata: Metadata = {
   description: "7-დღიანი უფასო ტრიალი. საკრედიტო ბარათი არ სჭირდება.",
 };
 
+interface SignUpPageProps {
+  searchParams: Promise<{ redirect_url?: string; plan?: string }>;
+}
+
+/**
+ * Validate the redirect target so a crafted ?redirect_url=https://evil.example
+ * can't bounce signed-up users off-site. We only allow absolute internal paths.
+ */
+function safeRedirectUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('/')) return undefined;          // must be relative
+  if (trimmed.startsWith('//')) return undefined;          // protocol-relative escape
+  return trimmed;
+}
+
 const benefits = [
   "7-დღიანი ტრიალი — სრულყოფილი წვდომა",
   "Setup 10 წუთში — კოდი არ სჭირდება",
@@ -17,7 +33,14 @@ const benefits = [
   "გაუქმება ნებისმიერ დროს",
 ];
 
-export default function SignUpPage() {
+export default async function SignUpPage({ searchParams }: SignUpPageProps) {
+  // PricingCheckoutButton sends ?redirect_url=/pricing?go=<plan> when the
+  // visitor clicks a plan while signed out. We forward that to Clerk so
+  // the user lands back on /pricing after sign-up and the auto-checkout
+  // effect there opens Lemon Squeezy immediately.
+  const sp = await searchParams;
+  const redirectUrl = safeRedirectUrl(sp.redirect_url);
+
   return (
     <div className="min-h-screen flex bg-[#07070f]">
       {/* Left panel */}
@@ -104,6 +127,8 @@ export default function SignUpPage() {
         <div className="relative w-full max-w-md">
           <SignUp
             routing="hash"
+            forceRedirectUrl={redirectUrl}
+            signInForceRedirectUrl={redirectUrl}
             appearance={{
               variables: {
                 colorPrimary: "#7c3aed",

@@ -13,7 +13,22 @@ const perks = [
   { icon: Shield, text: "SOC 2 Type II, GDPR — მონაცემები სრულად დაცულია" },
 ];
 
-export default function SignInPage() {
+interface SignInPageProps {
+  searchParams: Promise<{ redirect_url?: string }>;
+}
+
+/** Reject anything that isn't a same-origin path. Mirrors signup/page.tsx. */
+function safeRedirectUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('/')) return undefined;
+  if (trimmed.startsWith('//')) return undefined;
+  return trimmed;
+}
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const sp = await searchParams;
+  const redirectUrl = safeRedirectUrl(sp.redirect_url);
   return (
     <div className="min-h-screen flex bg-[#07070f]">
       {/* Left panel — branding */}
@@ -88,6 +103,8 @@ export default function SignInPage() {
         <div className="relative w-full max-w-md">
           <SignIn
             routing="hash"
+            forceRedirectUrl={redirectUrl}
+            signUpForceRedirectUrl={redirectUrl}
             appearance={{
               variables: {
                 colorPrimary: "#7c3aed",

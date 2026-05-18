@@ -46,10 +46,31 @@ const responses: Record<string, Record<Lang, string>> = {
   },
 };
 
-const quickReplies: Record<Lang, string[]> = {
-  ka: ['💰 ფასები', '⚙️ Setup', '📱 არხები', '🎁 ტრიალი'],
-  en: ['💰 Pricing', '⚙️ Setup', '📱 Channels', '🎁 Trial'],
-  ru: ['💰 Цены', '⚙️ Настройка', '📱 Каналы', '🎁 Триал'],
+// Quick-reply chips at the top of the chat. `label` is what the user sees;
+// `intent` is what we feed into the keyword router (the user could type the
+// same intent in any phrasing, so keeping them decoupled is cleaner than
+// the previous label-to-intent lookup table that broke on duplicate keys).
+interface QuickReply { label: string; intent: string }
+
+const quickReplies: Record<Lang, QuickReply[]> = {
+  ka: [
+    { label: '💰 ფასები',  intent: 'ფასები'  },
+    { label: '⚙️ Setup',  intent: 'setup'   },
+    { label: '📱 არხები',  intent: 'არხები'  },
+    { label: '🎁 ტრიალი',  intent: 'ტრიალი'  },
+  ],
+  en: [
+    { label: '💰 Pricing',  intent: 'pricing'  },
+    { label: '⚙️ Setup',    intent: 'setup'    },
+    { label: '📱 Channels', intent: 'channels' },
+    { label: '🎁 Trial',    intent: 'trial'    },
+  ],
+  ru: [
+    { label: '💰 Цены',      intent: 'цены'      },
+    { label: '⚙️ Настройка', intent: 'настройка' },
+    { label: '📱 Каналы',    intent: 'каналы'    },
+    { label: '🎁 Триал',     intent: 'триал'     },
+  ],
 };
 
 const uiText: Record<Lang, {
@@ -86,7 +107,7 @@ function getBotResponse(input: string, lang: Lang): string {
   const lower = input.toLowerCase();
   if (/ფა[სზ]|price|pricing|plan|пла[нь]|цен/i.test(lower)) return responses.pricing[lang];
   if (/setup|კონფი|настр|install|დაყ|ინს/i.test(lower)) return responses.setup[lang];
-  if (/არხ|channel|каналмессенд|telegram|instagram|messenger|facebook/i.test(lower)) return responses.channels[lang];
+  if (/არხ|channel|канал|мессендж|telegram|instagram|messenger|facebook/i.test(lower)) return responses.channels[lang];
   if (/trial|ტრი|триал|უფასო|free|бесплат/i.test(lower)) return responses.trial[lang];
   if (/ენ[აა]|language|язык|georgian|ქართ|рус|english/i.test(lower)) return responses.languages[lang];
   return responses.default[lang];
@@ -146,12 +167,6 @@ export default function ChatWidget() {
       setMsgs(prev => [...prev, { id: uid + 1, from: 'bot', text: reply }]);
     }, delay);
   }
-
-  const quickReplyLabels: Record<string, string> = {
-    '💰 ფასები': 'ფასები', '⚙️ Setup': 'setup', '📱 არხები': 'არხები', '🎁 ტრიალი': 'ტრიალი',
-    '💰 Pricing': 'pricing', '⚙️ Setup ': 'setup', '📱 Channels': 'channels', '🎁 Trial': 'trial',
-    '💰 Цены': 'цены', '⚙️ Настройка': 'настройка', '📱 Каналы': 'каналы', '🎁 Триал': 'триал',
-  };
 
   return (
     // Positioning notes:
@@ -233,11 +248,11 @@ export default function ChatWidget() {
             <div className="px-3 pb-2 flex flex-wrap gap-1.5 shrink-0">
               {quickReplies[lang].map(qr => (
                 <button
-                  key={qr}
-                  onClick={() => send(quickReplyLabels[qr] ?? qr)}
+                  key={qr.intent}
+                  onClick={() => send(qr.intent)}
                   className="text-xs px-3 py-1.5 rounded-full border border-violet-500/30 text-violet-300 hover:bg-violet-500/10 transition-colors"
                 >
-                  {qr}
+                  {qr.label}
                 </button>
               ))}
             </div>

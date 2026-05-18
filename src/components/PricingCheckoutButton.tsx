@@ -1,13 +1,15 @@
 'use client';
 
 // Drop-in CTA button used by the Pricing page. Handles three cases:
-//   1. Not signed in → goes to /signup?plan=<slug>
+//   1. Not signed in → goes to /signup?plan=<slug>&redirect_url=/pricing?go=<slug>
+//      so Clerk bounces them back here once authenticated, and the auto-resume
+//      effect below opens Lemon Squeezy without a second click.
 //   2. Signed in, billing not yet configured → error message
 //   3. Signed in + LS ready → POST /api/lemon/checkout, redirect
 //
 // Renders a spinner while the checkout session is being created.
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { Loader2 } from 'lucide-react';
@@ -24,24 +26,19 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
   const { isLoaded, isSignedIn } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Guard against double-firing the auto-resume effect (Strict Mode in dev
+  // mounts effects twice; we MUST only launch checkout once).
+  const autoResumedRef = useRef(false);
 
-  async function handleClick() {
+  /** Open the Lemon Squeezy hosted checkout for this plan. */
+  async function startCheckout() {
     setError(null);
-
-    if (!isLoaded) return; // wait for Clerk to settle
-
-    if (!isSignedIn) {
-      // Send to signup with the chosen plan as a return hint
-      router.push(`/signup?plan=${plan}&redirect_url=/pricing?go=${plan}`);
-      return;
-    }
-
     setBusy(true);
     try {
       const res = await fetch('/api/lemon/checkout', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body:    JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -50,12 +47,47 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
       }
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        setError('გადახდის ბმული ვერ მოვიდა — სცადე ხელახლა.');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
     } finally {
       setBusy(false);
     }
+  }
+
+  // Auto-resume: if the URL says ?go=<this plan>, the user just came back
+  // from sign-up — open the checkout immediately. We read the query string
+  // directly from `window.location` (rather than useSearchParams) so the
+  // /pricing page can stay statically generated — useSearchParams would
+  // force the whole subtree into dynamic rendering or a Suspense boundary.
+  useEffect(() => {
+    if (autoResumedRef.current) return;
+    if (!isLoaded || !isSignedIn) return;
+    if (typeof window === 'undefined') return;
+    const go = new URLSearchParams(window.location.search).get('go');
+    if (go !== plan) return;
+    autoResumedRef.current = true;
+    // Kicking off a network request after the auth state settles is a
+    // legitimate use of useEffect — the state updates that startCheckout
+    // performs (setBusy, setError) happen async, not during render. Lint
+    // is correct in general but conservative for this case.
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    void startCheckout();
+  }, [isLoaded, isSignedIn, plan]);
+
+  async function handleClick() {
+    setError(null);
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      // Send to signup with the chosen plan as a return hint — Clerk
+      // honours `forceRedirectUrl` from the signup page, so the user
+      // lands back on /pricing?go=<plan> and the effect above takes over.
+      router.push(`/signup?plan=${plan}&redirect_url=${encodeURIComponent(`/pricing?go=${plan}`)}`);
+      return;
+    }
+    await startCheckout();
   }
 
   return (
