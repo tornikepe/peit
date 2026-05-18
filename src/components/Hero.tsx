@@ -2,43 +2,185 @@
 
 import Link from "next/link";
 import { ArrowRight, Zap, Sparkles, MessageSquare, Bot } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
-// Static demo conversation for the hero preview card. Was previously
-// auto-played on a 10-second loop, but that made the card feel restless
-// (it kept "typing" by itself) AND the message stack grew vertically as
-// each new message faded in, so the whole card visibly resized.
+// Hero chat preview — replyory.com-style cycling demo.
 //
-// The product still shows the same conversation — we just render every
-// turn immediately on mount and lock the card height. No timers, no
-// re-renders, no surprise scroll jumps.
-const chatMessagesKa = [
-  { from: "bot",  text: "გამარჯობა! როგორ შეგიძლიათ დაგეხმაროთ? 👋" },
-  { from: "user", text: "მინდა ვიცოდე მიტანის ფასები" },
-  { from: "bot",  text: "თბილისში მიტანა ₾3, ბათუმში — ₾8. ₾100-ზე მეტი შეკვეთისას უფასოა! 🚚" },
-  { from: "user", text: "რამდენ ხანს იღებს?" },
-  { from: "bot",  text: "თბილისში 45-90 წუთი. ბათუმში მეორე დღეს. 📦" },
+// Each language has multiple sample conversations (delivery, hotel
+// booking, fitness membership). Every conversation has the same shape:
+// a bot greeting → user question → bot answer → user follow-up → bot
+// answer. Once the bot's last reply has been on screen for a beat, the
+// card wipes and the next conversation starts — so the visitor sees
+// fresh content on every loop instead of the same dialogue replayed.
+//
+// The card itself is a FIXED size (panel + 480px message column +
+// input row), so the height never changes as messages fade in.
+// Overflow is clipped — long replies just push older messages out of
+// view inside the bordered area. No layout shift on the outer page.
+
+type Msg = { from: 'bot' | 'user'; text: string };
+type Conv = Msg[];
+
+const conversationsKa: Conv[] = [
+  [
+    { from: 'bot',  text: 'გამარჯობა! როგორ შეგიძლიათ დაგეხმაროთ? 👋' },
+    { from: 'user', text: 'მინდა ვიცოდე მიტანის ფასები' },
+    { from: 'bot',  text: 'თბილისში მიტანა ₾3, ბათუმში — ₾8. ₾100-ზე მეტი შეკვეთისას უფასოა! 🚚' },
+    { from: 'user', text: 'რამდენ ხანს იღებს?' },
+    { from: 'bot',  text: 'თბილისში 45-90 წუთი. ბათუმში მეორე დღეს. 📦' },
+  ],
+  [
+    { from: 'bot',  text: 'მოგესალმებით! რით შემიძლია დაგეხმაროთ? 🏨' },
+    { from: 'user', text: 'ხელმისაწვდომი ნომრები გაქვთ შაბათ-კვირას?' },
+    { from: 'bot',  text: 'დიახ — Deluxe ნომერი ₾280/ღამეში, აუზის ხედით. 🌅' },
+    { from: 'user', text: 'შემიძლია ახლა დავაჯავშნო?' },
+    { from: 'bot',  text: 'რა თქმა უნდა! სახელი + ნომერი მომწერეთ — დადასტურდება 2 წუთში. ✅' },
+  ],
+  [
+    { from: 'bot',  text: 'გამარჯობა! 💪 რა გაინტერესებთ?' },
+    { from: 'user', text: 'წევრობის ფასები' },
+    { from: 'bot',  text: 'თვიური ₾80, 3-თვიური ₾210, წლიური ₾720. პერსონალური მწვრთნელი — დამატებითი. 🏋️' },
+    { from: 'user', text: 'შემიძლია სცადო?' },
+    { from: 'bot',  text: 'პირველი ვიზიტი უფასოა! დაჯავშნე drop-in ერთ-ერთ ჩვენ კლუბში. 🎁' },
+  ],
 ];
 
-const chatMessagesEn = [
-  { from: "bot",  text: "Hi! How can I help you today? 👋" },
-  { from: "user", text: "What are your delivery prices?" },
-  { from: "bot",  text: "Tbilisi: ₾3, Batumi: ₾8. Free on orders over ₾100! 🚚" },
-  { from: "user", text: "How long does delivery take?" },
-  { from: "bot",  text: "Tbilisi: 45-90 min. Batumi: next day. 📦" },
+const conversationsEn: Conv[] = [
+  [
+    { from: 'bot',  text: 'Hi! How can I help you today? 👋' },
+    { from: 'user', text: 'What are your delivery prices?' },
+    { from: 'bot',  text: 'Tbilisi: ₾3, Batumi: ₾8. Free on orders over ₾100! 🚚' },
+    { from: 'user', text: 'How long does delivery take?' },
+    { from: 'bot',  text: 'Tbilisi: 45-90 min. Batumi: next day. 📦' },
+  ],
+  [
+    { from: 'bot',  text: 'Welcome! How can I help? 🏨' },
+    { from: 'user', text: 'Any rooms available this weekend?' },
+    { from: 'bot',  text: 'Yes — Deluxe room at ₾280/night with pool view. 🌅' },
+    { from: 'user', text: 'Can I book now?' },
+    { from: 'bot',  text: 'Absolutely! Send your name + phone — confirmed in 2 minutes. ✅' },
+  ],
+  [
+    { from: 'bot',  text: 'Hi there! 💪 What would you like to know?' },
+    { from: 'user', text: 'Membership pricing?' },
+    { from: 'bot',  text: 'Monthly ₾80, 3-month ₾210, annual ₾720. Personal training extra. 🏋️' },
+    { from: 'user', text: 'Can I try it first?' },
+    { from: 'bot',  text: 'Your first visit is free! Drop in at any of our clubs. 🎁' },
+  ],
 ];
 
-const chatMessagesRu = [
-  { from: "bot",  text: "Привет! Чем могу помочь? 👋" },
-  { from: "user", text: "Сколько стоит доставка?" },
-  { from: "bot",  text: "Тбилиси: ₾3, Батуми: ₾8. Бесплатно от ₾100! 🚚" },
-  { from: "user", text: "Как долго ждать?" },
-  { from: "bot",  text: "Тбилиси: 45-90 мин. Батуми: на следующий день. 📦" },
+const conversationsRu: Conv[] = [
+  [
+    { from: 'bot',  text: 'Привет! Чем могу помочь? 👋' },
+    { from: 'user', text: 'Сколько стоит доставка?' },
+    { from: 'bot',  text: 'Тбилиси: ₾3, Батуми: ₾8. Бесплатно от ₾100! 🚚' },
+    { from: 'user', text: 'Как долго ждать?' },
+    { from: 'bot',  text: 'Тбилиси: 45-90 мин. Батуми: на следующий день. 📦' },
+  ],
+  [
+    { from: 'bot',  text: 'Добро пожаловать! Чем могу помочь? 🏨' },
+    { from: 'user', text: 'Есть свободные номера на выходные?' },
+    { from: 'bot',  text: 'Да — Deluxe ₾280/ночь с видом на бассейн. 🌅' },
+    { from: 'user', text: 'Могу забронировать сейчас?' },
+    { from: 'bot',  text: 'Конечно! Пришлите имя + телефон — подтвердим за 2 минуты. ✅' },
+  ],
+  [
+    { from: 'bot',  text: 'Привет! 💪 Что вас интересует?' },
+    { from: 'user', text: 'Цены на абонемент' },
+    { from: 'bot',  text: 'Месяц ₾80, 3 месяца ₾210, год ₾720. Тренер — отдельно. 🏋️' },
+    { from: 'user', text: 'Можно попробовать?' },
+    { from: 'bot',  text: 'Первое посещение бесплатно! Заходите в любой наш клуб. 🎁' },
+  ],
 ];
+
+const SCROLL_ENABLED = true;
+
+// Per-step delays. Tuned to feel natural without dragging.
+const DELAY_USER       = 1100;   // gap before user's message appears
+const DELAY_BOT_FIRST  = 600;    // gap before the initial bot greeting
+const DELAY_TYPING     = 1100;   // length of the "..." typing indicator
+const DELAY_AFTER_LAST = 3500;   // pause once the conversation ends
+const DELAY_WIPE       = 450;    // blank-card pause between conversations
+
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 function AnimatedChat() {
   const { lang, t } = useLanguage();
-  const msgs = lang === 'en' ? chatMessagesEn : lang === 'ru' ? chatMessagesRu : chatMessagesKa;
+  const conversations =
+    lang === 'en' ? conversationsEn
+    : lang === 'ru' ? conversationsRu
+    : conversationsKa;
+
+  const [convoIdx, setConvoIdx]   = useState(0);
+  const [shown,    setShown]      = useState(0);
+  const [typing,   setTyping]     = useState(false);
+  const scrollRef                 = useRef<HTMLDivElement>(null);
+
+  // Reset when the visitor changes language — keeps copy and state in sync.
+  const [lastLang, setLastLang] = useState(lang);
+  if (lastLang !== lang) {
+    setLastLang(lang);
+    setConvoIdx(0);
+    setShown(0);
+    setTyping(false);
+  }
+
+  // Drive the animation. Effect re-runs each time a conversation finishes
+  // (convoIdx changes), playing through the whole script from message 0 to
+  // the end, then bumping to the next conversation.
+  useEffect(() => {
+    let cancelled = false;
+    const conv = conversations[convoIdx];
+
+    (async () => {
+      // Brief blank pause at the start of each cycle, so the previous
+      // conversation has a chance to feel "wiped".
+      await sleep(DELAY_WIPE);
+      if (cancelled) return;
+      setShown(0);
+      setTyping(false);
+
+      for (let i = 0; i < conv.length; i++) {
+        if (cancelled) return;
+        const msg = conv[i];
+
+        // Bot replies (after the greeting) get a typing indicator first.
+        if (msg.from === 'bot' && i > 0) {
+          setTyping(true);
+          await sleep(DELAY_TYPING);
+          if (cancelled) return;
+          setTyping(false);
+        } else {
+          await sleep(msg.from === 'user' ? DELAY_USER : DELAY_BOT_FIRST);
+          if (cancelled) return;
+        }
+
+        setShown(i + 1);
+      }
+
+      // Hold the completed conversation on screen, then advance.
+      await sleep(DELAY_AFTER_LAST);
+      if (cancelled) return;
+      setConvoIdx(prev => (prev + 1) % conversations.length);
+    })();
+
+    return () => { cancelled = true; };
+  // We intentionally don't depend on `conversations` because it's recomputed
+  // on every render from `lang`; the lang-change branch above resets state.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [convoIdx, lang]);
+
+  // Auto-scroll the message column to the bottom as new bubbles appear.
+  useEffect(() => {
+    if (!SCROLL_ENABLED) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [shown, typing]);
+
+  const conv = conversations[convoIdx];
+  const visibleMsgs = conv.slice(0, shown);
 
   return (
     <div className="relative w-full max-w-md mx-auto lg:mx-0">
@@ -73,27 +215,48 @@ function AnimatedChat() {
           <div className="ml-auto text-[10px] text-gray-600 font-mono">{t.hero.chatAvg}</div>
         </div>
 
-        {/* Messages — fixed height so the card never resizes when the user
-            switches language (which swaps the conversation copy). */}
-        <div className="p-5 space-y-3 h-[300px] overflow-hidden bg-gradient-to-b from-transparent to-violet-950/10">
-          {msgs.map((msg, i) => (
-            <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`rounded-2xl px-4 py-2.5 max-w-[82%] text-sm leading-relaxed shadow-sm ${
-                msg.from === 'user'
-                  ? 'bg-gradient-to-br from-violet-600 to-violet-700 text-white rounded-tr-sm'
-                  : 'bg-white/[0.08] text-gray-200 rounded-tl-sm ring-1 ring-white/[0.04]'
-              }`}>
+        {/* Messages — fixed height; auto-scrolls to bottom on each new bubble. */}
+        <div
+          ref={scrollRef}
+          className="p-5 space-y-3 h-[420px] overflow-y-auto scroll-smooth bg-gradient-to-b from-transparent to-violet-950/10"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {visibleMsgs.map((msg, i) => (
+            <div
+              key={`${convoIdx}-${i}`}
+              className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+            >
+              <div
+                className={`rounded-2xl px-4 py-2.5 max-w-[82%] text-sm leading-relaxed shadow-sm ${
+                  msg.from === 'user'
+                    ? 'bg-gradient-to-br from-violet-600 to-violet-700 text-white rounded-tr-sm'
+                    : 'bg-white/[0.08] text-gray-200 rounded-tl-sm ring-1 ring-white/[0.04]'
+                }`}
+              >
                 {msg.text}
               </div>
             </div>
           ))}
+          {typing && (
+            <div className="flex justify-start animate-fade-in">
+              <div className="bg-white/[0.08] ring-1 ring-white/[0.04] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
+                {[0, 1, 2].map(i => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Input */}
-        <div className="px-5 pb-5">
+        {/* Input — visual only; the real chat lives in the floating widget. */}
+        <div className="px-5 pb-5 pt-2">
           <div className="flex items-center gap-2 bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3">
-            <span className="text-gray-500 text-sm flex-1">{t.hero.chatPlaceholder}</span>
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-md shadow-violet-500/40">
+            <span className="text-gray-500 text-sm flex-1 truncate">{t.hero.chatPlaceholder}</span>
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-md shadow-violet-500/40 shrink-0">
               <ArrowRight className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
             </div>
           </div>
