@@ -12,17 +12,31 @@
 
 const API_BASE = 'https://api.lemonsqueezy.com/v1';
 
+/**
+ * Read an env var, stripping surrounding whitespace. A trailing space in the
+ * dashboard or .env file is invisible to humans but breaks `Authorization:
+ * Bearer <token>` and any LS API call that includes the variant ID — Lemon
+ * Squeezy then returns a confusing 401/422 and the UI shows
+ * "გადახდის სერვისი დროებით მიუწვდომელია".
+ */
+function cleanEnv(name: string): string | null {
+  const v = process.env[name];
+  if (!v) return null;
+  const trimmed = v.trim();
+  return trimmed.length ? trimmed : null;
+}
+
 export function isLemonAvailable(): boolean {
-  return !!(process.env.LEMONSQUEEZY_API_KEY && process.env.LEMONSQUEEZY_STORE_ID);
+  return !!(cleanEnv('LEMONSQUEEZY_API_KEY') && cleanEnv('LEMONSQUEEZY_STORE_ID'));
 }
 
 export function getStoreId(): string | null {
-  return process.env.LEMONSQUEEZY_STORE_ID ?? null;
+  return cleanEnv('LEMONSQUEEZY_STORE_ID');
 }
 
 export function requireLemon(): { apiKey: string; storeId: string } {
-  const apiKey  = process.env.LEMONSQUEEZY_API_KEY;
-  const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+  const apiKey  = cleanEnv('LEMONSQUEEZY_API_KEY');
+  const storeId = cleanEnv('LEMONSQUEEZY_STORE_ID');
   if (!apiKey || !storeId) throw new Error('LEMON_NOT_CONFIGURED');
   return { apiKey, storeId };
 }

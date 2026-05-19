@@ -43,30 +43,44 @@ export const PLAN_DISPLAY: Record<PlanSlug, {
   },
 };
 
+/**
+ * Read a variant-ID env var, stripping surrounding whitespace. A stray
+ * trailing space on a dashboard value passes silently through `process.env`
+ * but makes the resulting "1051079 " a string LS doesn't recognise as a
+ * variant ID — the checkout call then 422s and the UI flashes
+ * "გადახდის სერვისი დროებით მიუწვდომელია".
+ */
+function cleanVariant(name: string): string | null {
+  const v = process.env[name];
+  if (!v) return null;
+  const trimmed = v.trim();
+  return trimmed.length ? trimmed : null;
+}
+
 /** Returns the configured LS variant ID for a plan, or null if unset. */
 export function variantIdFor(plan: PlanSlug): string | null {
   switch (plan) {
-    case 'basic':      return process.env.LEMONSQUEEZY_VARIANT_BASIC    ?? null;
-    case 'pro':        return process.env.LEMONSQUEEZY_VARIANT_PRO      ?? null;
-    case 'ultimate':   return process.env.LEMONSQUEEZY_VARIANT_ULTIMATE ?? null;
+    case 'basic':      return cleanVariant('LEMONSQUEEZY_VARIANT_BASIC');
+    case 'pro':        return cleanVariant('LEMONSQUEEZY_VARIANT_PRO');
+    case 'ultimate':   return cleanVariant('LEMONSQUEEZY_VARIANT_ULTIMATE');
     case 'enterprise': return null;  // contact sales
   }
 }
 
 /** Reverse lookup: which plan does this LS variant ID belong to? */
 export function planForVariantId(variantId: string | number): PlanSlug | null {
-  const v = String(variantId);
-  if (v === process.env.LEMONSQUEEZY_VARIANT_BASIC)    return 'basic';
-  if (v === process.env.LEMONSQUEEZY_VARIANT_PRO)      return 'pro';
-  if (v === process.env.LEMONSQUEEZY_VARIANT_ULTIMATE) return 'ultimate';
+  const v = String(variantId).trim();
+  if (v === cleanVariant('LEMONSQUEEZY_VARIANT_BASIC'))    return 'basic';
+  if (v === cleanVariant('LEMONSQUEEZY_VARIANT_PRO'))      return 'pro';
+  if (v === cleanVariant('LEMONSQUEEZY_VARIANT_ULTIMATE')) return 'ultimate';
   return null;
 }
 
 /** True if all required LS variant IDs are configured. */
 export function areVariantsConfigured(): boolean {
   return !!(
-    process.env.LEMONSQUEEZY_VARIANT_BASIC &&
-    process.env.LEMONSQUEEZY_VARIANT_PRO &&
-    process.env.LEMONSQUEEZY_VARIANT_ULTIMATE
+    cleanVariant('LEMONSQUEEZY_VARIANT_BASIC') &&
+    cleanVariant('LEMONSQUEEZY_VARIANT_PRO') &&
+    cleanVariant('LEMONSQUEEZY_VARIANT_ULTIMATE')
   );
 }

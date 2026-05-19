@@ -12,7 +12,7 @@
 // Falls back to a non-AI tier internally if Claude isn't configured, in
 // which case the whole reply arrives as a single "delta".
 
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { corsPreflight, corsError, CORS_HEADERS } from '@/lib/widget-cors';
 import { answer } from '@/lib/answer-engine';
@@ -135,19 +135,33 @@ export async function POST(
     })),
   };
 
-  // Pull recent conversation history for follow-up context
+  // Pull recent conversation history for follow-up context.
+  // SECURITY: same cross-tenant check as /message — validate ownership before
+  // reading message history; otherwise a caller could replay a foreign bot's
+  // conversation ID and pull its messages into this bot's prompt.
   let history: { role: 'user' | 'assistant'; content: string }[] | undefined;
+  let validatedConversationId: string | undefined;
   if (body.conversationId) {
     try {
-      const past = await db.query.messages.findMany({
-        where: eq(schema.messages.conversationId, body.conversationId),
-        orderBy: [desc(schema.messages.createdAt)],
-        limit: 6,
+      const convo = await db.query.conversations.findFirst({
+        where: and(
+          eq(schema.conversations.id, body.conversationId),
+          eq(schema.conversations.botId, dbBot.id),
+        ),
+        columns: { id: true },
       });
-      history = past.reverse().map(m => ({
-        role: (m.fromUser ? 'user' : 'assistant') as 'user' | 'assistant',
-        content: m.content,
-      }));
+      if (convo) {
+        validatedConversationId = convo.id;
+        const past = await db.query.messages.findMany({
+          where: eq(schema.messages.conversationId, convo.id),
+          orderBy: [desc(schema.messages.createdAt)],
+          limit: 6,
+        });
+        history = past.reverse().map(m => ({
+          role: (m.fromUser ? 'user' : 'assistant') as 'user' | 'assistant',
+          content: m.content,
+        }));
+      }
     } catch (e) {
       console.error('[widget/stream] history fetch failed:', e);
     }
@@ -155,7 +169,7 @@ export async function POST(
 
   // Create/resolve conversation BEFORE streaming so the client can store the ID
   // even if the network drops mid-stream.
-  let conversationId = body.conversationId;
+  let conversationId = validatedConversationId;
   if (!conversationId) {
     try {
       const [convo] = await db.insert(schema.conversations).values({

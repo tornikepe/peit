@@ -9,7 +9,7 @@
 // updates the bot's leads counter, and fires an owner-notification email
 // (when RESEND_API_KEY is set — silent no-op otherwise).
 
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
 import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
@@ -85,10 +85,30 @@ export async function POST(
   // ── Score lead before insert ──────────────────────────────────────────
   const score = scoreLead({ email, phone, message });
 
+  // SECURITY: only attach a conversationId that actually belongs to this bot
+  // — otherwise a caller could associate a lead with a foreign tenant's
+  // conversation (data-integrity bug + cross-tenant linkage). An invalid /
+  // foreign / malformed ID is dropped silently; the lead is still saved.
+  let conversationId: string | null = null;
+  if (body.conversationId) {
+    try {
+      const convo = await db.query.conversations.findFirst({
+        where: and(
+          eq(schema.conversations.id, body.conversationId),
+          eq(schema.conversations.botId, bot.id),
+        ),
+        columns: { id: true },
+      });
+      if (convo) conversationId = convo.id;
+    } catch {
+      // Invalid UUID etc. — fall through with conversationId = null.
+    }
+  }
+
   try {
     const [lead] = await db.insert(schema.leads).values({
       botId:          bot.id,
-      conversationId: body.conversationId ?? null,
+      conversationId,
       name, email, phone, message,
       score,
       metadata: {

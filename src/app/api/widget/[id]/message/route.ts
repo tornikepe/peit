@@ -2,7 +2,7 @@
 // Hardened with: per-IP rate limit, per-bot rate limit, per-visitor rate limit,
 // origin allowlist, and plan-tier monthly message ceiling.
 
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
 import { answer } from '@/lib/answer-engine';
@@ -145,19 +145,36 @@ export async function POST(
     })),
   };
 
-  // Pull recent conversation history for follow-up context
+  // Pull recent conversation history for follow-up context.
+  // SECURITY: validate the conversation belongs to THIS bot before reading
+  // its messages — otherwise a caller could pass another bot's conversation
+  // ID and leak history across tenants into this bot's LLM context.
   let history: { role: 'user' | 'assistant'; content: string }[] | undefined;
+  let validatedConversationId: string | undefined;
   if (body.conversationId) {
     try {
-      const past = await db.query.messages.findMany({
-        where: eq(schema.messages.conversationId, body.conversationId),
-        orderBy: [desc(schema.messages.createdAt)],
-        limit: 6,
+      const convo = await db.query.conversations.findFirst({
+        where: and(
+          eq(schema.conversations.id, body.conversationId),
+          eq(schema.conversations.botId, dbBot.id),
+        ),
+        columns: { id: true },
       });
-      history = past.reverse().map(m => ({
-        role: (m.fromUser ? 'user' : 'assistant') as 'user' | 'assistant',
-        content: m.content,
-      }));
+      if (!convo) {
+        // Foreign / unknown — drop it silently and start a fresh conversation.
+        validatedConversationId = undefined;
+      } else {
+        validatedConversationId = convo.id;
+        const past = await db.query.messages.findMany({
+          where: eq(schema.messages.conversationId, convo.id),
+          orderBy: [desc(schema.messages.createdAt)],
+          limit: 6,
+        });
+        history = past.reverse().map(m => ({
+          role: (m.fromUser ? 'user' : 'assistant') as 'user' | 'assistant',
+          content: m.content,
+        }));
+      }
     } catch (e) {
       console.error('[widget/message] history fetch failed:', e);
     }
@@ -176,7 +193,7 @@ export async function POST(
   }
 
   // Persist conversation + messages (best-effort)
-  let conversationId = body.conversationId;
+  let conversationId = validatedConversationId;
   try {
     if (!conversationId) {
       const [convo] = await db.insert(schema.conversations).values({
