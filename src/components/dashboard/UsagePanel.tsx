@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Crown, MessageSquare, Bot as BotIcon, Clock, AlertCircle } from 'lucide-react';
+import UpgradeCta from './UpgradeCta';
 
 interface SubscriptionData {
   ok: true;
@@ -72,6 +73,10 @@ export default function UsagePanel() {
 
   const trialDays = daysUntil(sub.trialEndsAt);
   const isTrial = sub.status === 'trialing';
+  // Show the inline upgrade button to anyone on basic/trial — these are
+  // the users actively deciding whether to convert. Pro/Ultimate users
+  // already see the "Plan manage" portal CTA in /dashboard/billing.
+  const showUpgrade = (sub.plan === 'basic' && isTrial) || !sub.usable;
 
   return (
     <div className="glass rounded-2xl p-6 mb-6">
@@ -103,22 +108,26 @@ export default function UsagePanel() {
           </div>
         </div>
 
-        <Link
-          href="/dashboard/billing"
-          className="text-violet-400 hover:text-violet-300 text-xs font-medium transition-colors"
-        >
-          Billing →
-        </Link>
+        <div className="flex items-center gap-3">
+          {showUpgrade && <UpgradeCta plan="pro" compact />}
+          <Link
+            href="/dashboard/billing"
+            className="text-violet-400 hover:text-violet-300 text-xs font-medium transition-colors"
+          >
+            Billing →
+          </Link>
+        </div>
       </div>
 
       {/* Trial expired banner */}
       {!sub.usable && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <p className="text-red-300 text-sm font-semibold">ტრიალი დასრულდა</p>
             <p className="text-gray-400 text-xs mt-0.5">ბოტი აღარ პასუხობს — გადადი ფასიან პლანზე გასაგრძელებლად.</p>
           </div>
+          <UpgradeCta plan="pro" label="ახლავე გადახდა" />
         </div>
       )}
 

@@ -1,13 +1,19 @@
 'use client';
 
 // Drop-in CTA button used by the Pricing page. Handles three cases:
-//   1. Not signed in → goes to /signup?plan=<slug>&redirect_url=/pricing?go=<slug>
-//      so Clerk bounces them back here once authenticated, and the auto-resume
-//      effect below opens Lemon Squeezy without a second click.
-//   2. Signed in, billing not yet configured → error message
-//   3. Signed in + LS ready → POST /api/lemon/checkout, redirect
+//   1. Not signed in → stash plan in sessionStorage AND pass it as ?go=<plan>
+//      via redirect_url, then send to /signup. After auth Clerk bounces us
+//      back here; either signal (query string or sessionStorage) triggers
+//      auto-resume so the user lands on Lemon Squeezy with a single click.
+//   2. Signed in, billing not yet configured → friendly error.
+//   3. Signed in + LS ready → POST /api/lemon/checkout, redirect.
 //
-// Renders a spinner while the checkout session is being created.
+// Why both signals? In production we've observed cases where the Clerk
+// redirect drops the query string (depends on session-cookie set order +
+// Next router state), leaving the user stuck on /pricing with the button
+// looking like it "didn't work". sessionStorage survives the round trip
+// regardless and is wiped immediately after resume so a second visit to
+// /pricing doesn't re-fire the checkout.
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -20,6 +26,9 @@ interface Props {
   label: string;
   highlight?: boolean;
 }
+
+/** sessionStorage key shared with the global resumer on /dashboard. */
+const RESUME_KEY = 'peit-resume-plan';
 
 export default function PricingCheckoutButton({ plan, label, highlight }: Props) {
   const router = useRouter();
@@ -46,6 +55,9 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
         return;
       }
       if (data.url) {
+        // Clear resume hint before navigating away so a back-button visit
+        // to /pricing doesn't re-trigger checkout.
+        try { sessionStorage.removeItem(RESUME_KEY); } catch { /* ignore */ }
         window.location.href = data.url;
       } else {
         setError('გადახდის ბმული ვერ მოვიდა — სცადე ხელახლა.');
@@ -57,22 +69,29 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
     }
   }
 
-  // Auto-resume: if the URL says ?go=<this plan>, the user just came back
-  // from sign-up — open the checkout immediately. We read the query string
-  // directly from `window.location` (rather than useSearchParams) so the
-  // /pricing page can stay statically generated — useSearchParams would
-  // force the whole subtree into dynamic rendering or a Suspense boundary.
+  // Auto-resume: fire when the URL has ?go=<this plan> OR sessionStorage
+  // says we should resume this plan. We read the query string directly
+  // from window.location (rather than useSearchParams) so /pricing can
+  // stay statically generated — useSearchParams would force a Suspense
+  // boundary or dynamic rendering for the whole subtree.
   useEffect(() => {
     if (autoResumedRef.current) return;
     if (!isLoaded || !isSignedIn) return;
     if (typeof window === 'undefined') return;
-    const go = new URLSearchParams(window.location.search).get('go');
-    if (go !== plan) return;
+
+    const query = new URLSearchParams(window.location.search).get('go');
+    let stored: string | null = null;
+    try { stored = sessionStorage.getItem(RESUME_KEY); } catch { /* ignore */ }
+
+    const wants = query ?? stored;
+    if (wants !== plan) return;
+
     autoResumedRef.current = true;
+    // Wipe both signals so a refresh doesn't re-fire.
+    try { sessionStorage.removeItem(RESUME_KEY); } catch { /* ignore */ }
     // Kicking off a network request after the auth state settles is a
     // legitimate use of useEffect — the state updates that startCheckout
-    // performs (setBusy, setError) happen async, not during render. Lint
-    // is correct in general but conservative for this case.
+    // performs (setBusy, setError) happen async, not during render.
     // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
     void startCheckout();
   }, [isLoaded, isSignedIn, plan]);
@@ -81,6 +100,9 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
     setError(null);
     if (!isLoaded) return;
     if (!isSignedIn) {
+      // Persist the chosen plan across the Clerk round-trip. sessionStorage
+      // is per-tab and clears on tab close, which is exactly what we want.
+      try { sessionStorage.setItem(RESUME_KEY, plan); } catch { /* ignore */ }
       // Send to signup with the chosen plan as a return hint — Clerk
       // honours `forceRedirectUrl` from the signup page, so the user
       // lands back on /pricing?go=<plan> and the effect above takes over.
