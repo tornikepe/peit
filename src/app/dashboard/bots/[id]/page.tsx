@@ -23,8 +23,12 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   // Local FAQ state — typing edits this; saves to bot only on blur
   const [editFaqs, setEditFaqs] = useState<FAQItem[]>([]);
   useEffect(() => {
+    // Re-sync local edit buffer when the upstream bot changes (initial
+    // load or after a server-side update). This MUST run as an effect —
+    // we can't read external state synchronously during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (bot) setEditFaqs(bot.faqs);
-  }, [bot?.id, bot?.updatedAt]); // re-sync when bot changes
+  }, [bot?.id, bot?.updatedAt]);
 
   // Re-crawl state
   const [recrawling, setRecrawling] = useState(false);

@@ -105,6 +105,10 @@ function LeadsInner() {
     }
   }, [queryString]);
 
+  // Re-fetch whenever the filter inputs change (load is memoised on
+  // queryString). Calling load() does setState — intentional, this is
+  // a query-driven external data fetch, not a derived value.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   async function updateStatus(leadId: string, status: LeadStatus) {

@@ -92,7 +92,7 @@ export default function PricingCheckoutButton({ plan, label, highlight }: Props)
     // Kicking off a network request after the auth state settles is a
     // legitimate use of useEffect — the state updates that startCheckout
     // performs (setBusy, setError) happen async, not during render.
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void startCheckout();
   }, [isLoaded, isSignedIn, plan]);
 

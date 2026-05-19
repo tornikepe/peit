@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  createContext, useContext, useEffect, useState, useCallback, useRef,
+  createContext, useContext, useEffect, useState, useCallback,
 } from 'react';
 import type { Bot } from '@/lib/bots';
 import { loadBots, saveBots } from '@/lib/bots';
@@ -36,12 +36,11 @@ export function BotsProvider({ children }: { children: React.ReactNode }) {
   const [hasLocalToMigrate, setHasLocalToMigrate] = useState(false);
   const [migrating, setMigrating] = useState(false);
 
-  // Persist to localStorage whenever bots change in local mode
-  const isLocalMode = useRef(false);
-  isLocalMode.current = mode === 'local';
+  // Persist to localStorage whenever bots change in local mode. Reading
+  // `mode` directly is fine — it's plain state, no need for a ref.
   useEffect(() => {
-    if (loaded && isLocalMode.current) saveBots(bots);
-  }, [bots, loaded]);
+    if (loaded && mode === 'local') saveBots(bots);
+  }, [bots, loaded, mode]);
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -75,6 +74,11 @@ export function BotsProvider({ children }: { children: React.ReactNode }) {
     setLoaded(true);
   }, []);
 
+  // Fire-once on mount. detectAndLoad legitimately calls setState — it's
+  // initialising client state from an external source (DB or localStorage)
+  // that isn't available during SSR. The lint rule discourages cascading
+  // renders, which doesn't apply here (the effect runs once per mount).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void detectAndLoad(); }, [detectAndLoad]);
 
   // ── Migration ────────────────────────────────────────────────────────────

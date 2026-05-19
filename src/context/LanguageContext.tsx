@@ -22,10 +22,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     try {
       const saved = localStorage.getItem('peit-lang') as Lang | null;
       if (saved && (saved === 'ka' || saved === 'en' || saved === 'ru')) {
+        // Hydrating client-only state from localStorage is exactly the
+        // case React docs call out as legitimate setState-in-effect:
+        // we can't read localStorage during SSR, so this MUST happen post-mount.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLangState(saved);
       }
     } catch {
-      // localStorage not available (SSR)
+      // localStorage not available (SSR or privacy-mode browser).
     }
   }, []);
 

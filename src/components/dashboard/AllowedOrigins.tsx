@@ -33,8 +33,14 @@ export default function AllowedOrigins({ value, onSave }: Props) {
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
-  // Re-sync if upstream value changes (e.g. after save)
-  useEffect(() => { setList(value); }, [value.join('|')]);
+  // Re-sync if the parent's saved value changes (e.g. after another tab
+  // edits the same bot). Joining on '|' gives a stable string dep so the
+  // effect only fires on actual content changes, not array-identity flips.
+  const valueKey = value.join('|');
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setList(value);
+  }, [valueKey]);
 
   async function commit(next: string[]) {
     setSaving(true);

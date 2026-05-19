@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
   Zap, ArrowLeft, CreditCard, Crown, Loader2,
   CheckCircle2, AlertCircle, ExternalLink, Sparkles,
@@ -46,7 +46,6 @@ export default function BillingPage() {
 }
 
 function BillingInner() {
-  const router = useRouter();
   const sp = useSearchParams();
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,10 +59,26 @@ function BillingInner() {
     let alive = true;
     fetch('/api/subscription')
       .then(r => r.json())
+       
       .then(d => { if (alive && d.ok) setData(d); })
+       
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
+
+  // Days-remaining in the trial. Must call useMemo unconditionally
+  // (rules-of-hooks), so we read sub.trialEndsAt through optional
+  // chaining instead of after the early returns below. Date.now() is
+  // intentionally impure — disabling the purity rule because the value
+  // is genuinely time-dependent and recomputes only when trialEndsAt
+  // changes (i.e. once per subscription fetch).
+  const trialEndsAt = data?.subscription?.trialEndsAt ?? null;
+  const trialDaysLeft = useMemo(() =>
+    trialEndsAt
+      // eslint-disable-next-line react-hooks/purity
+      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000))
+      : null,
+    [trialEndsAt]);
 
   async function openPortal() {
     setPortalBusy(true);
@@ -103,9 +118,6 @@ function BillingInner() {
   const { subscription: sub, usage, limits } = data;
   const plan = PLAN_META[sub.plan];
   const isTrialing = sub.status === 'trialing';
-  const trialDaysLeft = sub.trialEndsAt
-    ? Math.max(0, Math.ceil((new Date(sub.trialEndsAt).getTime() - Date.now()) / 86_400_000))
-    : null;
 
   return (
     <div className="min-h-screen bg-[#07070f]">
