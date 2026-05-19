@@ -13,9 +13,14 @@ function withWidgetHeaders(res: NextResponse): NextResponse {
   return res;
 }
 
-// File renamed from middleware.ts to proxy.ts for Next.js 16 — the
-// "middleware" file convention is deprecated; proxy.ts is the same
-// runtime under a clearer name.
+// NOTE: Next.js 16 deprecates the "middleware" file convention in favour
+// of proxy.ts, but renaming this file to proxy.ts caused every request
+// on Vercel to 500 ("Error running the exported function") even though
+// the build + local dev both passed. Clerk 7.3.4 says it supports proxy
+// in src/server/fs/middleware-location.js, but the runtime wrapper
+// doesn't actually start. Keeping middleware.ts until either Clerk or
+// Next.js fix the integration — the deprecation is a warning, not a
+// breaking change.
 //
 // ALWAYS register clerkMiddleware. The previous build had a conditional
 // (`process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? clerk : passthrough`)
