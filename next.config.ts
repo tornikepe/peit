@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "node:path";
 
 const nextConfig: NextConfig = {
   // Bundle the SQL migration files so the /api/admin/migrate endpoint can
@@ -8,13 +7,12 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/admin/migrate": ["./drizzle/**/*.sql", "./drizzle/meta/**/*"],
   },
-  // Pin Turbopack to this directory. Without this, when a parent git
-  // worktree also has a package-lock.json (which is the normal git
-  // worktree layout), Turbopack walks up and picks the parent as root —
-  // producing the noisy "multiple lockfiles" warning every dev start.
-  turbopack: {
-    root: path.resolve(import.meta.dirname),
-  },
+  // NOTE: tried setting `turbopack.root: path.resolve(import.meta.dirname)`
+  // here to silence the local-dev "multiple lockfiles" warning, but it
+  // caused MIDDLEWARE_INVOCATION_FAILED on Vercel — the resolved path
+  // exists on the dev laptop but not in the serverless filesystem layout.
+  // The warning was only noisy in local dev, never in production, so the
+  // workaround isn't worth the risk.
 };
 
 export default nextConfig;
