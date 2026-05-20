@@ -29,6 +29,7 @@ import {
   isEmailAvailable, sendPaymentFailedEmail, sendSubscriptionCancelledEmail,
   sendSubscriptionReceiptEmail,
 } from '@/lib/email';
+import { checkRateLimit, rateLimitKey } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -219,6 +220,26 @@ async function handleEvent(envelope: LsWebhookEnvelope): Promise<void> {
 // ─── Side-effects: email helpers ──────────────────────────────────────────
 // Each runs detached from the webhook ack so a Resend hiccup never causes
 // LS to retry the whole event — that would double-count usage counters.
+//
+// IDEMPOTENCY: LS retries any webhook that returns non-2xx, and occasionally
+// double-delivers under load. The sync helpers (syncLsSubscription, mark*)
+// are already idempotent. Email is not — sending twice spams the customer.
+// We dedupe email dispatch with the existing rate_limits table: the first
+// call within `windowSeconds` claims the slot (allowed=true), retries hit
+// the same row and get allowed=false → skip.
+
+/**
+ * Try to claim a send slot for this (event-type, key) pair. Returns false
+ * if the slot is already taken (i.e. we already dispatched this email
+ * within the window).
+ */
+async function claimEmailSlot(kind: string, key: string): Promise<boolean> {
+  // 24h window — handles every realistic LS retry pattern (they retry within
+  // minutes, not hours) without permanently blocking re-sends if the user
+  // genuinely re-subscribes after a year.
+  const rl = await checkRateLimit(rateLimitKey(['ls_email', kind, key]), 1, 86_400);
+  return rl.allowed;
+}
 
 async function dispatchReceiptEmail(
   userId: string,
@@ -226,6 +247,10 @@ async function dispatchReceiptEmail(
   status: string,
   nextBilling: Date | null,
 ): Promise<void> {
+  if (!await claimEmailSlot('receipt', `${userId}:${nextBilling?.getTime() ?? '0'}`)) {
+    console.log('[lemon webhook] receipt already sent for this period, skipping');
+    return;
+  }
   const to = await loadRecipient(userId);
   if (!to) return;
   await sendSubscriptionReceiptEmail({ to, plan, status, nextBilling })
@@ -245,6 +270,10 @@ async function dispatchReceiptEmailForUser(userId: string): Promise<void> {
 }
 
 async function dispatchCancelledEmail(userId: string, endsAt: Date | null): Promise<void> {
+  if (!await claimEmailSlot('cancel', userId)) {
+    console.log('[lemon webhook] cancel email already sent, skipping');
+    return;
+  }
   const to = await loadRecipient(userId);
   if (!to) return;
   await sendSubscriptionCancelledEmail({ to, endsAt })
@@ -252,6 +281,12 @@ async function dispatchCancelledEmail(userId: string, endsAt: Date | null): Prom
 }
 
 async function dispatchPaymentFailedEmail(userId: string): Promise<void> {
+  // Dedup window: 24h. Payment retries happen on the same day; we don't
+  // want to email the customer once per retry.
+  if (!await claimEmailSlot('payment_failed', userId)) {
+    console.log('[lemon webhook] payment-failed email already sent today, skipping');
+    return;
+  }
   const to = await loadRecipient(userId);
   if (!to) return;
   await sendPaymentFailedEmail({ to })
