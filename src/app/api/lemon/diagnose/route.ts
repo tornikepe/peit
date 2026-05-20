@@ -1,15 +1,36 @@
-// GET /api/lemon/diagnose — public health-check that surfaces *which* LS
-// env vars Vercel can actually see, plus live LS API checks: store,
-// products list, variants list (per product, since variants don't filter
-// by store_id), and a direct lookup of each env variant ID. Never reveals
+// GET /api/lemon/diagnose — ops health-check that surfaces *which* LS env
+// vars Vercel can actually see, plus live LS API checks: store, products
+// list, variants list (per product, since variants don't filter by
+// store_id), and a direct lookup of each env variant ID. Never reveals
 // secret values.
 //
-// Usage: curl https://peit.vercel.app/api/lemon/diagnose
+// SECURITY: protected by CRON_SECRET (re-used as a generic ops token).
+// Reasoning — this endpoint:
+//   1. Discloses every LS env var name + last-4-chars + length
+//   2. Lists ALL products and variants in the store
+//   3. Makes ~10 LS API calls per request (rate-limit amplification)
+// In production that's a useful recon surface for an attacker AND a
+// trivial DoS vector against our LS quota. Same secret as the cron
+// endpoint — ops already has it, no new env var to manage.
+//
+// Usage: curl -H "Authorization: Bearer $CRON_SECRET" \
+//          https://peit.vercel.app/api/lemon/diagnose
+// Or:   curl "https://peit.vercel.app/api/lemon/diagnose?secret=$CRON_SECRET"
 
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+function isAuthorized(req: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return process.env.NODE_ENV !== 'production'; // open in dev
+  const url    = new URL(req.url);
+  const header = req.headers.get('authorization');
+  if (header && header === `Bearer ${secret}`) return true;
+  if (url.searchParams.get('secret') === secret) return true;
+  return false;
+}
 
 interface VarStatus {
   set:      boolean;
@@ -73,7 +94,12 @@ interface LsVariantDoc {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!isAuthorized(req)) {
+    // Pretend the route doesn't exist rather than confirming the path
+    // with a 401 — keeps it off automated scanners.
+    return new NextResponse('Not found', { status: 404 });
+  }
   const env = {
     LEMONSQUEEZY_API_KEY:       check(process.env.LEMONSQUEEZY_API_KEY),
     LEMONSQUEEZY_STORE_ID:      check(process.env.LEMONSQUEEZY_STORE_ID),
