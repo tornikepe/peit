@@ -131,7 +131,10 @@ export async function POST(req: Request) {
   const channel = payload.object === 'instagram' ? 'instagram' : 'facebook';
 
   // Process each entry (each page) in parallel; failures are isolated.
-  await Promise.all(payload.entry.map(entry =>
+  // Some malformed / health-check payloads arrive without `entry` (Meta's
+  // own probe tool fires them too) — `?? []` so we 200 quietly instead of
+  // 500'ing on `.map` of undefined.
+  await Promise.all((payload.entry ?? []).map(entry =>
     handleEntry(channel, entry).catch(e =>
       console.error('[meta webhook] entry failed:', entry.id, e),
     ),
