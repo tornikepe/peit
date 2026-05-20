@@ -239,6 +239,64 @@ export const rateLimits = pgTable('rate_limits', {
   windowSeconds: integer('window_seconds').notNull(),
 });
 
+// ─── bot_channels ─────────────────────────────────────────────────────────
+// One row per (bot, channel) — stores the per-channel credentials and
+// runtime stats. The web channel never lives here (it's implicit). Telegram
+// fills in { botToken, botUsername, webhookSecret }. Meta channels (IG / FB)
+// fill in { pageId, pageAccessToken, igBusinessId? } once the OAuth dance
+// completes.
+//
+// Credentials are stored as JSONB so each channel can evolve independently.
+// If you ever rotate to a secrets manager, the `credentials` column is the
+// single field to migrate.
+
+export const botChannelStatusEnum = pgEnum('bot_channel_status', [
+  'active', 'disconnected', 'error',
+]);
+
+/** Telegram channel credentials. */
+export interface TelegramChannelCreds {
+  botToken:       string;
+  botUsername?:   string;
+  /** Random secret we generate; Telegram echoes it in webhook header so
+   *  we can verify the call really came from Telegram. */
+  webhookSecret:  string;
+  /** Vercel-side webhook URL we registered with TG so we can refresh it
+   *  after a deploy that changes the host. */
+  webhookUrl?:    string;
+}
+
+/** Meta (Instagram/Facebook) channel credentials. */
+export interface MetaChannelCreds {
+  pageId:           string;
+  pageAccessToken:  string;
+  pageName?:        string;
+  igBusinessId?:    string;     // present only for Instagram
+  /** When the page token last refreshed. Meta long-lived tokens last 60d. */
+  tokenRefreshedAt?: string;
+}
+
+export const botChannels = pgTable('bot_channels', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  botId:     uuid('bot_id').notNull().references(() => bots.id, { onDelete: 'cascade' }),
+  channel:   channelEnum('channel').notNull(),
+  status:    botChannelStatusEnum('status').notNull().default('active'),
+  credentials: jsonb('credentials')
+                 .$type<TelegramChannelCreds | MetaChannelCreds | Record<string, unknown>>()
+                 .notNull().default({}),
+  /** Last successful inbound message timestamp — useful for "Last active" UI. */
+  lastInboundAt: timestamp('last_inbound_at'),
+  /** Total inbound messages ever (across periods) — cheap analytics. */
+  totalInbound:  integer('total_inbound').notNull().default(0),
+  /** Last error string when status='error', null otherwise. */
+  lastError:     text('last_error'),
+  createdAt:     timestamp('created_at').defaultNow().notNull(),
+  updatedAt:     timestamp('updated_at').defaultNow().notNull(),
+}, t => ({
+  botIdx:      index('bot_channels_bot_idx').on(t.botId),
+  botChannel:  uniqueIndex('bot_channels_bot_channel_idx').on(t.botId, t.channel),
+}));
+
 // ─── Relations ─────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -255,6 +313,11 @@ export const botsRelations = relations(bots, ({ one, many }) => ({
   chunks:   many(knowledgeChunks),
   convos:   many(conversations),
   leads:    many(leads),
+  channels: many(botChannels),
+}));
+
+export const botChannelsRelations = relations(botChannels, ({ one }) => ({
+  bot: one(bots, { fields: [botChannels.botId], references: [bots.id] }),
 }));
 
 export const faqsRelations = relations(faqs, ({ one }) => ({
@@ -292,9 +355,10 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
 
 // ─── Inferred TS types ─────────────────────────────────────────────────────
 
-export type DbUser  = typeof users.$inferSelect;
-export type DbBot   = typeof bots.$inferSelect;
-export type DbFaq   = typeof faqs.$inferSelect;
-export type DbChunk = typeof knowledgeChunks.$inferSelect;
-export type DbLead  = typeof leads.$inferSelect;
-export type DbSub   = typeof subscriptions.$inferSelect;
+export type DbUser    = typeof users.$inferSelect;
+export type DbBot     = typeof bots.$inferSelect;
+export type DbFaq     = typeof faqs.$inferSelect;
+export type DbChunk   = typeof knowledgeChunks.$inferSelect;
+export type DbLead    = typeof leads.$inferSelect;
+export type DbSub     = typeof subscriptions.$inferSelect;
+export type DbChannel = typeof botChannels.$inferSelect;

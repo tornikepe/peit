@@ -11,6 +11,7 @@ import {
 import { useBots } from '@/context/BotsContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
 import AllowedOrigins from '@/components/dashboard/AllowedOrigins';
+import ChannelsPanel  from '@/components/dashboard/ChannelsPanel';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -397,6 +398,9 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 await updateBot(bot.id, { allowedOrigins: next });
               }}
             />
+
+            {/* Multi-channel — Telegram + Instagram + Facebook Messenger */}
+            <ChannelsPanel botId={bot.id} />
 
             {/* Website Sync */}
             {bot.websiteUrl && (
