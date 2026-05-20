@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import { and, eq, gt, gte, isNull, lte, or } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { sendTrialEndedEmail, sendTrialEndingEmail } from '@/lib/email';
+import { DEFAULT_EMAIL_PREFS, type EmailPrefs } from '@/db/schema';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,10 +34,20 @@ function isAuthorized(req: Request): boolean {
 }
 
 interface Counters {
-  remindersSent:   number;
+  remindersSent:    number;
   remindersSkipped: number;
-  endedSent:       number;
-  endedSkipped:    number;
+  remindersFailed:  number;
+  endedSent:        number;
+  endedSkipped:     number;
+  endedFailed:      number;
+}
+
+/**
+ * Read trialReminders pref defensively. Treat null prefs (legacy rows) the
+ * same as the DEFAULT_EMAIL_PREFS so old users still get notified once.
+ */
+function wantsTrialReminders(prefs: EmailPrefs | null): boolean {
+  return (prefs ?? DEFAULT_EMAIL_PREFS).trialReminders !== false;
 }
 
 async function runJob(): Promise<Counters> {
@@ -71,7 +82,8 @@ async function runJob(): Promise<Counters> {
     ));
 
   const counters: Counters = {
-    remindersSent: 0, remindersSkipped: 0, endedSent: 0, endedSkipped: 0,
+    remindersSent: 0, remindersSkipped: 0, remindersFailed: 0,
+    endedSent:     0, endedSkipped:     0, endedFailed:     0,
   };
 
   for (const row of ending) {
@@ -79,6 +91,17 @@ async function runJob(): Promise<Counters> {
       counters.remindersSkipped++;
       continue;
     }
+
+    // Opt-out is a deliberate "do not send" — stamp the timestamp so we
+    // don't keep evaluating this row every day, but never send.
+    if (!wantsTrialReminders(row.prefs)) {
+      await db.update(schema.subscriptions)
+        .set({ trialReminderSentAt: new Date(), updatedAt: new Date() })
+        .where(eq(schema.subscriptions.id, row.subId));
+      counters.remindersSkipped++;
+      continue;
+    }
+
     const daysLeft = Math.max(1, Math.ceil((row.trialEnds.getTime() - now.getTime()) / 86_400_000));
 
     const sent = await sendTrialEndingEmail({
@@ -92,13 +115,17 @@ async function runJob(): Promise<Counters> {
       daysLeft,
     });
 
-    // Always stamp the timestamp — even if email opted-out we don't want to
-    // try again tomorrow. The user explicitly asked not to be reminded.
-    await db.update(schema.subscriptions)
-      .set({ trialReminderSentAt: new Date(), updatedAt: new Date() })
-      .where(eq(schema.subscriptions.id, row.subId));
-
-    if (sent) counters.remindersSent++; else counters.remindersSkipped++;
+    // Only stamp on success. A transient Resend failure (domain unverified,
+    // 5xx, etc.) MUST be retryable — stamping unconditionally lost three
+    // notifications in production before this fix.
+    if (sent) {
+      await db.update(schema.subscriptions)
+        .set({ trialReminderSentAt: new Date(), updatedAt: new Date() })
+        .where(eq(schema.subscriptions.id, row.subId));
+      counters.remindersSent++;
+    } else {
+      counters.remindersFailed++;
+    }
   }
 
   // ── 2. Trial-ended notice ─────────────────────────────────────────────
@@ -135,6 +162,16 @@ async function runJob(): Promise<Counters> {
       counters.endedSkipped++;
       continue;
     }
+
+    // Same opt-out handling as the reminder pass above.
+    if (!wantsTrialReminders(row.prefs)) {
+      await db.update(schema.subscriptions)
+        .set({ trialEndedNotifiedAt: new Date(), updatedAt: new Date() })
+        .where(eq(schema.subscriptions.id, row.subId));
+      counters.endedSkipped++;
+      continue;
+    }
+
     const sent = await sendTrialEndedEmail({
       to: {
         userId:     row.userId,
@@ -145,11 +182,14 @@ async function runJob(): Promise<Counters> {
       },
     });
 
-    await db.update(schema.subscriptions)
-      .set({ trialEndedNotifiedAt: new Date(), updatedAt: new Date() })
-      .where(eq(schema.subscriptions.id, row.subId));
-
-    if (sent) counters.endedSent++; else counters.endedSkipped++;
+    if (sent) {
+      await db.update(schema.subscriptions)
+        .set({ trialEndedNotifiedAt: new Date(), updatedAt: new Date() })
+        .where(eq(schema.subscriptions.id, row.subId));
+      counters.endedSent++;
+    } else {
+      counters.endedFailed++;
+    }
   }
 
   return counters;
