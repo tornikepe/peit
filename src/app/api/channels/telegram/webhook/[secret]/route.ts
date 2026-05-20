@@ -28,6 +28,7 @@ import { sendMessage, sendTyping, type TgUpdate } from '@/lib/telegram';
 import {
   checkRateLimit, getClientIp, rateLimitKey,
 } from '@/lib/rate-limit';
+import { extractGeo } from '@/lib/geoip';
 import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
 
@@ -197,16 +198,23 @@ export async function POST(req: Request, { params }: RouteCtx) {
   // ── Persist conversation + counters (best-effort) ──────────────────────
   try {
     if (!conversationId) {
+      // Telegram doesn't include user geo in the webhook, but its delivery
+      // node tends to be in the user's region — Vercel's edge headers give
+      // us at least a country-level signal that's better than nothing.
+      const geo = extractGeo(req);
       const [convo] = await db.insert(schema.conversations).values({
         botId:     dbBot.id,
         channel:   'telegram',
         language:  lang,
         visitorId: chatVisitorId.slice(0, 64),
+        country:   geo.country,
+        city:      geo.city,
         metadata: {
           tgChatId:  msg.chat.id,
           tgUserId:  msg.from?.id,
           tgUsername: msg.from?.username,
           chatType:  msg.chat.type,
+          tgLang:    msg.from?.language_code,
         },
       }).returning({ id: schema.conversations.id });
       conversationId = convo.id;

@@ -9,6 +9,7 @@ import { answer } from '@/lib/answer-engine';
 import { type Bot, type BotLang } from '@/lib/bots';
 import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
 import { isOriginAllowed } from '@/lib/origin-check';
+import { extractGeo } from '@/lib/geoip';
 import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
 
@@ -196,11 +197,14 @@ export async function POST(
   let conversationId = validatedConversationId;
   try {
     if (!conversationId) {
+      const geo = extractGeo(req);
       const [convo] = await db.insert(schema.conversations).values({
         botId:     dbBot.id,
         channel:   body.channel ?? 'web',
         language:  lang,
         visitorId: body.visitorId?.slice(0, 64) ?? null,
+        country:   geo.country,
+        city:      geo.city,
         metadata: {
           pageUrl:   body.pageUrl?.slice(0, 500),
           pageTitle: body.pageTitle?.slice(0, 200),

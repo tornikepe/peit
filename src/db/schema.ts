@@ -142,12 +142,17 @@ export const conversations = pgTable('conversations', {
   channel:     channelEnum('channel').notNull().default('web'),
   language:    varchar('language', { length: 4 }).notNull().default('ka'),
   visitorId:   varchar('visitor_id', { length: 64 }), // anonymous cookie/uuid
+  /** ISO 3166-1 alpha-2 country code from edge geoip (Vercel x-vercel-ip-country). */
+  country:     varchar('country', { length: 2 }),
+  /** Free-form city string from edge geoip. Truncated to 80 chars at write time. */
+  city:        varchar('city', { length: 80 }),
   startedAt:   timestamp('started_at').defaultNow().notNull(),
   endedAt:     timestamp('ended_at'),
   metadata:    jsonb('metadata').$type<Record<string, unknown>>().default({}),
 }, t => ({
   botIdx:     index('conversations_bot_idx').on(t.botId),
   startedIdx: index('conversations_started_idx').on(t.startedAt),
+  countryIdx: index('conversations_country_idx').on(t.country),
 }));
 
 // ─── messages ──────────────────────────────────────────────────────────────

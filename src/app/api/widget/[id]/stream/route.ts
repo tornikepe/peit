@@ -22,6 +22,7 @@ import { searchChunksByVector } from '@/db/queries/chunks';
 import { embedOne, isEmbeddingsAvailable } from '@/lib/embeddings';
 import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
 import { isOriginAllowed } from '@/lib/origin-check';
+import { extractGeo } from '@/lib/geoip';
 import {
   getSubscriptionForBot, incrementMessageCount, incrementTokenUsage,
 } from '@/db/queries/subscriptions';
@@ -172,11 +173,14 @@ export async function POST(
   let conversationId = validatedConversationId;
   if (!conversationId) {
     try {
+      const geo = extractGeo(req);
       const [convo] = await db.insert(schema.conversations).values({
         botId:     dbBot.id,
         channel:   body.channel ?? 'web',
         language:  lang,
         visitorId: body.visitorId?.slice(0, 64) ?? null,
+        country:   geo.country,
+        city:      geo.city,
         metadata: {
           pageUrl:   body.pageUrl?.slice(0, 500),
           pageTitle: body.pageTitle?.slice(0, 200),

@@ -35,6 +35,7 @@ import {
 import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
 import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
+import { extractGeo } from '@/lib/geoip';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -134,8 +135,9 @@ export async function POST(req: Request) {
   // Some malformed / health-check payloads arrive without `entry` (Meta's
   // own probe tool fires them too) — `?? []` so we 200 quietly instead of
   // 500'ing on `.map` of undefined.
+  const geo = extractGeo(req);
   await Promise.all((payload.entry ?? []).map(entry =>
-    handleEntry(channel, entry).catch(e =>
+    handleEntry(channel, entry, geo).catch(e =>
       console.error('[meta webhook] entry failed:', entry.id, e),
     ),
   ));
@@ -147,6 +149,7 @@ export async function POST(req: Request) {
 async function handleEntry(
   channel: 'instagram' | 'facebook',
   entry:   MetaEntry,
+  geo:     { country: string | null; city: string | null },
 ): Promise<void> {
   for (const evt of entry.messaging ?? []) {
     const text = evt.message?.text;
@@ -207,6 +210,8 @@ async function handleEntry(
         channel,
         language:  lang,
         visitorId: visitor,
+        country:   geo.country,
+        city:      geo.city,
         metadata:  { pageId: entry.id, senderId: evt.sender.id },
       }).returning({ id: schema.conversations.id });
       await db.insert(schema.messages).values([

@@ -64,6 +64,13 @@
       "when": 1778800000000,
       "tag": "0008_bot_channels",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778900000000,
+      "tag": "0009_analytics_geoip",
+      "breakpoints": true
     }
   ]
 }
