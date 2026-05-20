@@ -139,55 +139,117 @@ export function makeNewBot(partial: Partial<Bot> = {}): Bot {
 // ─── Answer engine ─────────────────────────────────────────────────────────
 
 /**
- * Score how well a user query matches a text.
- * - Exact substring: high score
- * - Word-by-word overlap: medium score
- * - Partial word/stem match: low score
+ * Tokens that carry no topical signal. Without filtering, the FAQ matcher
+ * gives points for words like "რა" / "what" / "и" — a single match crosses
+ * the threshold and the bot ships an unrelated FAQ as if it were the answer.
+ * We observed this in production with one bot replying with hotel marketing
+ * copy to every Georgian question that contained "რა".
  */
-function scoreMatch(query: string, text: string): number {
-  const q = query.toLowerCase().trim();
-  const t = text.toLowerCase();
-  if (!q || !t) return 0;
+const STOPWORDS: ReadonlySet<string> = new Set([
+  // Georgian — common interrogatives, copulas, pronouns, connectors.
+  'და', 'ან', 'რა', 'ეს', 'ის', 'იმ', 'ამ', 'რომ', 'რომელი', 'რომელიც',
+  'ვინ', 'სად', 'როდის', 'როგორ', 'რატომ', 'რომელ', 'რას', 'რის',
+  'მე', 'შენ', 'ჩვენ', 'თქვენ', 'ისინი',
+  'მინდა', 'გინდა', 'გვინდა', 'უნდა',
+  'თუ', 'არი', 'არის', 'არიან', 'ვართ', 'ხართ', 'იყო', 'იქნება', 'იქნა',
+  'არა', 'კი', 'ხო', 'აღარ', 'ჯერ',
+  'აქ', 'იქ', 'ცოტა', 'ბევრი', 'ერთი', 'ორი', 'სამი',
+  'ცალკე', 'ერთად', 'შენი', 'ჩემი', 'მისი', 'ჩვენი', 'თქვენი',
+  'ხომ', 'ხო', 'სხვა', 'ისე', 'ისეთი', 'ასე', 'ასეთი',
+  // English — articles, copulas, common modals, function words.
+  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+  'i', 'you', 'we', 'they', 'he', 'she', 'it', 'my', 'your', 'our', 'their',
+  'what', 'where', 'when', 'how', 'why', 'who', 'which',
+  'that', 'this', 'these', 'those',
+  'and', 'or', 'but', 'if', 'of', 'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by',
+  'do', 'does', 'did', 'can', 'could', 'will', 'would', 'should', 'may', 'might',
+  'have', 'has', 'had', 'not', 'no', 'yes',
+  // Russian — same idea.
+  'и', 'в', 'не', 'я', 'ты', 'на', 'что', 'как', 'да', 'но', 'или', 'это', 'эта',
+  'мы', 'вы', 'они', 'он', 'она', 'оно', 'для', 'от', 'до', 'без',
+]);
 
-  let score = 0;
-
-  // Exact substring
-  if (t.includes(q)) return 80;
-
-  // Split both into tokens (words ≥ 2 chars)
-  const qWords = q.split(/[\s,.:!?]+/).filter(w => w.length >= 2);
-  const tWords = t.split(/[\s,.:!?]+/).filter(w => w.length >= 2);
-
-  for (const qw of qWords) {
-    for (const tw of tWords) {
-      if (tw === qw) { score += 12; break; }
-      if (tw.includes(qw) || qw.includes(tw)) { score += 6; break; }
-      // Prefix match (handles Georgian morphology somewhat)
-      const minLen = Math.min(qw.length, tw.length);
-      if (minLen >= 3 && tw.slice(0, minLen - 1) === qw.slice(0, minLen - 1)) {
-        score += 3; break;
-      }
-    }
-  }
-
-  return score;
+/** Tokenise + drop short / stop / numeric tokens. */
+function meaningfulTokens(s: string): string[] {
+  return s
+    .toLowerCase()
+    .split(/[\s,.:!?()«»"'„“”\-\/]+/)
+    .filter(w => w.length >= 3 && !STOPWORDS.has(w) && !/^\d+$/.test(w));
 }
 
 /**
- * Search FAQ list. Returns best matching answer or null.
- * Threshold 15 to avoid false positives.
+ * Score how well a user query matches a text. Returns:
+ *  - 100 if the (non-trivial) query is a substring of the text
+ *  - 0..N based on overlap of meaningful tokens (stopwords ignored)
+ * The matcher also returns the count of distinct query words that matched,
+ * so callers can require multi-word agreement before treating a FAQ as a
+ * confident match.
+ */
+function scoreMatch(query: string, text: string): { score: number; matched: number } {
+  const q = query.toLowerCase().trim();
+  const t = text.toLowerCase();
+  if (!q || !t) return { score: 0, matched: 0 };
+
+  // Whole-query substring — most reliable signal, only meaningful if the
+  // query itself has substance (otherwise "რა" is "in" almost everything).
+  if (q.length >= 8 && t.includes(q)) return { score: 100, matched: 99 };
+
+  const qWords = meaningfulTokens(q);
+  const tWords = meaningfulTokens(t);
+  if (qWords.length === 0 || tWords.length === 0) return { score: 0, matched: 0 };
+
+  let score = 0;
+  const matchedQ = new Set<string>();
+
+  for (const qw of qWords) {
+    let hit = false;
+    for (const tw of tWords) {
+      if (tw === qw)                                      { score += 12; hit = true; break; }
+      if (qw.length >= 4 && (tw.includes(qw) || qw.includes(tw))) { score += 6; hit = true; break; }
+      // Stem-like prefix match — at least 4 leading chars must agree.
+      const minLen = Math.min(qw.length, tw.length);
+      if (minLen >= 5 && tw.slice(0, minLen - 1) === qw.slice(0, minLen - 1)) {
+        score += 3; hit = true; break;
+      }
+    }
+    if (hit) matchedQ.add(qw);
+  }
+
+  return { score, matched: matchedQ.size };
+}
+
+/**
+ * Return the best FAQ answer when the query clearly matches an existing
+ * FAQ question — otherwise null so the RAG/LLM tier can handle it. We
+ * deliberately keep this strict; a wrong FAQ answer is worse than no FAQ
+ * answer, because the LLM tier can always say "I don't have that info".
+ *
+ * Confidence rules (any one of them is enough):
+ *   - Query is an 8+ char substring of the FAQ question or its answer.
+ *   - Multi-word agreement: ≥2 distinct meaningful query tokens match
+ *     AND total score ≥ 20.
+ *   - Question-side score alone ≥ 24 (lots of overlap with the question).
  */
 export function matchFaq(input: string, bot: Bot): string | null {
   let best: { score: number; answer: string } | null = null;
 
   for (const faq of bot.faqs) {
-    // Score against the question AND the answer text so even off-phrasing works
-    const s = Math.max(
-      scoreMatch(input, faq.q),
-      scoreMatch(input, faq.q + ' ' + faq.a) * 0.6,
-    );
-    if (s >= 12 && (!best || s > best.score)) {
-      best = { score: s, answer: faq.a };
+    const qHit = scoreMatch(input, faq.q);
+    const aHit = scoreMatch(input, faq.q + ' ' + faq.a);
+
+    // Take the strongest signal. Question-side wins over answer-side
+    // because the question is what the user is paraphrasing.
+    const score   = Math.max(qHit.score, aHit.score * 0.5);
+    const matched = Math.max(qHit.matched, aHit.matched);
+
+    const confident =
+      qHit.score >= 100                  ||   // substring of question
+      aHit.score >= 100                  ||   // substring of answer
+      qHit.score >= 24                   ||   // strong question agreement
+      (score >= 20 && matched >= 2);          // multi-word match
+
+    if (confident && (!best || score > best.score)) {
+      best = { score, answer: faq.a };
     }
   }
 
@@ -205,15 +267,17 @@ export function searchKnowledge(input: string, bot: Bot): string | null {
   let best: { score: number; chunk: KnowledgeChunk } | null = null;
 
   for (const chunk of bot.knowledgeChunks) {
-    const headingScore = scoreMatch(input, chunk.heading) * 1.5; // headings weigh more
-    const contentScore = scoreMatch(input, chunk.content);
+    const headingScore = scoreMatch(input, chunk.heading).score * 1.5; // headings weigh more
+    const contentScore = scoreMatch(input, chunk.content).score;
     const keywordScore = chunk.keywords.some(k =>
       input.toLowerCase().includes(k) || k.includes(input.toLowerCase().slice(0, 4))
     ) ? 20 : 0;
 
     const total = Math.max(headingScore, contentScore) + keywordScore;
 
-    if (total >= 8 && (!best || total > best.score)) {
+    // Require non-trivial relevance — 12+ matches the FAQ tier's spirit and
+    // keeps short-prefix matches from surfacing unrelated chunks.
+    if (total >= 12 && (!best || total > best.score)) {
       best = { score: total, chunk };
     }
   }
