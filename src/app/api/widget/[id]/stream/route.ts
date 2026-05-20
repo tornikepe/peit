@@ -16,7 +16,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { corsPreflight, corsError, CORS_HEADERS } from '@/lib/widget-cors';
 import { answer } from '@/lib/answer-engine';
-import { streamAnswer, isClaudeAvailable } from '@/lib/claude';
+import { streamAnswer, isLLMAvailable } from '@/lib/llm';
 import { type Bot, type BotLang } from '@/lib/bots';
 import { searchChunksByVector } from '@/db/queries/chunks';
 import { embedOne, isEmbeddingsAvailable } from '@/lib/embeddings';
@@ -215,7 +215,7 @@ export async function POST(
         // Tier 1: FAQ — instant, no AI. Reuse the non-streaming engine.
         // Tier 2: RAG with streaming Claude
         // Tier 3: Keyword fallback via the same non-streaming engine
-        if (isClaudeAvailable()) {
+        if (isLLMAvailable()) {
           // Retrieve chunks (mirror answer-engine's tier-2 retrieval)
           let chunks: { heading: string; content: string }[] = [];
           if (isEmbeddingsAvailable()) {

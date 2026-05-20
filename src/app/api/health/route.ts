@@ -71,15 +71,21 @@ export async function GET() {
   const db = await checkDatabase();
 
   // Optional integrations — never fail the probe, just report.
-  const anthropic = { configured: !!process.env.ANTHROPIC_API_KEY };
-  const voyage    = { configured: !!process.env.VOYAGE_API_KEY };
-  const resend    = { configured: !!process.env.RESEND_API_KEY };
-  const lemon     = { configured: !!(process.env.LEMONSQUEEZY_API_KEY && process.env.LEMONSQUEEZY_STORE_ID) };
+  const anthropic = { configured: !!process.env.ANTHROPIC_API_KEY?.trim() };
+  const gemini    = { configured: !!process.env.GEMINI_API_KEY?.trim() };
+  const voyage    = { configured: !!process.env.VOYAGE_API_KEY?.trim() };
+  const resend    = { configured: !!process.env.RESEND_API_KEY?.trim() };
+  const lemon     = {
+    configured: !!(process.env.LEMONSQUEEZY_API_KEY?.trim() && process.env.LEMONSQUEEZY_STORE_ID?.trim()),
+  };
+  // At least one LLM provider must be reachable for the AI tier — the
+  // answer engine degrades to keyword search otherwise.
+  const llmOk = anthropic.configured || gemini.configured;
 
   // Overall verdict — DB is the only hard requirement.
   const status: 'healthy' | 'degraded' | 'down' =
-    !db.ok                                     ? 'down'
-    : (!anthropic.configured || !lemon.configured) ? 'degraded'
+    !db.ok                          ? 'down'
+    : (!llmOk || !lemon.configured) ? 'degraded'
     : 'healthy';
 
   const body = {
@@ -88,7 +94,7 @@ export async function GET() {
     version:   VERSION,
     uptimeMs:  Date.now() - START_AT,
     timestamp: new Date().toISOString(),
-    checks: { db, anthropic, voyage, resend, lemon },
+    checks: { db, anthropic, gemini, voyage, resend, lemon },
   };
 
   return NextResponse.json(body, {

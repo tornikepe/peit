@@ -15,7 +15,7 @@ import {
   type Bot, type BotLang,
 } from './bots';
 import { embedOne, isEmbeddingsAvailable } from './embeddings';
-import { generateAnswer, isClaudeAvailable, type RetrievedChunk, type ClaudeUsage } from './claude';
+import { generateAnswer, isLLMAvailable, type RetrievedChunk, type ClaudeUsage } from './llm';
 import {
   searchChunksByVector, type RetrievedChunk as DbChunk,
 } from '@/db/queries/chunks';
@@ -50,8 +50,8 @@ export async function answer(input: EngineInput): Promise<AnswerResult> {
     return { text: faqAnswer, source: 'faq' };
   }
 
-  // ── Tier 2: RAG (Voyage + Claude) ───────────────────────────────────────
-  if (isClaudeAvailable()) {
+  // ── Tier 2: RAG (Voyage + Claude or Gemini) ─────────────────────────────
+  if (isLLMAvailable()) {
     let chunks: RetrievedChunk[] = [];
     let groundedChunkIds: string[] = [];
     let retrievalScores: number[] = [];
