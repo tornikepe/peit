@@ -238,3 +238,25 @@ h1, h2, h3, h4 {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─── Print stylesheet — used by /dashboard/analytics "PDF / ბეჭდვა"
+   button which simply calls window.print(). Switches to light theme so
+   ink and toner don't burn through a black page; keeps charts visible
+   but strips interactive controls (range picker, header, export bar). */
+@media print {
+  body, .min-h-screen { background: #fff !important; color: #111 !important; }
+  header, .print\\:hidden { display: none !important; }
+  .glass {
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+  }
+  .text-white, .text-gray-200, .text-gray-300, .text-gray-400 { color: #111 !important; }
+  .text-gray-500, .text-gray-600 { color: #555 !important; }
+  .text-violet-300, .text-violet-400 { color: #6d28d9 !important; }
+  a { color: #6d28d9 !important; text-decoration: none !important; }
+  /* Force charts to fit one page nicely. */
+  svg { max-height: 200px !important; }
+  /* Allow grid sections to wrap on narrow paper widths. */
+  section { break-inside: avoid; }
+}

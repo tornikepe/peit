@@ -38,6 +38,9 @@ export default async function DashboardPage() {
             <Link href="/dashboard" className="px-4 py-2 text-sm text-white bg-white/[0.05] rounded-lg">
               Overview
             </Link>
+            <Link href="/dashboard/analytics" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
+              ანალიტიკა
+            </Link>
             <Link href="/dashboard/leads" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors">
               ლიდები
             </Link>
