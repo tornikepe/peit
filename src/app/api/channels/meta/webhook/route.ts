@@ -30,7 +30,7 @@ import {
   findMetaBotByPageId, recordInbound, markChannelError,
 } from '@/db/queries/channels';
 import {
-  isMetaAvailable, getWebhookVerifyToken, sendMessengerMessage, sendInstagramMessage,
+  getWebhookVerifyToken, sendMessengerMessage, sendInstagramMessage,
 } from '@/lib/meta';
 import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
@@ -91,17 +91,26 @@ function verifySignature(raw: string, header: string | null, appSecret: string):
 }
 
 export async function POST(req: Request) {
-  if (!isMetaAvailable()) {
-    // Meta isn't configured on this deployment — drop quietly so Meta's
-    // delivery infra stops retrying.
-    return NextResponse.json({ received: true });
-  }
-  const appSecret = process.env.META_APP_SECRET!.trim();
+  // Two operating modes are supported here:
+  //   1. Peit owns a Meta App → META_APP_SECRET is set → enforce HMAC.
+  //      Every paid SaaS deployment should run in this mode.
+  //   2. Customers paste their own Page Access Tokens (paste-token mode) →
+  //      Meta App lives on the customer side → HMAC would be signed with
+  //      a per-customer App Secret we don't have. Skip the signature check
+  //      and rely on pageId routing (findMetaBotByPageId) as the auth gate.
+  //      Spoofing requires knowing an exact connected pageId.
+  const appSecret = process.env.META_APP_SECRET?.trim();
   const raw = await req.text();
 
-  if (!verifySignature(raw, req.headers.get('x-hub-signature-256'), appSecret)) {
-    console.warn('[meta webhook] signature mismatch');
-    return NextResponse.json({ error: 'INVALID_SIGNATURE' }, { status: 401 });
+  if (appSecret) {
+    if (!verifySignature(raw, req.headers.get('x-hub-signature-256'), appSecret)) {
+      console.warn('[meta webhook] signature mismatch');
+      return NextResponse.json({ error: 'INVALID_SIGNATURE' }, { status: 401 });
+    }
+  } else {
+    // Permissive mode is fine for paste-token deployments but operators
+    // should know. Print once per cold start.
+    console.warn('[meta webhook] META_APP_SECRET not set — HMAC verification disabled; pageId routing only');
   }
 
   let payload: MetaPayload;

@@ -255,6 +255,21 @@ function TelegramRow({ botId, view, onChange }: {
 }
 
 // ─── Meta (FB / IG) row ───────────────────────────────────────────────────
+//
+// Two connection modes — UI shows whichever applies first:
+//
+//   1. OAuth flow — preferred when Peit's Meta App is registered on the
+//      server (META_APP_ID + META_APP_SECRET set). User clicks "Meta-ში
+//      შესვლა", picks a page in a popup, done.
+//   2. Paste-token flow — always available. User generates a Page Access
+//      Token in Meta Business Suite themselves and pastes it. Works
+//      without Peit owning a Meta App. For inbound messages to also flow
+//      the user still needs to subscribe their page to a Meta App whose
+//      webhook points at Peit (we surface the URL + verify token in the
+//      help text).
+//
+// The dashboard probes /api/channels/[botId]/meta/auth-url on expand —
+// 503 means OAuth isn't configured; we fall through to paste-token only.
 
 function MetaRow({ botId, view, kind, onChange }: {
   botId:    string;
@@ -262,47 +277,49 @@ function MetaRow({ botId, view, kind, onChange }: {
   kind:     'instagram' | 'facebook';
   onChange: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg]   = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [busy,     setBusy]     = useState(false);
+  const [msg,      setMsg]      = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [pageId,   setPageId]   = useState('');
+  const [token,    setToken]    = useState('');
+  const [info,     setInfo]     = useState<{
+    webhookUrl: string; verifyToken: string | null; oauthAvailable: boolean;
+  } | null>(null);
 
   const connected = view?.status === 'active';
   const pageName  = view?.credentials.pageName as string | undefined;
 
-  const Icon = kind === 'instagram' ? InstagramIcon : FacebookIcon;
+  const Icon  = kind === 'instagram' ? InstagramIcon : FacebookIcon;
   const label = kind === 'instagram' ? 'Instagram' : 'Facebook Messenger';
+
+  /** Pull webhook URL + verify token + OAuth availability from the server
+   *  the first time the user expands the row. */
+  async function loadInfo() {
+    if (info) return info;
+    try {
+      const res = await fetch('/api/channels/meta/info');
+      if (!res.ok) return null;
+      const data = await res.json() as typeof info;
+      setInfo(data);
+      return data;
+    } catch { return null; }
+  }
 
   async function startOAuth() {
     setBusy(true); setMsg(null);
     try {
       const res = await fetch(`/api/channels/${botId}/meta/auth-url?kind=${kind}`);
       const data = await res.json();
-      if (!res.ok) {
-        if (data.error === 'META_NOT_CONFIGURED') {
-          setMsg({ kind: 'err', text: 'Meta App ჯერ არ არის დაყენებული server-ზე' });
-          return;
-        }
-        throw new Error(data.message ?? data.error ?? 'oauth url failed');
-      }
-      // Open in a new window — the callback handler will postMessage back
-      // when it's done.
+      if (!res.ok) throw new Error(data.message ?? data.error ?? 'oauth url failed');
       const w = window.open(data.authUrl, 'peit-meta-oauth', 'width=600,height=700');
-      if (!w) {
-        setMsg({ kind: 'err', text: 'Popup-ი დაიბლოკა — გახსენი popup-ი ბრაუზერისთვის' });
-        return;
-      }
-      // Listen for the callback page's postMessage. Poll closed state as
-      // a fallback so we don't hang if the user closes the window.
+      if (!w) { setMsg({ kind: 'err', text: 'Popup-ი დაიბლოკა' }); return; }
       const handler = (ev: MessageEvent) => {
         if (ev.origin !== window.location.origin) return;
         const m = ev.data as { source?: string; ok?: boolean; error?: string };
         if (m?.source !== 'peit-meta-oauth') return;
         window.removeEventListener('message', handler);
-        if (m.ok) {
-          setMsg({ kind: 'ok', text: '✅ დაკავშირდა' });
-          onChange();
-        } else {
-          setMsg({ kind: 'err', text: m.error ?? 'oauth failed' });
-        }
+        if (m.ok) { setMsg({ kind: 'ok', text: '✅ დაკავშირდა' }); onChange(); }
+        else      { setMsg({ kind: 'err', text: m.error ?? 'oauth failed' }); }
       };
       window.addEventListener('message', handler);
       const poll = setInterval(() => {
@@ -310,9 +327,26 @@ function MetaRow({ botId, view, kind, onChange }: {
       }, 500);
     } catch (e) {
       setMsg({ kind: 'err', text: e instanceof Error ? e.message : 'oauth failed' });
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
+  }
+
+  async function connectWithToken() {
+    if (!pageId.trim() || !token.trim()) return;
+    setBusy(true); setMsg(null);
+    try {
+      const res = await fetch(`/api/channels/${botId}/meta-token`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ kind, pageId: pageId.trim(), pageAccessToken: token.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? data.error ?? 'connect failed');
+      setMsg({ kind: 'ok', text: `✅ დაკავშირდა${data.pageName ? ` — ${data.pageName}` : ''}` });
+      setPageId(''); setToken(''); setExpanded(false);
+      onChange();
+    } catch (e) {
+      setMsg({ kind: 'err', text: e instanceof Error ? e.message : 'connect failed' });
+    } finally { setBusy(false); }
   }
 
   async function disconnect() {
@@ -324,9 +358,7 @@ function MetaRow({ botId, view, kind, onChange }: {
       onChange();
     } catch (e) {
       setMsg({ kind: 'err', text: e instanceof Error ? e.message : 'disconnect failed' });
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   return (
@@ -348,16 +380,111 @@ function MetaRow({ botId, view, kind, onChange }: {
         >
           <Trash2 className="w-3 h-3" /> გათიშვა
         </button>
-      ) : (
+      ) : !expanded ? (
         <button
           type="button"
-          onClick={startOAuth}
-          disabled={busy}
-          className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+          onClick={() => { void loadInfo(); setExpanded(true); }}
+          className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg flex items-center gap-1.5"
         >
-          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plug className="w-3 h-3" />}
-          {kind === 'instagram' ? 'Meta-ში შესვლა' : 'Page-ის შერჩევა'}
+          <Plug className="w-3 h-3" /> დაკავშირება
         </button>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {info?.oauthAvailable && (
+            <button
+              type="button"
+              onClick={startOAuth}
+              disabled={busy}
+              className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-50 self-start"
+            >
+              {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plug className="w-3 h-3" />}
+              {kind === 'instagram' ? 'Meta-ში ავტომატური' : 'Page-ის ავტომატური არჩევა'}
+            </button>
+          )}
+
+          {/* Paste-token form — always shown */}
+          <div className="border border-white/[0.06] rounded-lg p-3 bg-black/20">
+            <p className="text-[11px] text-gray-300 font-medium mb-2">
+              Page Access Token + Page ID
+            </p>
+            <p className="text-[10px] text-gray-500 leading-relaxed mb-3">
+              1. გახსენი <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Meta Business Suite → Settings → System Users</a>
+              <br />
+              2. Generate Token → აარჩიე {kind === 'instagram' ? 'IG-დაკავშირებული page' : 'page'} + <code className="text-violet-300">pages_messaging{kind === 'instagram' ? ', instagram_manage_messages' : ''}</code> ნებართვები
+              <br />
+              3. დააკოპირე token + Page ID (Page Settings → About → Page ID)
+            </p>
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={pageId}
+                onChange={e => setPageId(e.target.value)}
+                placeholder="Page ID (123456789012345)"
+                className="bg-white/5 border border-white/10 focus:border-violet-500/50 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-gray-600 outline-none"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <input
+                type="password"
+                value={token}
+                onChange={e => setToken(e.target.value)}
+                placeholder="EAAxxxxxxxxxxxxxxxxxxxx..."
+                className="bg-white/5 border border-white/10 focus:border-violet-500/50 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-gray-600 outline-none font-mono"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={connectWithToken}
+                  disabled={busy || pageId.length < 5 || token.length < 40}
+                  className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {busy && <Loader2 className="w-3 h-3 animate-spin" />} შემოწმება + დაკავშირება
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setExpanded(false); setPageId(''); setToken(''); setMsg(null); }}
+                  disabled={busy}
+                  className="text-xs text-gray-400 hover:text-gray-300 px-2"
+                >
+                  cancel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Inbound webhook info — needed so Meta sends messages to us.
+              Customer pastes both values into THEIR Meta App's webhook
+              configuration. The verify token is shared across all Peit
+              tenants — it only authenticates Meta's setup handshake. */}
+          <details className="text-[10px] text-gray-500">
+            <summary className="cursor-pointer hover:text-gray-400">
+              ⚙ შემოსავალი მესიჯების მისაღებად (advanced)
+            </summary>
+            <div className="mt-2 leading-relaxed flex flex-col gap-2">
+              <div>
+                Meta App Dashboard → Webhooks → {kind === 'instagram' ? 'Instagram' : 'Page'}.<br/>
+                <span className="text-gray-600">Callback URL:</span>
+                <div className="mt-0.5 bg-black/40 rounded px-2 py-1 font-mono text-[10px] text-violet-300 break-all">
+                  {info?.webhookUrl ?? '…'}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-600">Verify Token:</span>
+                <div className="mt-0.5 bg-black/40 rounded px-2 py-1 font-mono text-[10px] text-violet-300 break-all">
+                  {info?.verifyToken ?? '⚠ Peit-ის სერვერზე META_WEBHOOK_VERIFY_TOKEN არ არის დაყენებული'}
+                </div>
+              </div>
+              <div className="text-gray-600">
+                გადაიწერე {kind === 'instagram'
+                  ? <>field: <code className="text-violet-300">messages</code></>
+                  : <>fields: <code className="text-violet-300">messages, messaging_postbacks</code></>}
+              </div>
+            </div>
+          </details>
+        </div>
       )}
       {msg && (
         <p className={`mt-2 text-[11px] ${msg.kind === 'ok' ? 'text-emerald-400' : 'text-red-400'}`}>
