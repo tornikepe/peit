@@ -52,6 +52,39 @@ function normalizeUrl(input: string): string {
   return u;
 }
 
+/**
+ * Reject URLs that point at private / internal infrastructure. Defense in
+ * depth: the analyze-site API route validates before calling us, but a
+ * malicious bot.websiteUrl PATCH could otherwise let recrawl proxy SSRF
+ * probes through our server. Hostname checks are coarse on purpose — full
+ * DNS rebinding protection would need per-fetch lookups, which is too much
+ * for this scraper. The patterns below catch the realistic targets
+ * (localhost, RFC1918, link-local, cloud-metadata IPs).
+ */
+function isPrivateHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (h === 'localhost' || h === '0.0.0.0' || h.endsWith('.localhost')) return true;
+  if (h === '169.254.169.254') return true; // AWS / GCP / Azure metadata
+  // IPv4 private ranges
+  if (/^127\./.test(h)) return true;
+  if (/^10\./.test(h)) return true;
+  if (/^192\.168\./.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^169\.254\./.test(h)) return true;
+  // IPv6 loopback / link-local / unique-local
+  if (h === '::1' || h === '[::1]') return true;
+  if (/^fe80:/i.test(h) || /^fc00:/i.test(h) || /^fd00:/i.test(h)) return true;
+  return false;
+}
+
+function assertPublicUrl(url: string): void {
+  let parsed: URL;
+  try { parsed = new URL(url); }
+  catch { throw new Error('INVALID_URL'); }
+  if (!/^https?:$/.test(parsed.protocol)) throw new Error('INVALID_URL');
+  if (isPrivateHost(parsed.hostname))      throw new Error('INTERNAL_URL_BLOCKED');
+}
+
 function detectLang(text: string): SiteAnalysis['language'] {
   const ka = (text.match(/[Ⴀ-ჿ]/g) ?? []).length;
   const ru = (text.match(/[Ѐ-ӿ]/g) ?? []).length;
@@ -129,6 +162,11 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
 }
 
 async function fetchPage(url: string, timeoutMs = PER_PAGE_TIMEOUT): Promise<ExtractedPage | null> {
+  // Belt-and-braces SSRF check — even if a discovered internal link slips
+  // through the per-call analyzeSite() validation (e.g. an http://10.x
+  // anchor on the homepage), the fetch never leaves the LAN.
+  try { assertPublicUrl(url); } catch { return null; }
+
   const res = await fetchWithTimeout(url, timeoutMs);
   if (!res || !res.ok) return null;
   if (!(res.headers.get('content-type') || '').includes('text/html')) return null;
@@ -326,6 +364,7 @@ function pickInternalLinks(
 
 export async function analyzeSite(rawUrl: string): Promise<SiteAnalysis> {
   const url = normalizeUrl(rawUrl);
+  assertPublicUrl(url);
 
   const main = await fetchPage(url);
   if (!main) {
