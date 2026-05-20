@@ -34,6 +34,7 @@ import {
 } from '@/lib/meta';
 import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
+import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,6 +92,16 @@ function verifySignature(raw: string, header: string | null, appSecret: string):
 }
 
 export async function POST(req: Request) {
+  // Per-IP cap covers the gap when paste-token mode skips HMAC: an
+  // attacker who knows a connected pageId could otherwise burn AI budget
+  // by spamming spoofed events. 300/min/IP is far above Meta's real
+  // delivery rate but cheap to enforce.
+  const ip = getClientIp(req);
+  const rl = await checkRateLimit(rateLimitKey(['meta_wh_ip', ip]), 300, 60);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429 });
+  }
+
   // Two operating modes are supported here:
   //   1. Peit owns a Meta App → META_APP_SECRET is set → enforce HMAC.
   //      Every paid SaaS deployment should run in this mode.
@@ -140,6 +151,15 @@ async function handleEntry(
 
     const match = await findMetaBotByPageId(entry.id, channel);
     if (!match) continue; // unknown page, no bot connected
+
+    // Per-sender rate limit — mirrors the per-chat cap on the Telegram
+    // webhook so one Messenger / IG thread can't drain a bot's monthly
+    // quota. 30/h/sender is generous for a real customer conversation.
+    const rl = await checkRateLimit(
+      rateLimitKey(['meta_sender', match.botId, evt.sender.id]),
+      30, 3600,
+    );
+    if (!rl.allowed) continue; // silently drop; sender keeps writing, we don't burn AI
 
     const db = getDb();
     if (!db) continue;

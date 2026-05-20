@@ -135,9 +135,12 @@ export async function deleteWebhook(token: string): Promise<void> {
  * Send a message back to a chat. Used by the webhook handler after the
  * answer engine produces a reply.
  *
- * `parse_mode: 'Markdown'` mirrors what the widget renders (bold, lists,
- * links). Telegram's flavour is laxer than CommonMark — escape only the
- * minimum: backticks and underscores in identifiers can break formatting.
+ * Telegram's old "Markdown" parser is strict about balanced `_` and `*` —
+ * any unmatched marker (very common in LLM output: URLs with underscores,
+ * lone asterisks, Georgian text with technical terms) makes the API
+ * reject the whole message with 400 "Can't parse entities". When that
+ * happens we retry as plain text instead of dropping the reply on the
+ * floor — customer always gets an answer, even if it loses bold/italics.
  */
 export async function sendMessage(
   token: string,
@@ -145,14 +148,41 @@ export async function sendMessage(
   text: string,
   opts?: { replyToMessageId?: number },
 ): Promise<TgMessage> {
-  return tgFetch<TgMessage>(token, 'sendMessage', {
-    chat_id:    chatId,
-    text:       text.slice(0, 4000), // TG hard cap is 4096
-    parse_mode: 'Markdown',
+  const truncated = text.slice(0, 4000); // TG hard cap is 4096
+  const base = {
+    chat_id:             chatId,
+    text:                truncated,
     reply_to_message_id: opts?.replyToMessageId,
-    // Disable preview to keep the chat clean when the answer includes a URL
     link_preview_options: { is_disabled: true },
-  });
+  };
+
+  try {
+    return await tgFetch<TgMessage>(token, 'sendMessage', {
+      ...base,
+      parse_mode: 'Markdown',
+    });
+  } catch (e) {
+    // 400 from TG = parse error 99% of the time. Strip markup and retry
+    // plain so the user always sees the answer text.
+    if (e instanceof TelegramApiError && e.status === 400) {
+      return tgFetch<TgMessage>(token, 'sendMessage', {
+        ...base,
+        text: stripMarkdown(truncated),
+      });
+    }
+    throw e;
+  }
+}
+
+/** Best-effort markdown → plain. Keeps content readable, drops marks only. */
+function stripMarkdown(s: string): string {
+  return s
+    // Links: [text](url) → text (url)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+    // Bold / italic / code markers — leave underscores inside words alone.
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/(^|[\s(])[*_]([^*_\n]+?)[*_]([\s.,!?;:)]|$)/g, '$1$2$3')
+    .replace(/`([^`]+)`/g, '$1');
 }
 
 /**

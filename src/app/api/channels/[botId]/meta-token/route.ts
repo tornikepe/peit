@@ -68,9 +68,14 @@ export const POST = withAuth<{ botId: string }>(async ({ user, req, params }) =>
   try { body = await req.json() as ConnectBody; }
   catch { return jsonError(400, 'INVALID_JSON'); }
 
+  // Tokens copy-pasted from Meta Business Suite sometimes arrive wrapped in
+  // straight or smart quotes — strip them so the customer doesn't see a
+  // confusing "INVALID_TOKEN_FORMAT" for what looks like a valid string.
+  const unwrap = (s: string) => s.trim().replace(/^["'`“”„«»]+|["'`“”„«»]+$/g, '').trim();
+
   const kind   = body.kind === 'instagram' || body.kind === 'facebook' ? body.kind as Kind : null;
-  const pageId = typeof body.pageId === 'string' ? body.pageId.trim() : '';
-  const token  = typeof body.pageAccessToken === 'string' ? body.pageAccessToken.trim() : '';
+  const pageId = typeof body.pageId === 'string' ? unwrap(body.pageId) : '';
+  const token  = typeof body.pageAccessToken === 'string' ? unwrap(body.pageAccessToken) : '';
 
   if (!kind)   return jsonError(400, 'INVALID_KIND');
   if (!pageId) return jsonError(400, 'MISSING_PAGE_ID', 'Page ID is required.');

@@ -141,7 +141,13 @@ function TelegramRow({ botId, view, onChange }: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? data.error ?? 'connect failed');
-      setMsg({ kind: 'ok', text: `✅ დაკავშირდა @${data.botUsername}` });
+      // Server returns a warning when the bot is in 'draft' status —
+      // pass it through verbatim so the user knows why their fresh TG
+      // bot isn't replying yet.
+      const okText = data.warning
+        ? `✅ დაკავშირდა @${data.botUsername} — ⚠ ${data.warning}`
+        : `✅ დაკავშირდა @${data.botUsername}`;
+      setMsg({ kind: 'ok', text: okText });
       setToken('');
       setExpanded(false);
       onChange();

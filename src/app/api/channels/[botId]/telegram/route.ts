@@ -48,7 +48,10 @@ export const POST = withAuth<{ botId: string }>(async ({ user, req, params }) =>
   try { body = await req.json(); }
   catch { return jsonError(400, 'INVALID_JSON'); }
 
-  const token = body.token?.trim();
+  // BotFather copy buttons sometimes include surrounding quotes; strip
+  // them so the customer doesn't see "INVALID_TOKEN" for a token that's
+  // technically fine.
+  const token = body.token?.trim().replace(/^["'`“”„«»]+|["'`“”„«»]+$/g, '');
   if (!token || !looksLikeTelegramToken(token)) {
     return jsonError(400, 'INVALID_TOKEN',
       'Telegram bot tokens look like "123456:ABCDEF..." — get one from @BotFather.');
@@ -94,10 +97,19 @@ export const POST = withAuth<{ botId: string }>(async ({ user, req, params }) =>
       e instanceof Error ? e.message : 'Telegram refused the webhook');
   }
 
+  // Surface a "your bot is in draft" warning so the user doesn't wonder
+  // why their TG bot answers with silence. The connection itself is fine —
+  // the webhook handler returns 200-silent for non-active bots — but the
+  // customer-visible symptom is "I sent a message and nothing happened".
+  const warning = bot.status !== 'active'
+    ? `ბოტი ჯერ "${bot.status}" სტატუსშია — გადააქციე "active" რომ პასუხები გავიდეს.`
+    : null;
+
   return {
     ok:          true,
     botUsername: botInfo.username,
     inviteUrl:   botInfo.username ? `https://t.me/${botInfo.username}` : null,
+    warning,
   };
 });
 
