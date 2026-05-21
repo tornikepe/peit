@@ -204,24 +204,7 @@ export default function NewBotPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07070f]">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#07070f]/90 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Dashboard</span>
-          </Link>
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-white text-sm">Peit</span>
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-6 py-10">
+    <div className="max-w-3xl mx-auto">
         {/* Stepper */}
         <div className="mb-10">
           <div className="flex items-center justify-between mb-3">
@@ -718,7 +701,6 @@ export default function NewBotPage() {
             </div>
           )}
         </div>
-      </main>
     </div>
   );
 }

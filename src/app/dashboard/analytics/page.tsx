@@ -18,10 +18,9 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, BarChart3 } from 'lucide-react';
 import type { Metadata } from 'next';
 
+import PageHeader from '@/components/dashboard-shell/PageHeader';
 import { getCurrentUserOrThrow } from '@/db/queries/users';
 import {
   rangeFromPreset,
@@ -107,67 +106,53 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const rangeLabel = formatRangeLabel(range, preset);
 
   return (
-    <div className="min-h-screen bg-[#07070f] print:bg-white">
-      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#07070f]/90 backdrop-blur-xl print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 text-gray-400 hover:text-white text-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Dashboard
-          </Link>
-          <div className="flex items-center gap-2 text-white">
-            <BarChart3 className="w-4 h-4 text-violet-300" />
-            <span className="font-semibold">ანალიტიკა</span>
-          </div>
-        </div>
+    <div className="print:bg-white">
+      <div className="print:hidden">
+        <PageHeader
+          eyebrow="Analytics"
+          title="ანალიტიკა"
+          subtitle={rangeLabel}
+          action={
+            <>
+              <RangePicker current={preset} />
+              <ExportButtons />
+            </>
+          }
+        />
+      </div>
+
+      {/* Print-only header — narrower, no controls. */}
+      <header className="hidden print:block mb-3">
+        <h1 className="text-2xl font-bold text-black">ანალიტიკა</h1>
+        <p className="text-sm text-gray-700 mt-1">{rangeLabel}</p>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 print:py-2">
-        {/* Top controls */}
-        <section className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6 print:mb-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">ანალიტიკა</h1>
-            <p className="text-sm text-gray-500 mt-1">{rangeLabel}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 print:hidden">
-            <RangePicker current={preset} />
-            <ExportButtons />
-          </div>
-        </section>
+      <section className="mb-6">
+        <KpiCards kpis={kpis} />
+      </section>
 
-        {/* KPIs */}
-        <section className="mb-6">
-          <KpiCards kpis={kpis} />
-        </section>
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="lg:col-span-2">
+          <ConversationsChart points={dailyPoints} channel={channel} />
+        </div>
+        <Funnel data={funnel} />
+      </section>
 
-        {/* Chart + Funnel */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="lg:col-span-2">
-            <ConversationsChart points={dailyPoints} channel={channel} />
-          </div>
-          <Funnel data={funnel} />
-        </section>
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <TopQuestionsList items={topQuestions} />
+        <UnansweredList   items={unanswered}   />
+      </section>
 
-        {/* Top questions + Unanswered */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <TopQuestionsList items={topQuestions} />
-          <UnansweredList   items={unanswered}   />
-        </section>
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <GeoTable rows={geo} />
+        <div className="lg:col-span-2">
+          <Heatmap cells={heat} />
+        </div>
+      </section>
 
-        {/* Geo + Heatmap */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <GeoTable rows={geo} />
-          <div className="lg:col-span-2">
-            <Heatmap cells={heat} />
-          </div>
-        </section>
-
-        <p className="text-[10px] text-gray-600 text-center mt-8 print:mt-4">
-          ანალიტიკის მონაცემები რეალურ დროში მუშავდება — განახლება ხდება ყოველ მოთხოვნაზე
-        </p>
-      </main>
+      <p className="text-[10px] text-gray-600 text-center mt-8 print:mt-4">
+        ანალიტიკის მონაცემები რეალურ დროში მუშავდება — განახლება ხდება ყოველ მოთხოვნაზე
+      </p>
     </div>
   );
 }

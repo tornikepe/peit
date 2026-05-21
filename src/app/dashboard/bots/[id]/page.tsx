@@ -92,7 +92,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
 
   if (!loaded) {
     return (
-      <div className="min-h-screen bg-[#07070f] flex items-center justify-center">
+      <div className="py-24 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
       </div>
     );
@@ -100,7 +100,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
 
   if (!bot) {
     return (
-      <div className="min-h-screen bg-[#07070f] flex flex-col items-center justify-center px-6">
+      <div className="py-24 flex flex-col items-center justify-center">
         <p className="text-white text-lg mb-2">ბოტი ვერ მოიძებნა</p>
         <p className="text-gray-500 text-sm mb-6">ეს ბოტი არ არსებობს ან წაშლილია</p>
         <Link
@@ -180,24 +180,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="min-h-screen bg-[#07070f]">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#07070f]/90 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Dashboard</span>
-          </Link>
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-white text-sm">Peit</span>
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-6xl mx-auto">
         {/* Bot header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
@@ -513,7 +496,6 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
         </div>
-      </main>
     </div>
   );
 }

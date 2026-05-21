@@ -9,10 +9,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import {
-  ArrowLeft, Download, Trash2, AlertTriangle, Loader2, ShieldCheck,
+  Download, Trash2, AlertTriangle, Loader2, ShieldCheck,
   Cookie, ExternalLink, CheckCircle2, Mail, Globe,
 } from 'lucide-react';
-import { UserButton } from '@clerk/nextjs';
+import PageHeader from '@/components/dashboard-shell/PageHeader';
 
 type Locale = 'ka' | 'en' | 'ru';
 interface EmailPrefs {
@@ -152,36 +152,12 @@ export default function PrivacyDataPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07070f]">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#07070f]/90 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Dashboard</span>
-            </Link>
-            <span className="text-gray-700">/</span>
-            <h1 className="text-white font-semibold text-sm">Privacy & Data</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/" className="font-extrabold text-white text-xl tracking-[-0.04em] leading-none">
-              pe<span className="gradient-text">i</span>t
-            </Link>
-            <UserButton />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-6 py-10">
-        <div className="mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">
-            Privacy & მონაცემები
-          </h2>
-          <p className="text-gray-400 text-sm leading-relaxed max-w-xl">
-            GDPR-ის შესაბამისად, ნებისმიერ დროს შეგიძლია ჩამოტვირთო შენი მონაცემები ან წაშალო ანგარიში სრულად.
-          </p>
-        </div>
+    <div className="max-w-3xl mx-auto">
+      <PageHeader
+        eyebrow="Privacy & Data"
+        title="Privacy & მონაცემები"
+        subtitle="GDPR-ის შესაბამისად, ნებისმიერ დროს შეგიძლია ჩამოტვირთო შენი მონაცემები ან წაშალო ანგარიში სრულად."
+      />
 
         {/* Export card */}
         <section className="glass rounded-2xl p-6 mb-5">
@@ -439,7 +415,6 @@ export default function PrivacyDataPage() {
             GDPR Art. 17 — Right to erasure
           </p>
         </section>
-      </main>
     </div>
   );
 }

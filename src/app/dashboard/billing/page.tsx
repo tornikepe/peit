@@ -4,9 +4,10 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
-  Zap, ArrowLeft, CreditCard, Crown, Loader2,
+  CreditCard, Crown, Loader2,
   CheckCircle2, AlertCircle, ExternalLink, Sparkles,
 } from 'lucide-react';
+import PageHeader from '@/components/dashboard-shell/PageHeader';
 
 interface SubscriptionData {
   ok: true;
@@ -36,7 +37,7 @@ const PLAN_META = {
 export default function BillingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#07070f] flex items-center justify-center">
+      <div className="py-20 flex items-center justify-center">
         <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
       </div>
     }>
@@ -100,7 +101,7 @@ function BillingInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#07070f] flex items-center justify-center">
+      <div className="py-20 flex items-center justify-center">
         <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
       </div>
     );
@@ -108,7 +109,7 @@ function BillingInner() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-[#07070f] flex flex-col items-center justify-center p-6">
+      <div className="py-20 flex flex-col items-center justify-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-3" />
         <p className="text-gray-300">Subscription ვერ ჩაიტვირთა</p>
       </div>
@@ -120,26 +121,12 @@ function BillingInner() {
   const isTrialing = sub.status === 'trialing';
 
   return (
-    <div className="min-h-screen bg-[#07070f]">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#07070f]/90 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Dashboard</span>
-          </Link>
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-white text-sm">Peit</span>
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold text-white mb-2">Billing & Subscription</h1>
-        <p className="text-gray-400 text-sm mb-8">პლანის მართვა, ინვოისები, გადახდის მეთოდი.</p>
+    <div className="max-w-5xl mx-auto">
+      <PageHeader
+        eyebrow="Billing"
+        title="Billing & Subscription"
+        subtitle="პლანის მართვა, ინვოისები, გადახდის მეთოდი."
+      />
 
         {/* Checkout outcome banners */}
         {checkoutOutcome === 'success' && (
@@ -246,7 +233,6 @@ function BillingInner() {
             </p>
           </div>
         </div>
-      </main>
     </div>
   );
 }
