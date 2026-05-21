@@ -146,6 +146,12 @@ export const conversations = pgTable('conversations', {
   country:     varchar('country', { length: 2 }),
   /** Free-form city string from edge geoip. Truncated to 80 chars at write time. */
   city:        varchar('city', { length: 80 }),
+  /** Free-form labels the owner attaches in the dashboard ("vip", "refund", ...). */
+  tags:        jsonb('tags').$type<string[]>().notNull().default([]),
+  /** True when the owner has handed this conversation off to a human agent —
+   *  the bot stops auto-replying until the row is reset. */
+  isHandedOff: boolean('is_handed_off').notNull().default(false),
+  handedOffAt: timestamp('handed_off_at'),
   startedAt:   timestamp('started_at').defaultNow().notNull(),
   endedAt:     timestamp('ended_at'),
   metadata:    jsonb('metadata').$type<Record<string, unknown>>().default({}),
@@ -153,6 +159,7 @@ export const conversations = pgTable('conversations', {
   botIdx:     index('conversations_bot_idx').on(t.botId),
   startedIdx: index('conversations_started_idx').on(t.startedAt),
   countryIdx: index('conversations_country_idx').on(t.country),
+  handoffIdx: index('conversations_handoff_idx').on(t.isHandedOff),
 }));
 
 // ─── messages ──────────────────────────────────────────────────────────────

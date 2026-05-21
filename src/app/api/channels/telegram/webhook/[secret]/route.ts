@@ -29,6 +29,7 @@ import {
   checkRateLimit, getClientIp, rateLimitKey,
 } from '@/lib/rate-limit';
 import { extractGeo } from '@/lib/geoip';
+import { handoffReply } from '@/lib/handoff';
 import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
 
@@ -151,14 +152,16 @@ export async function POST(req: Request, { params }: RouteCtx) {
   const chatVisitorId = `tg:${msg.chat.id}`;
   let conversationId: string | undefined;
   let history: { role: 'user' | 'assistant'; content: string }[] | undefined;
+  let isHandedOff = false;
   try {
     const recent = await db.query.conversations.findFirst({
       where: eq(schema.conversations.visitorId, chatVisitorId.slice(0, 64)),
       orderBy: [desc(schema.conversations.startedAt)],
-      columns: { id: true },
+      columns: { id: true, isHandedOff: true },
     });
     if (recent) {
       conversationId = recent.id;
+      isHandedOff   = recent.isHandedOff;
       const past = await db.query.messages.findMany({
         where: eq(schema.messages.conversationId, recent.id),
         orderBy: [desc(schema.messages.createdAt)],
@@ -173,13 +176,17 @@ export async function POST(req: Request, { params }: RouteCtx) {
     console.warn('[telegram webhook] history fetch failed:', e);
   }
 
-  // Generate the reply.
-  let result;
-  try {
-    result = await answer({ query: msg.text, bot, lang, history });
-  } catch (e) {
-    console.error('[telegram webhook] answer engine failed:', e);
-    result = { text: bot.fallback[lang] ?? 'სამწუხაროდ ვერ ვიპოვე პასუხი.', source: 'fallback' as const };
+  // Generate the reply — handoff short-circuits past the LLM.
+  let result: { text: string; source: 'faq' | 'knowledge' | 'ai' | 'fallback' | 'human'; usage?: { inputTokens: number; outputTokens: number; cachedTokens: number } };
+  if (isHandedOff) {
+    result = { text: handoffReply(lang), source: 'human' };
+  } else {
+    try {
+      result = await answer({ query: msg.text, bot, lang, history });
+    } catch (e) {
+      console.error('[telegram webhook] answer engine failed:', e);
+      result = { text: bot.fallback[lang] ?? 'სამწუხაროდ ვერ ვიპოვე პასუხი.', source: 'fallback' as const };
+    }
   }
 
   // Send reply BEFORE persisting — TG's webhook timeout is tighter than
@@ -232,7 +239,11 @@ export async function POST(req: Request, { params }: RouteCtx) {
       })
       .where(eq(schema.bots.id, dbBot.id));
 
-    await incrementMessageCount(sub.userId);
+    // Don't charge the bot's monthly quota for human-handoff hold messages
+    // — the owner is doing the answering.
+    if (result.source !== 'human') {
+      await incrementMessageCount(sub.userId);
+    }
     if (result.source === 'ai' && 'usage' in result && result.usage) {
       await incrementTokenUsage(sub.userId, result.usage);
     }

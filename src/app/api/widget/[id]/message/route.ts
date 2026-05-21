@@ -12,6 +12,7 @@ import { isOriginAllowed } from '@/lib/origin-check';
 import { extractGeo } from '@/lib/geoip';
 import { getSubscriptionForBot, incrementMessageCount, incrementTokenUsage } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
+import { handoffReply } from '@/lib/handoff';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -150,8 +151,11 @@ export async function POST(
   // SECURITY: validate the conversation belongs to THIS bot before reading
   // its messages — otherwise a caller could pass another bot's conversation
   // ID and leak history across tenants into this bot's LLM context.
+  // Also pick up the handoff flag here so we can short-circuit before
+  // hitting the LLM.
   let history: { role: 'user' | 'assistant'; content: string }[] | undefined;
   let validatedConversationId: string | undefined;
+  let isHandedOff = false;
   if (body.conversationId) {
     try {
       const convo = await db.query.conversations.findFirst({
@@ -159,13 +163,13 @@ export async function POST(
           eq(schema.conversations.id, body.conversationId),
           eq(schema.conversations.botId, dbBot.id),
         ),
-        columns: { id: true },
+        columns: { id: true, isHandedOff: true },
       });
       if (!convo) {
-        // Foreign / unknown — drop it silently and start a fresh conversation.
         validatedConversationId = undefined;
       } else {
         validatedConversationId = convo.id;
+        isHandedOff = convo.isHandedOff;
         const past = await db.query.messages.findMany({
           where: eq(schema.messages.conversationId, convo.id),
           orderBy: [desc(schema.messages.createdAt)],
@@ -181,16 +185,23 @@ export async function POST(
     }
   }
 
-  // Run the answer engine
-  let result;
-  try {
-    result = await answer({ query: text, bot, lang, history });
-  } catch (e) {
-    console.error('[widget/message] answer engine failed:', e);
-    result = {
-      text: bot.fallback[lang] ?? bot.fallback[bot.primaryLang] ?? 'სამწუხაროდ ვერ ვიპოვე პასუხი.',
-      source: 'fallback' as const,
-    };
+  // Run the answer engine — unless the owner has handed this conversation
+  // off to a human. In handoff mode we still persist the user's message
+  // so the owner sees it in the transcript, but skip LLM + don't charge
+  // the bot's monthly quota.
+  let result: { text: string; source: 'faq' | 'knowledge' | 'ai' | 'fallback' | 'human'; usage?: { inputTokens: number; outputTokens: number; cachedTokens: number } };
+  if (isHandedOff) {
+    result = { text: handoffReply(lang), source: 'human' };
+  } else {
+    try {
+      result = await answer({ query: text, bot, lang, history });
+    } catch (e) {
+      console.error('[widget/message] answer engine failed:', e);
+      result = {
+        text: bot.fallback[lang] ?? bot.fallback[bot.primaryLang] ?? 'სამწუხაროდ ვერ ვიპოვე პასუხი.',
+        source: 'fallback' as const,
+      };
+    }
   }
 
   // Persist conversation + messages (best-effort)
@@ -230,8 +241,12 @@ export async function POST(
       })
       .where(eq(schema.bots.id, dbBot.id));
 
-    // Bump owner subscription counter (drives monthly cap)
-    await incrementMessageCount(sub.userId);
+    // Bump owner subscription counter (drives monthly cap) — only when
+    // the bot itself generated a reply. Handoff "hold" messages aren't
+    // billable; the owner is doing the work.
+    if (result.source !== 'human') {
+      await incrementMessageCount(sub.userId);
+    }
 
     // Track Claude token spend if the AI tier was hit
     if (result.source === 'ai' && result.usage) {

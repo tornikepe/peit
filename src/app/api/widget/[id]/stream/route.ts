@@ -27,6 +27,7 @@ import {
   getSubscriptionForBot, incrementMessageCount, incrementTokenUsage,
 } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
+import { handoffReply } from '@/lib/handoff';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -142,6 +143,7 @@ export async function POST(
   // conversation ID and pull its messages into this bot's prompt.
   let history: { role: 'user' | 'assistant'; content: string }[] | undefined;
   let validatedConversationId: string | undefined;
+  let isHandedOff = false;
   if (body.conversationId) {
     try {
       const convo = await db.query.conversations.findFirst({
@@ -149,10 +151,11 @@ export async function POST(
           eq(schema.conversations.id, body.conversationId),
           eq(schema.conversations.botId, dbBot.id),
         ),
-        columns: { id: true },
+        columns: { id: true, isHandedOff: true },
       });
       if (convo) {
         validatedConversationId = convo.id;
+        isHandedOff = convo.isHandedOff;
         const past = await db.query.messages.findMany({
           where: eq(schema.messages.conversationId, convo.id),
           orderBy: [desc(schema.messages.createdAt)],
@@ -210,6 +213,29 @@ export async function POST(
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(sseLine({ type: 'start', conversationId }));
+
+      // Handed-off conversations never reach the LLM — short-circuit
+      // with a polite hold message. Still persist via the same finally{}
+      // path below so the owner sees the message in the dashboard
+      // transcript.
+      if (isHandedOff) {
+        const holdText = handoffReply(lang);
+        controller.enqueue(sseLine({ type: 'delta', text: holdText }));
+        controller.enqueue(sseLine({ type: 'done', source: 'human', usage: null }));
+        controller.close();
+        // Best-effort: persist the bot-side hold message; don't bill it.
+        void (async () => {
+          if (!conversationId) return;
+          try {
+            await db.insert(schema.messages).values({
+              conversationId, fromUser: false, content: holdText, source: 'human',
+            });
+          } catch (e) {
+            console.error('[widget/stream] handoff persist failed:', e);
+          }
+        })();
+        return;
+      }
 
       let replyText = '';
       let source: 'faq' | 'knowledge' | 'ai' | 'fallback' = 'fallback';
