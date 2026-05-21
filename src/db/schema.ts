@@ -49,12 +49,18 @@ export interface EmailPrefs {
   productUpdates: boolean;
   /** Trial-ending (3 days before) and trial-ended reminders. */
   trialReminders: boolean;
+  /** Triggered when a conversation flips to is_handed_off in transcript panel. */
+  handoffAlerts?:  boolean;
+  /** Monday-morning summary of last week's volume / leads / conversion. */
+  weeklyReport?:   boolean;
 }
 
 export const DEFAULT_EMAIL_PREFS: EmailPrefs = {
   leadAlerts:     true,
   productUpdates: true,
   trialReminders: true,
+  handoffAlerts:  true,
+  weeklyReport:   false,
 };
 
 export const users = pgTable('users', {
@@ -251,6 +257,57 @@ export const rateLimits = pgTable('rate_limits', {
   windowSeconds: integer('window_seconds').notNull(),
 });
 
+// ─── team_members ──────────────────────────────────────────────────────────
+// Per-user (owner-scoped) workspace invites. The `userId` column references
+// the OWNING account; once an invite is accepted, the invitee creates their
+// own Clerk session and the join happens via email lookup (see
+// resolveTeamMembership() in queries/team.ts). We don't grant cross-tenant
+// permissions yet — this is the storage + invite-email plumbing only.
+
+export const teamRoleEnum    = pgEnum('team_role',   ['owner', 'admin', 'member']);
+export const teamStatusEnum  = pgEnum('team_status', ['pending', 'active', 'revoked']);
+
+export const teamMembers = pgTable('team_members', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  /** Owner of the workspace this invite belongs to. */
+  userId:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email:     varchar('email', { length: 255 }).notNull(),
+  role:      teamRoleEnum('role').notNull().default('member'),
+  status:    teamStatusEnum('status').notNull().default('pending'),
+  /** Random token sent in the invite email; consumed once on accept. */
+  inviteToken: varchar('invite_token', { length: 64 }),
+  invitedAt: timestamp('invited_at').defaultNow().notNull(),
+  acceptedAt: timestamp('accepted_at'),
+}, t => ({
+  ownerIdx:    index('team_members_user_idx').on(t.userId),
+  uniqEmail:   uniqueIndex('team_members_owner_email_idx').on(t.userId, t.email),
+}));
+
+// ─── api_keys ──────────────────────────────────────────────────────────────
+// Customer-facing programmatic access — same convention Stripe / OpenAI
+// use: raw key shown once at creation, only a hash stored at rest, lookup
+// uses a 12-char prefix (logged on use) for indexing without revealing the
+// secret. SHA-256 of the raw key is the canonical hash here; the secret
+// itself is 48 hex chars (192 bits of entropy), so a salted bcrypt buys
+// nothing meaningful at that entropy level.
+
+export const apiKeys = pgTable('api_keys', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  userId:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name:      varchar('name', { length: 80 }).notNull(),
+  /** SHA-256 hex digest of the raw key. */
+  keyHash:   varchar('key_hash', { length: 64 }).notNull(),
+  /** First 12 chars of the raw key — safe to display + index by. */
+  prefix:    varchar('prefix', { length: 16 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastUsedAt: timestamp('last_used_at'),
+  revokedAt: timestamp('revoked_at'),
+}, t => ({
+  ownerIdx:  index('api_keys_user_idx').on(t.userId),
+  hashIdx:   uniqueIndex('api_keys_hash_idx').on(t.keyHash),
+  prefixIdx: index('api_keys_prefix_idx').on(t.prefix),
+}));
+
 // ─── bot_channels ─────────────────────────────────────────────────────────
 // One row per (bot, channel) — stores the per-channel credentials and
 // runtime stats. The web channel never lives here (it's implicit). Telegram
@@ -317,6 +374,16 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     fields: [users.id],
     references: [subscriptions.userId],
   }),
+  team:    many(teamMembers),
+  apiKeys: many(apiKeys),
+}));
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  owner: one(users, { fields: [teamMembers.userId], references: [users.id] }),
+}));
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  owner: one(users, { fields: [apiKeys.userId], references: [users.id] }),
 }));
 
 export const botsRelations = relations(bots, ({ one, many }) => ({
@@ -374,3 +441,5 @@ export type DbChunk   = typeof knowledgeChunks.$inferSelect;
 export type DbLead    = typeof leads.$inferSelect;
 export type DbSub     = typeof subscriptions.$inferSelect;
 export type DbChannel = typeof botChannels.$inferSelect;
+export type DbTeam    = typeof teamMembers.$inferSelect;
+export type DbApiKey  = typeof apiKeys.$inferSelect;

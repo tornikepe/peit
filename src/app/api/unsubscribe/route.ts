@@ -24,7 +24,7 @@ const RESPONSE_COPY: Record<EmailLang, {
   errorBody:   string;
   manageLink:  string;
   homeLink:    string;
-  category: { leadAlerts: string; productUpdates: string; trialReminders: string; all: string };
+  category: Record<'leadAlerts' | 'productUpdates' | 'trialReminders' | 'handoffAlerts' | 'weeklyReport' | 'all', string>;
 }> = {
   ka: {
     pageTitle:  'Email-ის ამოწერა — Peit',
@@ -38,6 +38,8 @@ const RESPONSE_COPY: Record<EmailLang, {
       leadAlerts:     'ლიდის შეტყობინებები',
       productUpdates: 'პროდუქტის სიახლეები',
       trialReminders: 'ტრიალის შეხსენებები',
+      handoffAlerts:  'ოპერატორზე გადაცემის შეტყობინებები',
+      weeklyReport:   'კვირის ანგარიში',
       all:            'ყველა email',
     },
   },
@@ -53,6 +55,8 @@ const RESPONSE_COPY: Record<EmailLang, {
       leadAlerts:     'Lead alerts',
       productUpdates: 'Product updates',
       trialReminders: 'Trial reminders',
+      handoffAlerts:  'Handoff alerts',
+      weeklyReport:   'Weekly report',
       all:            'All emails',
     },
   },
@@ -68,6 +72,8 @@ const RESPONSE_COPY: Record<EmailLang, {
       leadAlerts:     'Уведомления о лидах',
       productUpdates: 'Обновления продукта',
       trialReminders: 'Напоминания о триале',
+      handoffAlerts:  'Уведомления о передаче оператору',
+      weeklyReport:   'Еженедельный отчёт',
       all:            'Все письма',
     },
   },
@@ -107,7 +113,7 @@ async function handle(req: Request): Promise<Response> {
     if (user) {
       const current = user.emailPrefs ?? DEFAULT_EMAIL_PREFS;
       const next: EmailPrefs = token.type === 'all'
-        ? { leadAlerts: false, productUpdates: false, trialReminders: false }
+        ? { leadAlerts: false, productUpdates: false, trialReminders: false, handoffAlerts: false, weeklyReport: false }
         : { ...current, [token.type]: false };
 
       await db.update(schema.users)

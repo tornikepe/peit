@@ -511,3 +511,96 @@ export async function sendPaymentFailedEmail({ to }: SendPaymentFailedArgs): Pro
     tags:    [{ name: 'email_type', value: 'payment_failed' }],
   });
 }
+
+// ─── Team invite ───────────────────────────────────────────────────────────
+//
+// Sent when an account owner invites a new member from
+// /dashboard/settings/team. The recipient isn't a Peit user yet, so we
+// don't have a Recipient row to draw locale from — fall back to the
+// inviter's locale (best signal we've got) and the workspace owner's
+// name as the From-line context.
+//
+// The link points at /signup?invite=<token>; an invite-accept route can
+// later resolve the token to the team_members row.
+
+interface SendTeamInviteArgs {
+  to:         string;
+  ownerName:  string | null;
+  ownerLang:  string | null;
+  role:       'admin' | 'member';
+  token:      string;
+}
+
+const TEAM_INVITE_COPY: Record<EmailLang, {
+  subject:   (owner: string) => string;
+  heading:   string;
+  body:      (owner: string, role: string) => string;
+  cta:       string;
+  roleLabel: Record<'admin' | 'member', string>;
+}> = {
+  ka: {
+    subject:   o => `${o} გიწვევთ Peit-ის გუნდში`,
+    heading:   'მოგიწვიეთ გუნდში',
+    body:      (o, r) => `${o}-მა მოგიწვია Peit-ის dashboard-ში — როლი: ${r}. შესვლისთვის შექმენი ანგარიში ან გაიარე ავტორიზაცია.`,
+    cta:       'მიწვევის მიღება',
+    roleLabel: { admin: 'ადმინი', member: 'წევრი' },
+  },
+  en: {
+    subject:   o => `${o} invited you to their Peit workspace`,
+    heading:   'You have a Peit workspace invite',
+    body:      (o, r) => `${o} added you to their Peit workspace as a ${r}. Click below to accept and create or sign in to your account.`,
+    cta:       'Accept invitation',
+    roleLabel: { admin: 'admin', member: 'member' },
+  },
+  ru: {
+    subject:   o => `${o} приглашает вас в Peit`,
+    heading:   'Приглашение в команду Peit',
+    body:      (o, r) => `${o} добавил вас в свою рабочую область Peit как ${r}. Перейдите ниже, чтобы принять приглашение.`,
+    cta:       'Принять приглашение',
+    roleLabel: { admin: 'администратор', member: 'участник' },
+  },
+};
+
+export async function sendTeamInviteEmail({
+  to, ownerName, ownerLang, role, token,
+}: SendTeamInviteArgs): Promise<boolean> {
+  if (!isEmailAvailable()) return false;
+
+  const lang   = normalizeLang(ownerLang);
+  const appUrl = appBaseUrl();
+  const t      = TEAM_INVITE_COPY[lang];
+  const owner  = ownerName?.trim() || 'A Peit user';
+  const acceptUrl = `${appUrl}/signup?invite=${encodeURIComponent(token)}`;
+
+  const content = [
+    renderHeading(t.heading),
+    renderP(t.body(owner, t.roleLabel[role])),
+    renderCta(acceptUrl, t.cta),
+    renderHelp(acceptUrl),
+  ].join('\n');
+
+  const html = renderLayout({
+    title:     t.subject(owner),
+    preheader: t.body(owner, t.roleLabel[role]).slice(0, 120),
+    content,
+    lang,
+    appUrl,
+    preferencesUrl: `${appUrl}/dashboard/privacy`,
+  });
+
+  const text = [
+    t.heading,
+    '',
+    t.body(owner, t.roleLabel[role]),
+    '',
+    `${t.cta}: ${acceptUrl}`,
+  ].join('\n');
+
+  return send({
+    to,
+    subject: t.subject(owner),
+    html,
+    text,
+    tags:    [{ name: 'email_type', value: 'team_invite' }],
+  });
+}

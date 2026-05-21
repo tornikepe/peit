@@ -20,7 +20,7 @@ import { appBaseUrl } from './send';
 export type UnsubCategory = keyof EmailPrefs | 'all';
 
 const VALID_CATEGORIES: ReadonlySet<UnsubCategory> = new Set<UnsubCategory>([
-  'leadAlerts', 'productUpdates', 'trialReminders', 'all',
+  'leadAlerts', 'productUpdates', 'trialReminders', 'handoffAlerts', 'weeklyReport', 'all',
 ]);
 
 /**
