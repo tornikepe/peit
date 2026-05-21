@@ -271,14 +271,19 @@ export default function Hero() {
 
   return (
     <section className="relative pt-32 pb-20 px-4 sm:px-6 overflow-hidden">
-      {/* Layered background — mesh gradient + dot grid + floating orbs */}
-      <div className="mesh-bg absolute inset-0 pointer-events-none opacity-90" />
+      {/* Layered background — drifting aurora + mesh + dot grid.
+          aurora adds two slowly-orbiting blobs (violet + cyan) behind
+          everything else, which keeps the hero alive without animating
+          anything heavyweight. */}
+      <div className="aurora" />
+      <div className="mesh-bg absolute inset-0 pointer-events-none opacity-70" />
       <div className="dot-grid absolute inset-0 pointer-events-none" />
 
-      {/* Floating orbs */}
-      <div className="absolute top-20 left-[10%] w-72 h-72 bg-violet-500/20 rounded-full blur-3xl pointer-events-none animate-float-slow" />
+      {/* Floating orbs — kept as subtle highlights on top of the aurora.
+          Cyan + fuchsia accents brighten the corners. */}
+      <div className="absolute top-20 left-[10%] w-72 h-72 bg-violet-500/15 rounded-full blur-3xl pointer-events-none animate-float-slow" />
       <div className="absolute top-40 right-[15%] w-96 h-96 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none animate-float-slower" />
-      <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none animate-float-slow" style={{ animationDelay: '4s' }} />
+      <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-fuchsia-500/10 rounded-full blur-3xl pointer-events-none animate-float-slow" style={{ animationDelay: '4s' }} />
 
       <div className="relative max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -303,7 +308,10 @@ export default function Hero() {
             >
               {t.hero.h1a}
               <br />
-              <span className="gradient-text">{t.hero.h1b}</span>
+              {/* Slow shimmer slide over the accent line — gives the
+                  most prominent text a subtle aliveness without being
+                  distracting on read. */}
+              <span className="shimmer-text">{t.hero.h1b}</span>
             </h1>
 
             <p className="text-[1rem] sm:text-lg text-gray-300/80 leading-[1.65] mb-8 max-w-lg">

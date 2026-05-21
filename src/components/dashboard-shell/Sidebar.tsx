@@ -57,13 +57,17 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           <li key={href}>
             <Link
               href={href}
-              className={`group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              /* Active row gets a thin gradient rail on the left
+                 (.nav-active-rail) + tinted violet wash + glowing icon.
+                 Inactive rows brighten subtly on hover so the whole
+                 nav reads as one interactive surface, not seven. */
+              className={`group flex items-center gap-2.5 pl-4 pr-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                 active
-                  ? 'bg-white/[0.06] text-white border border-white/10'
-                  : 'text-gray-400 hover:text-white hover:bg-white/[0.03] border border-transparent'
+                  ? 'nav-active-rail bg-gradient-to-r from-violet-500/15 via-violet-500/[0.04] to-transparent text-white border border-violet-500/20'
+                  : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
               }`}
             >
-              <Icon className={`w-4 h-4 ${active ? 'text-violet-300' : 'text-gray-500 group-hover:text-gray-300'}`} />
+              <Icon className={`w-4 h-4 transition-colors ${active ? 'text-violet-300 drop-shadow-[0_0_6px_rgba(167,139,250,0.55)]' : 'text-gray-500 group-hover:text-violet-300'}`} />
               <span className="flex-1">{label}</span>
               {active && <ChevronRight className="w-3 h-3 text-violet-400" />}
             </Link>

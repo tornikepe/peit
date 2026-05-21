@@ -4,12 +4,27 @@
   --bg: #07070f;
   --bg-soft: #0d0d1a;
   --border: rgba(255, 255, 255, 0.08);
-  --primary: #7c3aed;
-  --primary-soft: #a855f7;
-  --accent: #06b6d4;
-  --accent-bright: #22d3ee;
-  --text: #f9fafb;
-  --text-muted: #9ca3af;
+  /* Refined two-tone violet — slightly cooler than the previous flat #7c3aed
+     so it sits next to the cyan accent without feeling muddy. */
+  --primary:        #8b5cf6;
+  --primary-soft:   #a78bfa;
+  --primary-deep:   #5b21b6;
+  --primary-glow:   #c4b5fd;
+  /* Cyan accent kept; added a teal mid-tone for gradient crossovers. */
+  --accent:         #06b6d4;
+  --accent-bright:  #22d3ee;
+  --accent-deep:    #0e7490;
+  /* New: a fuchsia mid-tone we use sparingly to brighten "popular" pricing
+     glow + highlight states. Brings warmth without breaking the cool theme. */
+  --highlight:      #d946ef;
+  --highlight-soft: #f0abfc;
+  --text:           #f9fafb;
+  --text-muted:     #9ca3af;
+  /* Canonical brand gradient — used by .gradient-text, primary CTAs, pricing
+     popular badge, dashboard sidebar active indicator. Defined once here so
+     a single edit reskins the product. */
+  --grad-brand:     linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 35%, #6d28d9 70%, #22d3ee 100%);
+  --grad-brand-soft: linear-gradient(135deg, #ede9fe 0%, #c4b5fd 50%, #a78bfa 100%);
 }
 
 * {
@@ -237,6 +252,259 @@ h1, h2, h3, h4 {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   POLISH PASS — May 2026
+   Adds: ambient aurora background, gradient borders, refined hover lifts,
+   smoother section reveal, shimmer text. Existing components opt-in by
+   adding the new class names; nothing here overrides legacy rules so we
+   can roll back any single utility without ripples.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Ambient aurora — sits behind hero / pricing / cta blocks ─────────── */
+.aurora {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.aurora::before {
+  width: 60vw; height: 60vw;
+  top: -25%; left: -10%;
+  background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+  animation: aurora-drift-a 26s ease-in-out infinite alternate;
+}
+.aurora::after {
+  width: 55vw; height: 55vw;
+  bottom: -30%; right: -15%;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  animation: aurora-drift-b 32s ease-in-out infinite alternate;
+}
+@keyframes aurora-drift-a {
+  0%   { transform: translate(0,   0)   scale(1);    }
+  50%  { transform: translate(6%,  4%)  scale(1.12); }
+  100% { transform: translate(-4%, 2%)  scale(0.94); }
+}
+@keyframes aurora-drift-b {
+  0%   { transform: translate(0,   0)   scale(1);    }
+  50%  { transform: translate(-8%, -3%) scale(1.18); }
+  100% { transform: translate(5%,  4%)  scale(0.92); }
+}
+
+/* Third optional blob — uses --highlight for warmth. Add `.aurora--3` to
+   the same element to layer in the fuchsia accent (used by the pricing
+   "popular" section). */
+.aurora--3 {
+  position: relative;
+}
+.aurora--3 > .aurora-warm {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.aurora--3 > .aurora-warm::after {
+  content: "";
+  position: absolute;
+  width: 50vw; height: 50vw;
+  border-radius: 50%;
+  top: 30%; left: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(90px);
+  background: radial-gradient(circle, var(--highlight) 0%, transparent 70%);
+  opacity: 0.32;
+  animation: aurora-warm-pulse 14s ease-in-out infinite;
+}
+@keyframes aurora-warm-pulse {
+  0%, 100% { opacity: 0.22; transform: translate(-50%, -50%) scale(0.9); }
+  50%      { opacity: 0.42; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+/* ─── Animated gradient border ────────────────────────────────────────── */
+/* Wrap content with this to get a slowly-rotating brand-gradient stroke
+   the same thickness as a 1px border. Used by the Pro pricing card and
+   the dashboard "highlighted" stats card. */
+.gradient-border {
+  position: relative;
+  isolation: isolate;
+  background: var(--bg-soft);
+  border-radius: inherit;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background:
+    conic-gradient(from 0deg,
+      #8b5cf6 0deg,
+      #22d3ee 90deg,
+      #d946ef 180deg,
+      #8b5cf6 270deg,
+      #8b5cf6 360deg);
+  -webkit-mask:
+    linear-gradient(#000, #000) content-box,
+    linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: gradient-border-spin 9s linear infinite;
+  opacity: 0.7;
+}
+@keyframes gradient-border-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Hover lifts ─────────────────────────────────────────────────────── */
+/* Subtle universal lift+shadow — pair with `.glass` or `.card` surfaces.
+   Use a tight transform so the layout doesn't jitter on hover. */
+.hover-lift {
+  transition: transform 0.22s cubic-bezier(.4, 0, .2, 1),
+              box-shadow 0.22s ease,
+              border-color 0.22s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -20px rgba(139, 92, 246, 0.45);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+/* ─── Shimmer headline — slow gradient slide on accent words ──────────── */
+.shimmer-text {
+  background: linear-gradient(110deg,
+    var(--primary-glow) 0%,
+    var(--primary-soft) 30%,
+    var(--accent-bright) 55%,
+    var(--primary-soft) 80%,
+    var(--primary-glow) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-slide 7s linear infinite;
+}
+@keyframes shimmer-slide {
+  to { background-position: 200% center; }
+}
+
+/* ─── Section fade-up (better easing than existing `.reveal`) ─────────── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(.2, .65, .3, 1),
+              transform 0.7s cubic-bezier(.2, .65, .3, 1);
+}
+.fade-up.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Pricing "popular" card ambient ──────────────────────────────────── */
+.popular-glow {
+  position: relative;
+}
+.popular-glow::before {
+  content: "";
+  position: absolute;
+  inset: -40px;
+  z-index: -1;
+  background: radial-gradient(50% 60% at 50% 30%,
+    rgba(167, 139, 250, 0.38) 0%,
+    rgba(217, 70, 239, 0.18) 40%,
+    transparent 70%);
+  filter: blur(40px);
+  border-radius: 50%;
+  animation: popular-pulse 5.5s ease-in-out infinite;
+}
+@keyframes popular-pulse {
+  0%, 100% { opacity: 0.65; transform: scale(0.98); }
+  50%      { opacity: 1;    transform: scale(1.04); }
+}
+
+/* ─── Brand chip — small color swatch component shared across pages ───── */
+.brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg,
+    rgba(139, 92, 246, 0.15),
+    rgba(34, 211, 238, 0.10));
+  border: 1px solid rgba(139, 92, 246, 0.30);
+  color: var(--primary-glow);
+}
+.brand-chip-dot {
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  box-shadow: 0 0 10px currentColor;
+  animation: chip-dot-pulse 2.2s ease-in-out infinite;
+}
+@keyframes chip-dot-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1.2);  }
+}
+
+/* ─── Dashboard sidebar active indicator ──────────────────────────────── */
+/* Adds a thin gradient bar on the left of the active nav item. Looks
+   like an iOS Settings-style accent rail without changing background. */
+.nav-active-rail {
+  position: relative;
+}
+.nav-active-rail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px; bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--grad-brand);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.65);
+}
+
+/* ─── Polished refresh of legacy primary button ───────────────────────── */
+.btn-primary-v2 {
+  position: relative;
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #6d28d9 100%);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 14px 36px -14px rgba(124, 58, 237, 0.7),
+    0 0 0 1px rgba(167, 139, 250, 0.45);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+.btn-primary-v2:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.35),
+    0 20px 44px -14px rgba(124, 58, 237, 0.85),
+    0 0 0 1px rgba(167, 139, 250, 0.6);
+}
+
+/* ─── Number counter — tabular alignment for animated stats ───────────── */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 /* ─── Print stylesheet — used by /dashboard/analytics "PDF / ბეჭდვა"

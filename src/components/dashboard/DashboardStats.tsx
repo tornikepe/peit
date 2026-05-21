@@ -22,7 +22,7 @@ export default function DashboardStats() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map(s => (
-        <div key={s.label} className="glass rounded-2xl p-5">
+        <div key={s.label} className="glass hover-lift rounded-2xl p-5">
           <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-4 ${s.bg}`}>
             <s.icon className={s.color} style={{ width: 18, height: 18 }} />
           </div>

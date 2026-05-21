@@ -23,8 +23,12 @@ export default function Pricing() {
       id="pricing"
       className="relative py-28 px-4 sm:px-6 border-t border-white/[0.06] overflow-hidden"
     >
-      {/* Ambient glow behind pricing cards */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-violet-600/[0.08] blur-3xl rounded-full pointer-events-none" />
+      {/* Ambient mesh — two slowly-drifting blobs behind the cards. The
+          `.aurora` utility paints these via ::before / ::after; we layer a
+          smaller centered violet glow on top for warmth around the Pro
+          card specifically. */}
+      <div className="aurora opacity-60" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-violet-600/[0.10] blur-3xl rounded-full pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto">
 
@@ -64,15 +68,20 @@ export default function Pricing() {
             return (
               <div
                 key={plan.name}
-                className={`rounded-3xl p-8 flex flex-col gap-7 relative transition-all duration-200 ${
+                /* Hover lift applies to every card; the highlighted plan
+                   layers on a slowly-rotating gradient border (.gradient-
+                   border) plus an ambient fuchsia/violet glow halo
+                   (.popular-glow). The two pseudo-elements stack without
+                   touching the markup. */
+                className={`rounded-3xl p-8 flex flex-col gap-7 relative hover-lift ${
                   plan.highlight
-                    ? 'bg-gradient-to-b from-violet-600/[0.18] via-violet-700/[0.08] to-violet-900/[0.04] border border-violet-500/40 shadow-[0_0_60px_-12px_rgba(124,58,237,0.45)] md:scale-[1.03]'
-                    : 'glass hover:border-white/[0.12]'
+                    ? 'gradient-border popular-glow bg-gradient-to-b from-violet-600/[0.22] via-violet-700/[0.10] to-violet-900/[0.05] md:scale-[1.04]'
+                    : 'glass'
                 }`}
               >
                 {plan.highlight && 'badge' in plan && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-[11px] font-bold tracking-wider px-4 py-1.5 rounded-full shadow-lg shadow-violet-500/40 whitespace-nowrap uppercase">
+                    <span className="bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 text-white text-[11px] font-bold tracking-wider px-4 py-1.5 rounded-full shadow-lg shadow-violet-500/40 whitespace-nowrap uppercase">
                       {(plan as typeof plan & { badge: string }).badge}
                     </span>
                   </div>

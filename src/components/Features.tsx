@@ -51,7 +51,10 @@ export default function Features() {
             return (
               <div
                 key={i}
-                className={`group relative glass rounded-2xl p-6 flex flex-col gap-4 hover:border-violet-500/30 transition-all overflow-hidden ${
+                /* hover-lift adds a small translateY + violet shadow on
+                   hover; consistent now with the pricing + dashboard
+                   stat cards so the whole product breathes the same way. */
+                className={`group relative glass hover-lift rounded-2xl p-6 flex flex-col gap-4 overflow-hidden ${
                   featured ? 'lg:col-span-2' : ''
                 }`}
               >
