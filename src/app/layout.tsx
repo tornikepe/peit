@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Noto_Sans_Georgian } from "next/font/google";
 import Providers from "@/components/Providers";
+import JsonLd, { organizationSchema } from "@/components/JsonLd";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -70,55 +71,28 @@ export const metadata: Metadata = {
   },
 };
 
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "Peit",
-  url: SITE_URL,
-  logo: `${SITE_URL}/favicon.ico`,
-  description:
-    "AI chatbot SaaS for Georgian small and medium businesses. Natural Georgian language support, multi-channel deployment, lead capture.",
-  email: "info@peit.ge",
-  areaServed: { "@type": "Country", name: "Georgia" },
-  sameAs: [SITE_URL],
-};
-
-const softwareSchema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "Peit",
-  applicationCategory: "BusinessApplication",
-  operatingSystem: "Web",
-  offers: [
-    { "@type": "Offer", name: "Basic",    price: "45",  priceCurrency: "GEL" },
-    { "@type": "Offer", name: "Pro",      price: "65",  priceCurrency: "GEL" },
-    { "@type": "Offer", name: "Ultimate", price: "155", priceCurrency: "GEL" },
-  ],
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.9",
-    ratingCount: "320",
-    bestRating: "5",
-  },
-};
+// Schema.org payloads now live in components/JsonLd.tsx — single source
+// of truth across pages. Organization on every page (lives in this
+// layout); SoftwareApplication on homepage + pricing; Article on each
+// blog post; FAQPage on the homepage.
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const ld = organizationSchema();
   return (
     <html lang="ka" className={`${geistSans.variable} ${notoSansGeorgian.variable}`}>
       <head>
-        {/* Structured data so AI / search engines understand Peit's entity */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
-        />
+        {/* x-default hreflang — points to the canonical (Georgian) site. */}
+        <link rel="alternate" hrefLang="x-default" href={SITE_URL + '/'} />
+        <link rel="alternate" hrefLang="ka"        href={SITE_URL + '/'} />
+        <link rel="alternate" hrefLang="en"        href={SITE_URL + '/en'} />
+        <link rel="alternate" hrefLang="ru"        href={SITE_URL + '/ru'} />
+        {/* Organization JSON-LD — present on every page so AI / search
+            engines have a stable entity to attach reviews + sameAs to. */}
+        <JsonLd data={ld} />
       </head>
       <body className="flex flex-col min-h-screen">
         <Providers>{children}</Providers>

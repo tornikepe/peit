@@ -1,30 +1,28 @@
-// /blog — KA blog index. Reads from the shared POSTS store in lib/blog,
-// so the same content drives /blog, /en/blog, /ru/blog with a single
-// edit propagating everywhere.
+// /ru/blog — Russian mirror of the blog index.
 
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import { getPostsSorted } from '@/lib/blog';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
-  title:       'ბლოგი — AI ჩატბოტი ქართული ბიზნესისთვის · Peit',
-  description: 'AI ჩატბოტების, ბიზნეს ავტომატიზაციისა და ქართული მარკეტინგის სიახლეები. Case studies, გზამკვლევები, ROI.',
-  path:        '/blog',
-  locale:      'ka',
+  title:       'Блог — AI-чатботы для грузинского бизнеса · Peit',
+  description: 'Гайды, кейсы и стратегия для AI-чатботов, бизнес-автоматизации и lead generation в Грузии.',
+  path:        '/ru/blog',
+  locale:      'ru',
 });
 
 const CATEGORY_LABEL: Record<string, string> = {
-  guide:      'გზამკვლევი',
-  'how-to':   'How-to',
+  guide:        'Гид',
+  'how-to':     'How-to',
   'case-study': 'Case Study',
-  strategy:   'სტრატეგია',
-  comparison: 'შედარება',
+  strategy:     'Стратегия',
+  comparison:   'Сравнение',
 };
 
-export default function BlogPage() {
+export default function BlogRuPage() {
   const posts = getPostsSorted();
 
   return (
@@ -34,24 +32,20 @@ export default function BlogPage() {
         <section className="py-16 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
-              <p className="text-violet-400 text-sm font-semibold uppercase tracking-widest mb-3">
-                ბლოგი
-              </p>
-              <h1 className="text-5xl font-bold text-white mb-4">
-                AI ბიზნესისთვის
-              </h1>
+              <p className="text-violet-400 text-sm font-semibold uppercase tracking-widest mb-3">Блог</p>
+              <h1 className="text-5xl font-bold text-white mb-4">AI для бизнеса</h1>
               <p className="text-gray-400 text-lg max-w-xl mx-auto">
-                Case studies, სტრატეგიები და სიახლეები ქართული ბიზნეს-ავტომატიზაციის შესახებ.
+                Кейсы, стратегии и новости автоматизации грузинского бизнеса.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {posts.map(post => {
-                const t = post.translations.ka;
+                const t = post.translations.ru;
                 return (
                   <Link
                     key={post.slug}
-                    href={`/blog/${post.slug}`}
+                    href={`/ru/blog/${post.slug}`}
                     className="glass hover-lift rounded-2xl overflow-hidden flex flex-col group"
                   >
                     <div className="h-44 bg-gradient-to-br from-violet-900/30 to-purple-900/20 flex items-center justify-center">
@@ -73,10 +67,10 @@ export default function BlogPage() {
                       <p className="text-gray-500 text-sm leading-relaxed line-clamp-3">{t.excerpt}</p>
                       <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
                         <span className="text-xs text-gray-600">
-                          {new Date(post.publishedAt).toLocaleDateString('ka-GE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(post.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                         <span className="text-xs text-violet-400 group-hover:text-violet-300 flex items-center gap-1">
-                          წაიკითხე
+                          Читать
                           <ArrowRight className="w-3 h-3" />
                         </span>
                       </div>

@@ -112,10 +112,14 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const alt = alternatives[slug];
   if (!alt) return {};
-  return {
-    title: `${alt.headline} — Peit`,
+  const { buildMetadata } = await import('@/lib/seo');
+  return buildMetadata({
+    title:       `${alt.headline} — Peit`,
     description: alt.subheadline,
-  };
+    path:        `/alternatives/${slug}`,
+    locale:      'ka',
+    keywords:    [`Peit vs ${slug}`, `${slug} alternative`, 'AI chatbot Georgia'],
+  });
 }
 
 export default async function AlternativePage({ params }: Props) {

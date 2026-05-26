@@ -3,12 +3,15 @@ import HowItWorks from "@/components/HowItWorks";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "როგორ მუშაობს — Peit",
-  description: "3 ნაბიჯი — 10 წუთი. ატვირთე, გაასხური, შეაგროვე შედეგები.",
-};
+export const metadata = buildMetadata({
+  title:       'როგორ მუშავდება — Peit · 3 ნაბიჯი, 10 წუთი',
+  description: '3 ნაბიჯი — 10 წუთი. ატვირთე საიტი, გასცე ბოტი ცოცხალი ყველა არხზე, შეაგროვე ლიდები ავტომატურად.',
+  path:        '/how-it-works',
+  locale:      'ka',
+  keywords:    ['AI setup', 'chatbot setup', 'Peit how it works'],
+});
 
 export default function HowItWorksPage() {
   return (

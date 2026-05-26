@@ -281,10 +281,16 @@ export async function generateMetadata({ params }: Props) {
   const ind = industries.find((i) => i.slug === slug);
   if (!ind) return {};
   const content = industryContent[slug];
-  return {
-    title: `${content?.headline ?? ind.label} — Peit`,
-    description: content?.subheadline,
-  };
+  // buildMetadata handles canonical + hreflang + OG + Twitter so every
+  // industry landing inherits the same SEO scaffolding the home page uses.
+  const { buildMetadata } = await import('@/lib/seo');
+  return buildMetadata({
+    title:       `${content?.headline ?? ind.label} — Peit AI ჩატბოტი`,
+    description: content?.subheadline ?? `AI ჩატბოტი ${ind.label}-სთვის ქართულ ბაზარზე`,
+    path:        `/industries/${slug}`,
+    locale:      'ka',
+    keywords:    [`AI ჩატბოტი ${ind.label}`, ind.label, 'Peit', 'Georgia'],
+  });
 }
 
 export default async function IndustryPage({ params }: Props) {
