@@ -22,7 +22,19 @@ export default async function DashboardPage() {
   const { userId } = await auth();
   if (!userId) redirect('/signin');
 
-  const user = await currentUser();
+  // currentUser() can throw with ClerkAPIResponseError when the JWT is
+  // valid for `userId` (auth() above passed) but a downstream call to
+  // Clerk's user endpoint fails — most commonly because the dev session
+  // was issued for a different port (3000 vs 3001) and Clerk treats
+  // them as different origins. Treat that as "session needs refresh"
+  // and bounce to sign-in instead of crashing the whole dashboard.
+  let user;
+  try {
+    user = await currentUser();
+  } catch (e) {
+    console.warn('[dashboard] currentUser() failed, redirecting to /signin:', e instanceof Error ? e.message : e);
+    redirect('/signin');
+  }
   const firstName = user?.firstName ?? 'მომხმარებელი';
 
   return (
