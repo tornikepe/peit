@@ -9,10 +9,14 @@ import Industries from "@/components/Industries";
 import Urgency from "@/components/Urgency";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
-import ChatWidget from "@/components/ChatWidget";
 import ScrollReveal from "@/components/ScrollReveal";
 import JsonLd, { softwareApplicationSchema, faqPageSchema } from "@/components/JsonLd";
 import { buildMetadata } from "@/lib/seo";
+// Chat widget is heavy + interactive but never visible above the fold,
+// so we lazy-load it. The wrapper component owns the `ssr: false`
+// dynamic() call (Next 14+ doesn't allow that flag inside a Server
+// Component) and shows a 60×60 placeholder until the bundle arrives.
+import LazyChatWidget from "@/components/LazyChatWidget";
 
 export const metadata = buildMetadata({
   title:       'Peit — AI ჩატბოტი ქართული ბიზნესისთვის · 7 დღე უფასოდ',
@@ -57,7 +61,7 @@ export default function Home() {
         <div className="reveal"><FAQ /></div>
       </main>
       <Footer />
-      <ChatWidget />
+      <LazyChatWidget />
       <ScrollReveal />
     </>
   );

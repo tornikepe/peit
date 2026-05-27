@@ -4,14 +4,27 @@ import Providers from "@/components/Providers";
 import JsonLd, { organizationSchema } from "@/components/JsonLd";
 import "./globals.css";
 
+// `next/font/google` self-hosts the font files, applies them via a
+// CSS variable, and emits `font-display: swap` so there's zero
+// render-blocking on first paint and zero CLS once the web font lands.
+//
+// Geist — primary Latin face. `latin-ext` covers extended Latin glyphs
+// for occasional Czech / Polish customer names. No cyrillic subset
+// here — Russian content uses Noto_Sans_Georgian's fallback chain
+// which already handles Cyrillic via system fonts (Geist itself has
+// no Cyrillic glyphs, so adding the subset would only inflate
+// bundle without rendering benefit).
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   display: "swap",
 });
 
-// Georgian-script font, designed by Google for Georgian text rendering.
-// Used as the primary font when lang=ka; falls back to Geist for Latin glyphs.
+// Georgian-script primary face. The `georgian` Google subset is the
+// only one that ships the glyphs we actually need; adding `latin`
+// would inflate the woff2 payload without changing rendering since
+// the Latin glyphs come from Geist via the fallback chain in
+// globals.css.
 const notoSansGeorgian = Noto_Sans_Georgian({
   variable: "--font-noto-georgian",
   subsets: ["georgian"],
@@ -85,6 +98,13 @@ export default function RootLayout({
   return (
     <html lang="ka" className={`${geistSans.variable} ${notoSansGeorgian.variable}`}>
       <head>
+        {/* Preconnect to the third-party domains the very first request
+            already hits. Saves ~100-300ms of TCP+TLS handshake time on
+            the next call — measurable LCP win on mobile networks. */}
+        <link rel="preconnect" href="https://accounts.clerk.com" crossOrigin="" />
+        <link rel="preconnect" href="https://img.clerk.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://api.lemonsqueezy.com" />
+
         {/* x-default hreflang — points to the canonical (Georgian) site. */}
         <link rel="alternate" hrefLang="x-default" href={SITE_URL + '/'} />
         <link rel="alternate" hrefLang="ka"        href={SITE_URL + '/'} />

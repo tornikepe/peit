@@ -6,6 +6,7 @@
 // cross-tenant permissions aren't enforced yet.
 
 import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Loader2, Plus, Trash2, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 type Role   = 'owner' | 'admin' | 'member';
@@ -125,8 +126,16 @@ function OwnerTr({ owner }: { owner: OwnerRow }) {
       <td className="py-3">
         <div className="flex items-center gap-2.5">
           {owner.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={owner.imageUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+            // Clerk-hosted avatar — img.clerk.com is allowlisted in
+            // next.config.ts so Next can transcode + size it. Fixed
+            // 28×28 footprint avoids CLS while it loads.
+            <Image
+              src={owner.imageUrl}
+              alt={owner.name ?? owner.email}
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-full object-cover"
+            />
           ) : (
             <div className="w-7 h-7 rounded-full bg-violet-500/30 text-violet-200 grid place-items-center text-[11px] font-medium">
               {(owner.name ?? owner.email).slice(0, 1).toUpperCase()}
