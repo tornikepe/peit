@@ -198,6 +198,24 @@ export const messages = pgTable('messages', {
   feedbackIdx: index('messages_feedback_idx').on(t.feedback),
 }));
 
+// ─── greeting_variants ─────────────────────────────────────────────────────
+// Per-bot A/B test pool. The widget picks one variant per session via
+// weighted-random selection, records an impression, and (if the visitor
+// sends at least one message) records a conversion. See /api/ab/*.
+
+export const greetingVariants = pgTable('greeting_variants', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  botId:        uuid('bot_id').notNull().references(() => bots.id, { onDelete: 'cascade' }),
+  message:      text('message').notNull(),
+  weight:       integer('weight').notNull().default(50),
+  impressions:  integer('impressions').notNull().default(0),
+  conversions:  integer('conversions').notNull().default(0),
+  isActive:     boolean('is_active').notNull().default(true),
+  createdAt:    timestamp('created_at').defaultNow().notNull(),
+}, t => ({
+  botIdx: index('greeting_variants_bot_idx').on(t.botId, t.isActive),
+}));
+
 // ─── leads ─────────────────────────────────────────────────────────────────
 
 export const leads = pgTable('leads', {

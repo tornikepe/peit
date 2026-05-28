@@ -26,6 +26,8 @@ interface PublicBot {
   leadCapture: { enabled: boolean; fields: ('name' | 'email' | 'phone')[] };
   quickReplies: QuickReplyPill[];
   customCss: string;
+  /** A/B greeting variant selected server-side for this session (Feature #6). */
+  abGreeting: { id: string; message: string } | null;
   suggestions: string[];
 }
 
@@ -234,6 +236,11 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [listening, setListening] = useState(false);
   /** Browser support is checked once on mount; on mismatch we hide the mic button. */
   const [voiceSupported, setVoiceSupported] = useState(false);
+  /** A/B greeting variant (Feature #6) — held so impression/conversion calls
+   *  bind to the right variantId for this session. */
+  const [abVariantId, setAbVariantId] = useState<string | null>(null);
+  const [abImpressionSent, setAbImpressionSent] = useState(false);
+  const [abConversionSent, setAbConversionSent] = useState(false);
 
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
@@ -279,7 +286,9 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         // Older bots predate quick_replies / custom_css — default for safety.
         if (!Array.isArray(b.quickReplies)) b.quickReplies = [];
         if (typeof b.customCss !== 'string')  b.customCss = '';
+        if (b.abGreeting === undefined)       b.abGreeting = null;
         setBot(b);
+        if (b.abGreeting) setAbVariantId(b.abGreeting.id);
         setActiveLang(b.primaryLang);
 
         // Restore prior conversation if visitor had one
@@ -289,8 +298,20 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           setMsgs(restored);
           if (queryRef.current.convo) setConversationId(queryRef.current.convo);
         } else {
-          // Fresh greeting — composed with time-of-day prefix
-          const greet = b.greeting[b.primaryLang] || 'Hi! 👋';
+          // Fresh greeting — A/B variant when present (Feature #6) overrides
+          // the static localized greeting. Fire an impression so the
+          // dashboard sees the variant landed.
+          const greet = b.abGreeting?.message
+            || b.greeting[b.primaryLang]
+            || 'Hi! 👋';
+          if (b.abGreeting && !abImpressionSent) {
+            void fetch(`/api/widget/${b.id}/ab`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ variantId: b.abGreeting.id, event: 'impression' }),
+            }).catch(() => undefined);
+            setAbImpressionSent(true);
+          }
           const greetMsg: Msg = {
             id: newMsgId(),
             from: 'bot',
@@ -514,6 +535,17 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     setInput('');
     setSending(true);
     setMsgs(prev => [...prev, userMsg, botMsg]);
+
+    // A/B conversion fires once per session, on the very first user message
+    // after we've recorded an impression (Feature #6).
+    if (abVariantId && abImpressionSent && !abConversionSent) {
+      void fetch(`/api/widget/${id}/ab`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ variantId: abVariantId, event: 'conversion' }),
+      }).catch(() => undefined);
+      setAbConversionSent(true);
+    }
 
     const payload = JSON.stringify({
       text,
