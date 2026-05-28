@@ -23,6 +23,7 @@ import { embedOne, isEmbeddingsAvailable } from '@/lib/embeddings';
 import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
 import { isOriginAllowed } from '@/lib/origin-check';
 import { extractGeo } from '@/lib/geoip';
+import { classifySentiment } from '@/lib/sentiment';
 import {
   getSubscriptionForBot, incrementMessageCount, incrementTokenUsage,
 } from '@/db/queries/subscriptions';
@@ -198,15 +199,32 @@ export async function POST(
   }
 
   // Persist user message immediately — if the stream drops we still have a
-  // record of what was asked.
+  // record of what was asked. Sentiment classification (Feature #5) fires
+  // in the background and back-fills the row when it returns; we never
+  // block the answer on it.
+  let userMessageId: string | null = null;
   if (conversationId) {
     try {
-      await db.insert(schema.messages).values({
+      const inserted = await db.insert(schema.messages).values({
         conversationId, fromUser: true, content: text,
-      });
+      }).returning({ id: schema.messages.id });
+      userMessageId = inserted[0]?.id ?? null;
     } catch (e) {
       console.error('[widget/stream] user message insert failed:', e);
     }
+  }
+  if (userMessageId) {
+    void (async () => {
+      const sentiment = await classifySentiment(text);
+      if (!sentiment) return;
+      try {
+        await db.update(schema.messages)
+          .set({ sentiment })
+          .where(eq(schema.messages.id, userMessageId!));
+      } catch (e) {
+        console.warn('[widget/stream] sentiment update failed:', e);
+      }
+    })();
   }
 
   // ── Build the SSE stream ────────────────────────────────────────────────

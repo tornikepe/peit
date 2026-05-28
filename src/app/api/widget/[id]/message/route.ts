@@ -4,6 +4,7 @@
 
 import { eq, desc, and } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
+import { classifySentiment } from '@/lib/sentiment';
 import { corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
 import { answer } from '@/lib/answer-engine';
 import { type Bot, type BotLang } from '@/lib/bots';
@@ -226,10 +227,27 @@ export async function POST(
       conversationId = convo.id;
     }
 
-    await db.insert(schema.messages).values([
+    const inserted = await db.insert(schema.messages).values([
       { conversationId, fromUser: true,  content: text },
       { conversationId, fromUser: false, content: result.text, source: result.source },
-    ]);
+    ]).returning({ id: schema.messages.id, fromUser: schema.messages.fromUser });
+
+    // Sentiment classification (Feature #5) — fire-and-forget so the user
+    // gets the answer without waiting on a second Claude round-trip.
+    const userMsgId = inserted.find(r => r.fromUser)?.id;
+    if (userMsgId) {
+      void (async () => {
+        const sentiment = await classifySentiment(text);
+        if (!sentiment) return;
+        try {
+          await db.update(schema.messages)
+            .set({ sentiment })
+            .where(eq(schema.messages.id, userMsgId));
+        } catch (e) {
+          console.warn('[widget/message] sentiment update failed:', e);
+        }
+      })();
+    }
 
     // Bump bot stats
     await db.update(schema.bots)

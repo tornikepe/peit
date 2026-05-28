@@ -137,6 +137,7 @@ export interface ConversationDetail {
     content:   string;
     source:    string | null;
     feedback:  'positive' | 'negative' | null;
+    sentiment: 'positive' | 'neutral' | 'negative' | 'frustrated' | null;
     createdAt: Date;
   }>;
 }
@@ -190,6 +191,7 @@ export async function getConversationDetail(
       content:   m.content,
       source:    m.source,
       feedback:  m.feedback ?? null,
+      sentiment: m.sentiment ?? null,
       createdAt: m.createdAt,
     })),
   };

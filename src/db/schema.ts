@@ -25,6 +25,9 @@ export const messageSourceEnum = pgEnum('message_source', [
 export const messageFeedbackEnum = pgEnum('message_feedback', [
   'positive', 'negative',
 ]);
+export const messageSentimentEnum = pgEnum('message_sentiment', [
+  'positive', 'neutral', 'negative', 'frustrated',
+]);
 export const channelEnum = pgEnum('channel', [
   'web', 'telegram', 'instagram', 'facebook', 'playground',
 ]);
@@ -192,10 +195,15 @@ export const messages = pgTable('messages', {
   /** Visitor's thumbs-up/down on the bot's reply. Only set on bot messages.
    *  Null = no rating; the most recent click wins. See /api/feedback. */
   feedback:       messageFeedbackEnum('feedback'),
+  /** Classified sentiment of inbound visitor messages (Feature #5). Set
+   *  before the answer engine runs; null on bot messages or when the
+   *  classifier wasn't available. */
+  sentiment:      messageSentimentEnum('sentiment'),
   createdAt:      timestamp('created_at').defaultNow().notNull(),
 }, t => ({
-  convoIdx:    index('messages_convo_idx').on(t.conversationId),
-  feedbackIdx: index('messages_feedback_idx').on(t.feedback),
+  convoIdx:     index('messages_convo_idx').on(t.conversationId),
+  feedbackIdx:  index('messages_feedback_idx').on(t.feedback),
+  sentimentIdx: index('messages_sentiment_idx').on(t.sentiment),
 }));
 
 // ─── greeting_variants ─────────────────────────────────────────────────────

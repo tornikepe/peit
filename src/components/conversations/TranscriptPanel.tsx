@@ -20,8 +20,18 @@ interface Message {
   content:   string;
   source:    string | null;
   feedback:  'positive' | 'negative' | null;
+  sentiment: 'positive' | 'neutral' | 'negative' | 'frustrated' | null;
   createdAt: string;
 }
+
+/** Brand color per classified sentiment — used for the small dot in the
+ *  message bubble's metadata row. */
+const SENTIMENT_DOT: Record<NonNullable<Message['sentiment']>, string> = {
+  positive:   'bg-emerald-400',
+  neutral:    'bg-gray-400',
+  negative:   'bg-orange-400',
+  frustrated: 'bg-rose-400',
+};
 
 interface ConversationDetail {
   id:           string;
@@ -236,6 +246,15 @@ function Bubble({ message }: { message: Message }) {
           </span>
           {message.source && message.source !== null && (
             <span className="opacity-60">· {sourceLabel(message.source)}</span>
+          )}
+          {/* Sentiment dot (Feature #5) — visible only on user messages
+              where the classifier returned a label. Helps the owner scan
+              a transcript for frustrated moments. */}
+          {isUser && message.sentiment && (
+            <span
+              className={`inline-block w-1.5 h-1.5 rounded-full ${SENTIMENT_DOT[message.sentiment]}`}
+              title={message.sentiment}
+            />
           )}
           {!isUser && message.feedback === 'positive' && (
             <span className="inline-flex items-center gap-0.5 text-emerald-400" title="Thumbs up">
