@@ -136,6 +136,7 @@ export interface ConversationDetail {
     role:      'user' | 'bot';
     content:   string;
     source:    string | null;
+    feedback:  'positive' | 'negative' | null;
     createdAt: Date;
   }>;
 }
@@ -188,6 +189,7 @@ export async function getConversationDetail(
       role:      m.fromUser ? 'user' : 'bot',
       content:   m.content,
       source:    m.source,
+      feedback:  m.feedback ?? null,
       createdAt: m.createdAt,
     })),
   };

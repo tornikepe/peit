@@ -4,6 +4,7 @@ import { use, useEffect, useRef, useState, useCallback } from 'react';
 import {
   Bot as BotIcon, Send, X, Mail, Phone, User as UserIcon,
   Loader2, AlertCircle, Sparkles, Check, RefreshCw,
+  ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { renderMd } from '@/lib/md-mini';
 
@@ -34,6 +35,11 @@ interface Msg {
   source?: 'faq' | 'knowledge' | 'fallback';
   timestamp: number;
   status?: 'sending' | 'sent' | 'failed';
+  /** Server-side messages.id, set after the SSE `done` frame. Required to
+   *  submit thumbs-up/down — null until the stream completes. */
+  serverId?: string | null;
+  /** Visitor's vote on this message. Hides the thumbs row once set. */
+  feedback?: 'positive' | 'negative' | null;
 }
 
 const I18N: Record<Lang, {
@@ -62,6 +68,9 @@ const I18N: Record<Lang, {
   eveningHi:     string;
   startConvo:    string;
   newChat:       string;
+  feedbackUp:    string;
+  feedbackDown:  string;
+  feedbackThanks: string;
 }> = {
   ka: {
     online:       'ონლაინ',
@@ -89,6 +98,9 @@ const I18N: Record<Lang, {
     eveningHi:    'საღამო მშვიდობისა',
     startConvo:   'დასვი კითხვა ან აირჩიე ქვემოთ',
     newChat:      'ახალი ჩატი',
+    feedbackUp:   'სასარგებლო პასუხი',
+    feedbackDown: 'უსარგებლო პასუხი',
+    feedbackThanks: 'მადლობა გამოხმაურებისთვის',
   },
   en: {
     online:       'Online',
@@ -116,6 +128,9 @@ const I18N: Record<Lang, {
     eveningHi:    'Good evening',
     startConvo:   'Ask a question or pick one below',
     newChat:      'New chat',
+    feedbackUp:   'Helpful answer',
+    feedbackDown: 'Not helpful',
+    feedbackThanks: 'Thanks for the feedback',
   },
   ru: {
     online:       'Онлайн',
@@ -143,6 +158,9 @@ const I18N: Record<Lang, {
     eveningHi:    'Добрый вечер',
     startConvo:   'Задайте вопрос или выберите снизу',
     newChat:      'Новый чат',
+    feedbackUp:   'Полезный ответ',
+    feedbackDown: 'Бесполезный ответ',
+    feedbackThanks: 'Спасибо за отзыв',
   },
 };
 
@@ -354,6 +372,28 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   // Posts to the SSE streaming endpoint and progressively updates the
   // in-flight bot message as deltas arrive. Falls back to a single-shot
   // POST to /message if streaming isn't usable (no fetch streams, etc).
+  // ─── Submit thumbs feedback (Feature #7) ────────────────────────────────
+  // Optimistic: stamp the message immediately so the buttons disappear,
+  // then POST. On failure we roll back so the visitor can retry.
+  const submitFeedback = useCallback(async (
+    localId: string,
+    serverId: string,
+    feedback: 'positive' | 'negative',
+  ) => {
+    setMsgs(prev => prev.map(m => m.id === localId ? { ...m, feedback } : m));
+    try {
+      const res = await fetch(`/api/widget/${id}/feedback`, {
+        method:  'POST',
+        headers: { 'content-type': 'application/json' },
+        body:    JSON.stringify({ messageId: serverId, feedback }),
+      });
+      if (!res.ok) throw new Error('bad_status');
+    } catch (e) {
+      console.warn('[widget] feedback POST failed:', e);
+      setMsgs(prev => prev.map(m => m.id === localId ? { ...m, feedback: null } : m));
+    }
+  }, [id]);
+
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text || !bot || sending) return;
@@ -418,7 +458,10 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           const raw = dataLine.slice(5).trim();
           if (!raw) continue;
 
-          let evt: { type: string; conversationId?: string; text?: string; source?: Msg['source'] };
+          let evt: {
+            type: string; conversationId?: string; text?: string;
+            source?: Msg['source']; messageId?: string | null;
+          };
           try { evt = JSON.parse(raw); } catch { continue; }
 
           if (evt.type === 'start' && evt.conversationId) {
@@ -431,7 +474,9 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
             ));
           } else if (evt.type === 'done') {
             setMsgs(prev => prev.map(m =>
-              m.id === botMsgId ? { ...m, source: evt.source ?? m.source } : m,
+              m.id === botMsgId
+                ? { ...m, source: evt.source ?? m.source, serverId: evt.messageId ?? null }
+                : m,
             ));
           } else if (evt.type === 'error') {
             throw new Error('STREAM_ERROR');
@@ -684,6 +729,43 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
                   >
                     <RefreshCw className="w-2.5 h-2.5" /> {ui.retry}
                   </button>
+                )}
+
+                {/* Thumbs-up/down feedback (Feature #7).
+                    Shown only on completed bot messages with a server id and
+                    no prior vote. After voting we replace with a small
+                    confirmation so the visitor sees their click landed. */}
+                {m.from === 'bot' && m.serverId && (
+                  m.feedback
+                    ? (
+                      <div className="text-[10px] mt-1 text-gray-500 flex items-center gap-1">
+                        {m.feedback === 'positive'
+                          ? <><ThumbsUp className="w-2.5 h-2.5" /> {ui.feedbackThanks}</>
+                          : <><ThumbsDown className="w-2.5 h-2.5" /> {ui.feedbackThanks}</>}
+                      </div>
+                    )
+                    : (
+                      <div className="mt-1 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => submitFeedback(m.id, m.serverId!, 'positive')}
+                          className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-emerald-400 transition-colors"
+                          aria-label={ui.feedbackUp}
+                          title={ui.feedbackUp}
+                        >
+                          <ThumbsUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => submitFeedback(m.id, m.serverId!, 'negative')}
+                          className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-rose-400 transition-colors"
+                          aria-label={ui.feedbackDown}
+                          title={ui.feedbackDown}
+                        >
+                          <ThumbsDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )
                 )}
               </div>
             </div>

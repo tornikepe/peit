@@ -10,12 +10,13 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Bot, MessageSquare, BarChart3, Users, CreditCard,
-  Settings, ShieldCheck, Zap, ChevronRight, X,
+  Settings, ShieldCheck, Zap, ChevronRight, X, ThumbsDown,
 } from 'lucide-react';
 
 const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { href: '/dashboard',               label: 'მთავარი',     icon: LayoutDashboard },
   { href: '/dashboard/conversations', label: 'საუბრები',    icon: MessageSquare   },
+  { href: '/dashboard/feedback',      label: 'გამოხმაურება', icon: ThumbsDown      },
   { href: '/dashboard/leads',         label: 'ლიდები',      icon: Users           },
   { href: '/dashboard/analytics',     label: 'ანალიტიკა',   icon: BarChart3       },
   { href: '/dashboard/billing',       label: 'გადახდები',   icon: CreditCard      },

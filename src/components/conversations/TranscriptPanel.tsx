@@ -8,7 +8,7 @@
 // replaces the close X.
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, X, Globe, Send, MapPin, Clock, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, X, Globe, Send, MapPin, Clock, Download, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { InstagramIcon, FacebookIcon } from '@/components/icons/BrandIcons';
 import { useFetch } from './useConversations';
 import TagInput from './TagInput';
@@ -19,6 +19,7 @@ interface Message {
   role:      'user' | 'bot';
   content:   string;
   source:    string | null;
+  feedback:  'positive' | 'negative' | null;
   createdAt: string;
 }
 
@@ -235,6 +236,16 @@ function Bubble({ message }: { message: Message }) {
           </span>
           {message.source && message.source !== null && (
             <span className="opacity-60">· {sourceLabel(message.source)}</span>
+          )}
+          {!isUser && message.feedback === 'positive' && (
+            <span className="inline-flex items-center gap-0.5 text-emerald-400" title="Thumbs up">
+              · <ThumbsUp className="w-2.5 h-2.5" />
+            </span>
+          )}
+          {!isUser && message.feedback === 'negative' && (
+            <span className="inline-flex items-center gap-0.5 text-rose-400" title="Thumbs down">
+              · <ThumbsDown className="w-2.5 h-2.5" />
+            </span>
           )}
         </div>
       </div>

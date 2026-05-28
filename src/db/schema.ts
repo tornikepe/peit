@@ -22,6 +22,9 @@ export const subPlanEnum   = pgEnum('subscription_plan', [
 export const messageSourceEnum = pgEnum('message_source', [
   'faq', 'knowledge', 'fallback', 'ai', 'human',
 ]);
+export const messageFeedbackEnum = pgEnum('message_feedback', [
+  'positive', 'negative',
+]);
 export const channelEnum = pgEnum('channel', [
   'web', 'telegram', 'instagram', 'facebook', 'playground',
 ]);
@@ -183,9 +186,13 @@ export const messages = pgTable('messages', {
   fromUser:       boolean('from_user').notNull(),
   content:        text('content').notNull(),
   source:         messageSourceEnum('source'),
+  /** Visitor's thumbs-up/down on the bot's reply. Only set on bot messages.
+   *  Null = no rating; the most recent click wins. See /api/feedback. */
+  feedback:       messageFeedbackEnum('feedback'),
   createdAt:      timestamp('created_at').defaultNow().notNull(),
 }, t => ({
-  convoIdx: index('messages_convo_idx').on(t.conversationId),
+  convoIdx:    index('messages_convo_idx').on(t.conversationId),
+  feedbackIdx: index('messages_feedback_idx').on(t.feedback),
 }));
 
 // ─── leads ─────────────────────────────────────────────────────────────────

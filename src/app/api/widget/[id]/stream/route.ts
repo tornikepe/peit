@@ -221,19 +221,22 @@ export async function POST(
       if (isHandedOff) {
         const holdText = handoffReply(lang);
         controller.enqueue(sseLine({ type: 'delta', text: holdText }));
-        controller.enqueue(sseLine({ type: 'done', source: 'human', usage: null }));
-        controller.close();
-        // Best-effort: persist the bot-side hold message; don't bill it.
-        void (async () => {
-          if (!conversationId) return;
+        // Persist hold message inline so we can return its id for feedback.
+        let holdMessageId: string | null = null;
+        if (conversationId) {
           try {
-            await db.insert(schema.messages).values({
+            const inserted = await db.insert(schema.messages).values({
               conversationId, fromUser: false, content: holdText, source: 'human',
-            });
+            }).returning({ id: schema.messages.id });
+            holdMessageId = inserted[0]?.id ?? null;
           } catch (e) {
             console.error('[widget/stream] handoff persist failed:', e);
           }
-        })();
+        }
+        controller.enqueue(sseLine({
+          type: 'done', source: 'human', usage: null, messageId: holdMessageId,
+        }));
+        controller.close();
         return;
       }
 
@@ -313,7 +316,21 @@ export async function POST(
           controller.enqueue(sseLine({ type: 'delta', text: replyText }));
         }
 
-        controller.enqueue(sseLine({ type: 'done', source, usage }));
+        // Persist the bot message BEFORE emitting `done` so the client can
+        // round-trip feedback against its real DB id (Feature #7). The
+        // counters + token usage stay async — they don't block UI.
+        let messageId: string | null = null;
+        if (conversationId && replyText) {
+          try {
+            const inserted = await db.insert(schema.messages).values({
+              conversationId, fromUser: false, content: replyText, source,
+            }).returning({ id: schema.messages.id });
+            messageId = inserted[0]?.id ?? null;
+          } catch (e) {
+            console.error('[widget/stream] persist bot msg failed:', e);
+          }
+        }
+        controller.enqueue(sseLine({ type: 'done', source, usage, messageId }));
       } catch (e) {
         console.error('[widget/stream] generation failed:', e);
         const fallback = bot.fallback[lang] ?? bot.fallback[bot.primaryLang]
@@ -321,21 +338,36 @@ export async function POST(
         if (!replyText) {
           replyText = fallback;
           controller.enqueue(sseLine({ type: 'delta', text: fallback }));
+          // Persist the fallback so feedback works on it too.
+          if (conversationId) {
+            try {
+              const inserted = await db.insert(schema.messages).values({
+                conversationId, fromUser: false, content: fallback, source: 'fallback',
+              }).returning({ id: schema.messages.id });
+              controller.enqueue(sseLine({
+                type: 'done', source: 'fallback', usage: null,
+                messageId: inserted[0]?.id ?? null,
+              }));
+            } catch {
+              controller.enqueue(sseLine({ type: 'done', source: 'fallback', usage: null, messageId: null }));
+            }
+          } else {
+            controller.enqueue(sseLine({ type: 'done', source: 'fallback', usage: null, messageId: null }));
+          }
+        } else {
+          controller.enqueue(sseLine({
+            type: 'done', source: 'fallback', usage: null, messageId: null,
+          }));
         }
-        controller.enqueue(sseLine({
-          type: 'done', source: 'fallback', usage: null,
-        }));
       } finally {
         controller.close();
 
-        // Persist the final assistant message + counters. Fire-and-forget so
-        // we never block stream termination.
+        // Bot-side counters / token usage — fire-and-forget; the message row
+        // is already persisted above. Skip when the conversation never started
+        // (e.g. early DB error) or we never produced text.
         void (async () => {
           if (!conversationId || !replyText) return;
           try {
-            await db.insert(schema.messages).values({
-              conversationId, fromUser: false, content: replyText, source,
-            });
             await db.update(schema.bots)
               .set({
                 statsCache: {
