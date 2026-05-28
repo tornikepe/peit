@@ -4,7 +4,7 @@ import { use, useEffect, useRef, useState, useCallback } from 'react';
 import {
   Bot as BotIcon, Send, X, Mail, Phone, User as UserIcon,
   Loader2, AlertCircle, Sparkles, Check, RefreshCw,
-  ThumbsUp, ThumbsDown,
+  ThumbsUp, ThumbsDown, Mic,
 } from 'lucide-react';
 import { renderMd } from '@/lib/md-mini';
 
@@ -72,6 +72,9 @@ const I18N: Record<Lang, {
   feedbackUp:    string;
   feedbackDown:  string;
   feedbackThanks: string;
+  listenStart:   string;
+  listenStop:    string;
+  listening:     string;
 }> = {
   ka: {
     online:       'ონლაინ',
@@ -102,6 +105,9 @@ const I18N: Record<Lang, {
     feedbackUp:   'სასარგებლო პასუხი',
     feedbackDown: 'უსარგებლო პასუხი',
     feedbackThanks: 'მადლობა გამოხმაურებისთვის',
+    listenStart:  'ხმოვანი შეტყობინება',
+    listenStop:   'შეჩერება',
+    listening:    'მისმენთ...',
   },
   en: {
     online:       'Online',
@@ -132,6 +138,9 @@ const I18N: Record<Lang, {
     feedbackUp:   'Helpful answer',
     feedbackDown: 'Not helpful',
     feedbackThanks: 'Thanks for the feedback',
+    listenStart:  'Voice message',
+    listenStop:   'Stop',
+    listening:    'Listening...',
   },
   ru: {
     online:       'Онлайн',
@@ -162,6 +171,9 @@ const I18N: Record<Lang, {
     feedbackUp:   'Полезный ответ',
     feedbackDown: 'Бесполезный ответ',
     feedbackThanks: 'Спасибо за отзыв',
+    listenStart:  'Голосовое сообщение',
+    listenStop:   'Стоп',
+    listening:    'Слушаю...',
   },
 };
 
@@ -218,6 +230,10 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [isVisible, setIsVisible] = useState(true);
   /** Indices of quick-reply pills the visitor has already clicked this session. */
   const [usedQuickReplies, setUsedQuickReplies] = useState<Set<number>>(new Set());
+  /** Voice input (Feature #4) — true while the SpeechRecognition session is live. */
+  const [listening, setListening] = useState(false);
+  /** Browser support is checked once on mount; on mismatch we hide the mic button. */
+  const [voiceSupported, setVoiceSupported] = useState(false);
 
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
@@ -387,6 +403,81 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   // Posts to the SSE streaming endpoint and progressively updates the
   // in-flight bot message as deltas arrive. Falls back to a single-shot
   // POST to /message if streaming isn't usable (no fetch streams, etc).
+  // ─── Voice input (Feature #4) ───────────────────────────────────────────
+  // Web Speech API: feature-detect on mount, hide the mic button entirely
+  // when unsupported (the brief calls for graceful degradation, not a
+  // disabled stub). The recognition instance is held in a ref so a re-render
+  // doesn't restart the session.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const autoSubmitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any };
+    setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
+
+  const localeForVoice = (l: Lang): string =>
+    l === 'ka' ? 'ka-GE' : l === 'ru' ? 'ru-RU' : 'en-US';
+
+  function toggleVoice() {
+    if (!voiceSupported || sending) return;
+
+    if (listening) {
+      try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) { setVoiceSupported(false); return; }
+
+    const rec = new Ctor();
+    rec.lang = localeForVoice(activeLang);
+    rec.interimResults = true;
+    rec.continuous = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult = (e: any) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      setInput(transcript);
+      // Auto-submit 1.5s after the last result frame (treat as end-of-speech).
+      if (autoSubmitTimer.current) clearTimeout(autoSubmitTimer.current);
+      autoSubmitTimer.current = setTimeout(() => {
+        try { rec.stop(); } catch { /* noop */ }
+        if (transcript.trim()) send(transcript);
+      }, 1500);
+    };
+    rec.onerror = () => { setListening(false); };
+    rec.onend   = () => {
+      setListening(false);
+      if (autoSubmitTimer.current) {
+        clearTimeout(autoSubmitTimer.current);
+        autoSubmitTimer.current = null;
+      }
+    };
+
+    try {
+      rec.start();
+      recognitionRef.current = rec;
+      setListening(true);
+    } catch (e) {
+      console.warn('[widget] mic start failed:', e);
+      setListening(false);
+    }
+  }
+
+  // Cleanup on unmount — never leave a recognition session running.
+  useEffect(() => () => {
+    try { recognitionRef.current?.stop(); } catch { /* noop */ }
+    if (autoSubmitTimer.current) clearTimeout(autoSubmitTimer.current);
+  }, []);
+
   // ─── Submit thumbs feedback (Feature #7) ────────────────────────────────
   // Optimistic: stamp the message immediately so the buttons disappear,
   // then POST. On failure we roll back so the visitor can retry.
@@ -926,11 +1017,36 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
               send();
             }
           }}
-          placeholder={ui.placeholder}
+          placeholder={listening ? ui.listening : ui.placeholder}
           disabled={sending}
           className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3.5 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/40 disabled:opacity-60 resize-none max-h-[120px]"
           style={{ minHeight: '36px' }}
         />
+
+        {/* Mic — hidden when browser SpeechRecognition missing (Feature #4) */}
+        {voiceSupported && (
+          <button
+            onClick={toggleVoice}
+            disabled={sending}
+            className="relative w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-30 shrink-0 hover:scale-105 active:scale-95 border border-white/[0.08]"
+            style={{
+              background: listening ? `${color}33` : 'transparent',
+            }}
+            aria-label={listening ? ui.listenStop : ui.listenStart}
+            title={listening ? ui.listenStop : ui.listenStart}
+          >
+            {listening
+              ? <>
+                  <span
+                    className="absolute inset-0 rounded-full animate-ping"
+                    style={{ background: `${color}55` }}
+                  />
+                  <Mic className="w-3.5 h-3.5 text-white relative z-10" />
+                </>
+              : <Mic className="w-3.5 h-3.5 text-gray-300" />}
+          </button>
+        )}
+
         <button
           onClick={() => send()}
           disabled={!input.trim() || sending}
