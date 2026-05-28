@@ -7,6 +7,7 @@ import {
   Zap, ArrowLeft, Bot as BotIcon, Play, Pause, Trash2,
   Copy, Check, Code2, MessageSquare, Settings, Globe,
   TrendingUp, Plus, Sparkles, Loader2, RefreshCw,
+  Database, Workflow, LayoutDashboard, Palette,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
@@ -25,6 +26,9 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   const bot = getBot(id);
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  /** Active tab on the bot detail page. Keeps the layout shallow even when
+   *  there are 12+ sub-editors. */
+  const [tab, setTab] = useState<'overview' | 'knowledge' | 'widget' | 'automation'>('overview');
 
   // Local FAQ state — typing edits this; saves to bot only on blur
   const [editFaqs, setEditFaqs] = useState<FAQItem[]>([]);
@@ -248,9 +252,39 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
           ))}
         </div>
 
-        {/* Two-col layout */}
+        {/* Tab bar — keeps the 12+ editor sections from drowning the page in
+            an endless vertical scroll. Each tab is a coherent task: overview
+            for the at-a-glance + FAQ, knowledge for content sources, widget
+            for look-and-feel, automation for flows + channels. */}
+        <div className="mb-6 flex items-center gap-1 overflow-x-auto border-b border-white/[0.06] pb-0">
+          {[
+            { id: 'overview',   label: 'მიმოხილვა',     icon: LayoutDashboard },
+            { id: 'knowledge',  label: 'ცოდნა',         icon: Database },
+            { id: 'widget',     label: 'ვიჯეტი',        icon: Palette },
+            { id: 'automation', label: 'ავტომატიზაცია', icon: Workflow },
+          ].map(t => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id as typeof tab)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  active
+                    ? 'text-white border-violet-500'
+                    : 'text-gray-500 border-transparent hover:text-gray-300 hover:border-white/10'
+                }`}
+              >
+                <t.icon className="w-3.5 h-3.5" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ─── Overview tab ─────────────────────────────────────────────── */}
+        {tab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: FAQ + settings */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             {/* FAQs */}
             <div className="glass rounded-2xl p-6">
@@ -340,7 +374,8 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
 
-          {/* Right: embed + danger */}
+          {/* Right column on Overview: embed snippet + Bot ID. The rest of
+              the secondary editors live under their own tab. */}
           <div className="flex flex-col gap-6">
             {/* Embed code */}
             <div className="glass rounded-2xl p-6">
@@ -367,7 +402,6 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 <p className="text-emerald-400 text-xs mt-2">✓ დაკოპირდა!</p>
               )}
 
-              {/* Direct preview link */}
               <a
                 href={`/widget/${bot.id}`}
                 target="_blank"
@@ -379,23 +413,123 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               </a>
             </div>
 
-            {/* Allowed origins */}
-            <AllowedOrigins
-              value={bot.allowedOrigins ?? []}
-              onSave={async next => {
-                await updateBot(bot.id, { allowedOrigins: next });
-              }}
-            />
+            {/* Bot ID */}
+            <div className="glass rounded-2xl p-6">
+              <p className="text-gray-500 text-xs mb-2">Bot ID</p>
+              <p className="text-white text-sm font-mono break-all">{bot.id}</p>
+            </div>
+          </div>
+        </div>
+        )}
 
-            {/* Quick-reply pills shown above the widget input */}
-            <QuickRepliesEditor
-              value={bot.quickReplies ?? []}
-              onSave={async next => {
-                await updateBot(bot.id, { quickReplies: next });
-              }}
-            />
+        {/* ─── Knowledge tab ────────────────────────────────────────────── */}
+        {tab === 'knowledge' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* PDF / DOCX / TXT uploads — spans both cols on smaller knowledge sets */}
+          <div className="lg:col-span-2">
+            <KnowledgeUploads botId={bot.id} />
+          </div>
 
-            {/* Owner-authored CSS with live preview */}
+          {/* Website Sync */}
+          {bot.websiteUrl && (
+            <div className="glass rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="w-4 h-4 text-blue-400" />
+                <h2 className="text-white font-semibold">საიტიდან განახლება</h2>
+              </div>
+              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                წაიკითხავს {bot.websiteUrl?.replace(/^https?:\/\//, '')}-ს ხელახლა, ჩაანაცვლებს ყველა chunk-ს და დააინდექსებს AI-სთვის.
+              </p>
+
+              <button
+                onClick={recrawlSite}
+                disabled={recrawling}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-600/15 border border-blue-500/30 text-blue-300 hover:bg-blue-600/25 transition-colors disabled:opacity-50"
+              >
+                {recrawling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Crawling...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    ხელახლა წაკითხვა
+                  </>
+                )}
+              </button>
+
+              {recrawlResult && (
+                <p className="mt-2 text-xs text-gray-300">{recrawlResult}</p>
+              )}
+
+              {bot.lastCrawledAt && (
+                <p className="mt-3 text-[11px] text-gray-600 text-center">
+                  ბოლო წაკითხვა: {new Date(bot.lastCrawledAt).toLocaleString('ka-GE')}
+                </p>
+              )}
+
+              <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between gap-2">
+                <label className="text-xs text-gray-400">ავტომატური განახლება</label>
+                <select
+                  value={bot.syncIntervalDays ?? 7}
+                  onChange={e => updateBot(bot.id, { syncIntervalDays: Number(e.target.value) })}
+                  className="bg-black/30 border border-white/[0.08] rounded-md px-2 py-1 text-xs text-gray-100 outline-none focus:border-blue-500/40"
+                >
+                  <option value={0}>გამორთული</option>
+                  <option value={1}>ყოველდღე</option>
+                  <option value={7}>ყოველ კვირას</option>
+                  <option value={14}>2 კვირაში ერთხელ</option>
+                  <option value={30}>თვეში ერთხელ</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* AI Index */}
+          <div className="glass rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-violet-400" />
+              <h2 className="text-white font-semibold">AI Index</h2>
+            </div>
+            <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+              ცოდნის ბაზის Vector embeddings — საშუალებას აძლევს ბოტს გაიგოს კითხვა ბუნებრივად, არა მხოლოდ keyword-ებით.
+            </p>
+            <button
+              onClick={rebuildIndex}
+              disabled={reindexing}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-violet-600/15 border border-violet-500/30 text-violet-300 hover:bg-violet-600/25 transition-colors disabled:opacity-50"
+            >
+              {reindexing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  ინდექსაცია...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  AI Index-ის გადაშენება
+                </>
+              )}
+            </button>
+            {reindexResult && (
+              <p className="mt-2 text-xs text-gray-300">{reindexResult}</p>
+            )}
+          </div>
+        </div>
+        )}
+
+        {/* ─── Widget tab ───────────────────────────────────────────────── */}
+        {tab === 'widget' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <QuickRepliesEditor
+            value={bot.quickReplies ?? []}
+            onSave={async next => {
+              await updateBot(bot.id, { quickReplies: next });
+            }}
+          />
+          <GreetingVariantsEditor botId={bot.id} />
+          <div className="lg:col-span-2">
             <CustomCssEditor
               botId={bot.id}
               value={bot.customCss ?? ''}
@@ -403,147 +537,58 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 await updateBot(bot.id, { customCss: next });
               }}
             />
-
-            {/* Greeting A/B variants */}
-            <GreetingVariantsEditor botId={bot.id} />
-
-            {/* Multi-step flows */}
-            <FlowsEditor botId={bot.id} />
-
-            {/* PDF / DOCX / TXT uploads as knowledge */}
-            <KnowledgeUploads botId={bot.id} />
-
-            {/* Multi-channel — Telegram + Instagram + Facebook Messenger */}
-            <ChannelsPanel botId={bot.id} />
-
-            {/* Website Sync */}
-            {bot.websiteUrl && (
-              <div className="glass rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Globe className="w-4 h-4 text-blue-400" />
-                  <h2 className="text-white font-semibold">საიტიდან განახლება</h2>
-                </div>
-                <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-                  წაიკითხავს {bot.websiteUrl?.replace(/^https?:\/\//, '')}-ს ხელახლა, ჩაანაცვლებს ყველა chunk-ს და დააინდექსებს AI-სთვის.
-                </p>
-
-                <button
-                  onClick={recrawlSite}
-                  disabled={recrawling}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-600/15 border border-blue-500/30 text-blue-300 hover:bg-blue-600/25 transition-colors disabled:opacity-50"
-                >
-                  {recrawling ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Crawling...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4" />
-                      ხელახლა წაკითხვა
-                    </>
-                  )}
-                </button>
-
-                {recrawlResult && (
-                  <p className="mt-2 text-xs text-gray-300">{recrawlResult}</p>
-                )}
-
-                {bot.lastCrawledAt && (
-                  <p className="mt-3 text-[11px] text-gray-600 text-center">
-                    ბოლო წაკითხვა: {new Date(bot.lastCrawledAt).toLocaleString('ka-GE')}
-                  </p>
-                )}
-
-                {/* Auto-sync cadence (Feature #8). 0 disables the daily cron
-                    sweep; positive values are the days-since-last-crawl
-                    threshold that makes a bot eligible. */}
-                <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between gap-2">
-                  <label className="text-xs text-gray-400">ავტომატური განახლება</label>
-                  <select
-                    value={bot.syncIntervalDays ?? 7}
-                    onChange={e => updateBot(bot.id, { syncIntervalDays: Number(e.target.value) })}
-                    className="bg-black/30 border border-white/[0.08] rounded-md px-2 py-1 text-xs text-gray-100 outline-none focus:border-blue-500/40"
-                  >
-                    <option value={0}>გამორთული</option>
-                    <option value={1}>ყოველდღე</option>
-                    <option value={7}>ყოველ კვირას</option>
-                    <option value={14}>2 კვირაში ერთხელ</option>
-                    <option value={30}>თვეში ერთხელ</option>
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* AI Index */}
-            <div className="glass rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-violet-400" />
-                <h2 className="text-white font-semibold">AI Index</h2>
-              </div>
-              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-                ცოდნის ბაზის Vector embeddings — საშუალებას აძლევს ბოტს გაიგოს კითხვა ბუნებრივად, არა მხოლოდ keyword-ებით.
-              </p>
-              <button
-                onClick={rebuildIndex}
-                disabled={reindexing}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-violet-600/15 border border-violet-500/30 text-violet-300 hover:bg-violet-600/25 transition-colors disabled:opacity-50"
-              >
-                {reindexing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    ინდექსაცია...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    AI Index-ის გადაშენება
-                  </>
-                )}
-              </button>
-              {reindexResult && (
-                <p className="mt-2 text-xs text-gray-300">{reindexResult}</p>
-              )}
-            </div>
-
-            {/* Bot ID */}
-            <div className="glass rounded-2xl p-6">
-              <p className="text-gray-500 text-xs mb-2">Bot ID</p>
-              <p className="text-white text-sm font-mono break-all">{bot.id}</p>
-            </div>
-
-            {/* Danger zone */}
-            <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6">
-              <h2 className="text-red-400 font-semibold mb-2">სახიფათო ზონა</h2>
-              <p className="text-gray-500 text-xs mb-4">
-                ბოტის წაშლის შემდეგ მონაცემები ვერ აღდგება.
-              </p>
-              {!confirmDelete ? (
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  ბოტის წაშლა
-                </button>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={handleDelete}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors"
-                  >
-                    დადასტურება — წაშლა
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    className="w-full px-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition-colors"
-                  >
-                    გაუქმება
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
+          <div className="lg:col-span-2">
+            <AllowedOrigins
+              value={bot.allowedOrigins ?? []}
+              onSave={async next => {
+                await updateBot(bot.id, { allowedOrigins: next });
+              }}
+            />
+          </div>
+        </div>
+        )}
+
+        {/* ─── Automation tab ───────────────────────────────────────────── */}
+        {tab === 'automation' && (
+        <div className="flex flex-col gap-6">
+          <FlowsEditor botId={bot.id} />
+          <ChannelsPanel botId={bot.id} />
+        </div>
+        )}
+
+        {/* Danger zone — always visible at the bottom, regardless of tab.
+            Deletion is a high-stakes action that shouldn't hide behind a
+            sub-navigation. */}
+        <div className="mt-10 rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6">
+          <h2 className="text-red-400 font-semibold mb-2">სახიფათო ზონა</h2>
+          <p className="text-gray-500 text-xs mb-4">
+            ბოტის წაშლის შემდეგ მონაცემები ვერ აღდგება.
+          </p>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              ბოტის წაშლა
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleDelete}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors"
+              >
+                დადასტურება — წაშლა
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                გაუქმება
+              </button>
+            </div>
+          )}
         </div>
     </div>
   );
