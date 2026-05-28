@@ -144,6 +144,8 @@ export const faqs = pgTable('faqs', {
 // Scraped content used for retrieval. `keywords` stays as text[] for simple
 // substring matching; vector embeddings come in a follow-up phase (pgvector).
 
+export const knowledgeSourceEnum = pgEnum('knowledge_source', ['crawl', 'upload']);
+
 export const knowledgeChunks = pgTable('knowledge_chunks', {
   id:        uuid('id').primaryKey().defaultRandom(),
   botId:     uuid('bot_id').notNull().references(() => bots.id, { onDelete: 'cascade' }),
@@ -152,9 +154,17 @@ export const knowledgeChunks = pgTable('knowledge_chunks', {
   keywords:  jsonb('keywords').$type<string[]>().notNull().default([]),
   /** Voyage AI embedding vector — null until indexed. */
   embedding: vector('embedding', { dimensions: EMBEDDING_DIMS }),
+  /** Origin of this chunk — 'crawl' for website scraper, 'upload' for
+   *  PDF/DOCX/TXT documents the owner pushed via the dashboard (Feature #9). */
+  source:    knowledgeSourceEnum('source').notNull().default('crawl'),
+  /** Original document filename for source='upload' rows; null for crawl. */
+  filename:  text('filename'),
+  /** Vercel Blob URL so the dashboard can re-process or expose the source. */
+  blobUrl:   text('blob_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, t => ({
-  botIdx: index('knowledge_chunks_bot_idx').on(t.botId),
+  botIdx:      index('knowledge_chunks_bot_idx').on(t.botId),
+  filenameIdx: index('knowledge_chunks_filename_idx').on(t.botId, t.filename),
   // HNSW index for fast cosine-similarity retrieval. Created via SQL in migration.
 }));
 

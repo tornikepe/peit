@@ -16,6 +16,7 @@ import QuickRepliesEditor from '@/components/dashboard/QuickRepliesEditor';
 import CustomCssEditor    from '@/components/dashboard/CustomCssEditor';
 import GreetingVariantsEditor from '@/components/dashboard/GreetingVariantsEditor';
 import FlowsEditor from '@/components/dashboard/FlowsEditor';
+import KnowledgeUploads from '@/components/dashboard/KnowledgeUploads';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -408,6 +409,9 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
 
             {/* Multi-step flows */}
             <FlowsEditor botId={bot.id} />
+
+            {/* PDF / DOCX / TXT uploads as knowledge */}
+            <KnowledgeUploads botId={bot.id} />
 
             {/* Multi-channel — Telegram + Instagram + Facebook Messenger */}
             <ChannelsPanel botId={bot.id} />
