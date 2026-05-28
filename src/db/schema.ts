@@ -96,6 +96,12 @@ export const bots = pgTable('bots', {
   brandColor:   varchar('brand_color', { length: 16 }).notNull().default('#7c3aed'),
   leadCapture:  jsonb('lead_capture').$type<{ enabled: boolean; fields: string[] }>()
                   .notNull().default({ enabled: true, fields: ['name', 'email'] }),
+  /** Pill-buttons rendered above the widget input. See QuickReply in lib/bots.ts. */
+  quickReplies: jsonb('quick_replies').$type<Array<{
+    label: string;
+    action: 'message' | 'url' | 'flow';
+    value: string;
+  }>>().notNull().default([]),
   /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
   allowedOrigins: jsonb('allowed_origins').$type<string[]>().notNull().default([]),
   /** When the website was last crawled to refresh knowledge chunks. */

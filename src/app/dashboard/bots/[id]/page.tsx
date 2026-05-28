@@ -12,6 +12,7 @@ import { useBots } from '@/context/BotsContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
 import AllowedOrigins from '@/components/dashboard/AllowedOrigins';
 import ChannelsPanel  from '@/components/dashboard/ChannelsPanel';
+import QuickRepliesEditor from '@/components/dashboard/QuickRepliesEditor';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -379,6 +380,14 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               value={bot.allowedOrigins ?? []}
               onSave={async next => {
                 await updateBot(bot.id, { allowedOrigins: next });
+              }}
+            />
+
+            {/* Quick-reply pills shown above the widget input */}
+            <QuickRepliesEditor
+              value={bot.quickReplies ?? []}
+              onSave={async next => {
+                await updateBot(bot.id, { quickReplies: next });
               }}
             />
 

@@ -7,6 +7,7 @@ import {
   getBotForUser, updateBotForUser, deleteBotForUser,
   type UpdateBotInput,
 } from '@/db/queries/bots';
+import { sanitizeQuickReplies } from '@/lib/quick-replies';
 
 export const runtime = 'nodejs';
 
@@ -23,6 +24,11 @@ export const PATCH = withAuth<{ id: string }>(async ({ user, req, params }) => {
   let patch: UpdateBotInput;
   try { patch = await req.json(); }
   catch { return jsonError(400, 'INVALID_JSON'); }
+
+  // Validate untrusted shapes before they hit the DB.
+  if (patch.quickReplies !== undefined) {
+    patch.quickReplies = sanitizeQuickReplies(patch.quickReplies);
+  }
 
   const bot = await updateBotForUser(user.id, params.id, patch);
   if (!bot) return jsonError(404, 'NOT_FOUND');

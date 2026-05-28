@@ -9,6 +9,12 @@ import { renderMd } from '@/lib/md-mini';
 
 type Lang = 'ka' | 'en' | 'ru';
 
+interface QuickReplyPill {
+  label: string;
+  action: 'message' | 'url' | 'flow';
+  value: string;
+}
+
 interface PublicBot {
   id: string;
   name: string;
@@ -17,6 +23,7 @@ interface PublicBot {
   primaryLang: Lang;
   greeting: Partial<Record<Lang, string>>;
   leadCapture: { enabled: boolean; fields: ('name' | 'email' | 'phone')[] };
+  quickReplies: QuickReplyPill[];
   suggestions: string[];
 }
 
@@ -190,6 +197,8 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  /** Indices of quick-reply pills the visitor has already clicked this session. */
+  const [usedQuickReplies, setUsedQuickReplies] = useState<Set<number>>(new Set());
 
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
@@ -232,6 +241,8 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           return;
         }
         const b = data.bot as PublicBot;
+        // Older bots predate quick_replies — default so render is safe.
+        if (!Array.isArray(b.quickReplies)) b.quickReplies = [];
         setBot(b);
         setActiveLang(b.primaryLang);
 
@@ -740,6 +751,55 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-400 py-1.5">
             <Check className="w-3 h-3" /> {ui.leadThanks.split('!')[0]}!
           </div>
+        </div>
+      )}
+
+      {/* Quick replies — bot-owner-configured pill buttons. Each pill is
+          consumed once: on click we record its index in usedQuickReplies and
+          hide it. For action='message' we feed the label into send() so the
+          chat shows what the visitor "picked" verbatim. */}
+      {bot.quickReplies.length > 0 && !sending && (
+        <div className="px-3 pb-2 shrink-0 flex flex-wrap gap-1.5">
+          {bot.quickReplies.map((qr, i) => {
+            if (usedQuickReplies.has(i)) return null;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  setUsedQuickReplies(prev => {
+                    const next = new Set(prev);
+                    next.add(i);
+                    return next;
+                  });
+                  if (qr.action === 'message') {
+                    send(qr.value);
+                  } else if (qr.action === 'url') {
+                    // Echo the label as a user message so the click is
+                    // visible in the transcript, then open the link.
+                    setMsgs(prev => [...prev, {
+                      id: newMsgId(), from: 'user', text: qr.label,
+                      timestamp: Date.now(), status: 'sent',
+                    }]);
+                    try { window.open(qr.value, '_blank', 'noopener,noreferrer'); }
+                    catch { /* popup blocked — visitor can re-click */ }
+                  } else if (qr.action === 'flow') {
+                    // Flow runner ships in Feature #1. For now we just send
+                    // the label so the visitor sees something happened.
+                    send(qr.label);
+                  }
+                }}
+                className="text-xs px-3 py-1.5 rounded-full border transition-all hover:scale-[1.02] active:scale-95"
+                style={{
+                  borderColor: `${color}40`,
+                  color: color,
+                  background: `${color}10`,
+                }}
+              >
+                {qr.label}
+              </button>
+            );
+          })}
         </div>
       )}
 

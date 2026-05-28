@@ -32,6 +32,7 @@ export async function GET(
     columns: {
       id: true, name: true, brandColor: true, languages: true,
       primaryLang: true, greeting: true, leadCapture: true,
+      quickReplies: true,
       allowedOrigins: true, status: true,
     },
     with: {
@@ -66,6 +67,7 @@ export async function GET(
       primaryLang: bot.primaryLang,
       greeting:    bot.greeting,
       leadCapture: bot.leadCapture,
+      quickReplies: bot.quickReplies ?? [],
       suggestions: bot.faqs.map(f => f.question).filter(q => q && q.length < 80),
     },
   });

@@ -9,6 +9,7 @@ import {
 import { getOrCreateSubscription } from '@/db/queries/subscriptions';
 import { getLimits } from '@/lib/plan-limits';
 import type { BotLang, BotTone, BotStatus } from '@/lib/bots';
+import { sanitizeQuickReplies } from '@/lib/quick-replies';
 
 export const runtime = 'nodejs';
 
@@ -55,6 +56,7 @@ export const POST = withAuth(async ({ user, req }) => {
     websiteUrl:     body.websiteUrl,
     brandColor:     body.brandColor ?? '#7c3aed',
     leadCapture:    body.leadCapture ?? { enabled: true, fields: ['name', 'email'] },
+    quickReplies:   sanitizeQuickReplies(body.quickReplies),
     allowedOrigins: limits.domainAllowlist ? (body.allowedOrigins ?? []) : [],
     status:         (body.status ?? 'active') as BotStatus,
     faqs,

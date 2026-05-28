@@ -18,6 +18,19 @@ export interface KnowledgeChunk {
   keywords: string[]; // pre-extracted lowercase keywords for fast matching
 }
 
+/**
+ * A quick-reply pill shown above the widget input.
+ *  - `message` — sends `value` as if the visitor typed it.
+ *  - `url`     — opens `value` in a new tab (only http/https accepted server-side).
+ *  - `flow`    — starts the flow whose id is `value` (see Feature #1).
+ */
+export type QuickReplyAction = 'message' | 'url' | 'flow';
+export interface QuickReply {
+  label: string;
+  action: QuickReplyAction;
+  value: string;
+}
+
 export interface Bot {
   id: string;
   name: string;
@@ -36,6 +49,10 @@ export interface Bot {
     enabled: boolean;
     fields: ('name' | 'email' | 'phone')[];
   };
+  /** Pill buttons shown above the widget input. Undefined or empty = no pills.
+   *  Optional so the many places that construct a Bot from a narrower source
+   *  (channel webhooks, message handlers) don't have to know about this field. */
+  quickReplies?: QuickReply[];
   /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
   allowedOrigins: string[];
   /** ISO timestamp when the website was last crawled (null = never re-crawled). */
@@ -127,6 +144,7 @@ export function makeNewBot(partial: Partial<Bot> = {}): Bot {
     knowledgeChunks: [],
     brandColor: '#7c3aed',
     leadCapture: { enabled: true, fields: ['name', 'email'] },
+    quickReplies: [],
     allowedOrigins: [],
     status: 'draft',
     createdAt: now,

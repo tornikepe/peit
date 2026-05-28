@@ -43,6 +43,7 @@ function rowToBot(
     websiteUrl:   row.websiteUrl ?? undefined,
     brandColor:   row.brandColor,
     leadCapture:  row.leadCapture as Bot['leadCapture'],
+    quickReplies: (row.quickReplies as Bot['quickReplies']) ?? [],
     allowedOrigins: (row.allowedOrigins as string[]) ?? [],
     lastCrawledAt: row.lastCrawledAt?.toISOString() ?? null,
     status:       row.status as BotStatus,
@@ -122,6 +123,7 @@ export interface CreateBotInput {
   websiteUrl?: string;
   brandColor: string;
   leadCapture: Bot['leadCapture'];
+  quickReplies?: Bot['quickReplies'];
   allowedOrigins?: string[];
   status: BotStatus;
   faqs: { q: string; a: string }[];
@@ -148,6 +150,7 @@ export async function createBotForUser(
         websiteUrl:     input.websiteUrl,
         brandColor:     input.brandColor,
         leadCapture:    input.leadCapture,
+        quickReplies:   input.quickReplies ?? [],
         allowedOrigins: input.allowedOrigins ?? [],
         status:         input.status,
       })
@@ -197,6 +200,7 @@ export interface UpdateBotInput {
   websiteUrl?: string | null;
   brandColor?: string;
   leadCapture?: Bot['leadCapture'];
+  quickReplies?: Bot['quickReplies'];
   allowedOrigins?: string[];
   status?: BotStatus;
   /** Replace full FAQ list. */
@@ -234,6 +238,7 @@ export async function updateBotForUser(
     if (patch.websiteUrl !== undefined)  update.websiteUrl = patch.websiteUrl;
     if (patch.brandColor !== undefined)  update.brandColor = patch.brandColor;
     if (patch.leadCapture !== undefined) update.leadCapture = patch.leadCapture;
+    if (patch.quickReplies !== undefined) update.quickReplies = patch.quickReplies;
     if (patch.allowedOrigins !== undefined) update.allowedOrigins = patch.allowedOrigins;
     if (patch.status !== undefined)      update.status = patch.status;
     if (patch.stats !== undefined)       update.statsCache = patch.stats;
