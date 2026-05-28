@@ -15,6 +15,7 @@ import ChannelsPanel  from '@/components/dashboard/ChannelsPanel';
 import QuickRepliesEditor from '@/components/dashboard/QuickRepliesEditor';
 import CustomCssEditor    from '@/components/dashboard/CustomCssEditor';
 import GreetingVariantsEditor from '@/components/dashboard/GreetingVariantsEditor';
+import FlowsEditor from '@/components/dashboard/FlowsEditor';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -404,6 +405,9 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
 
             {/* Greeting A/B variants */}
             <GreetingVariantsEditor botId={bot.id} />
+
+            {/* Multi-step flows */}
+            <FlowsEditor botId={bot.id} />
 
             {/* Multi-channel — Telegram + Instagram + Facebook Messenger */}
             <ChannelsPanel botId={bot.id} />

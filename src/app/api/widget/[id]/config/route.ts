@@ -2,7 +2,7 @@
 // Origin allowlist is enforced here so the widget refuses to render
 // on non-whitelisted host pages.
 
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { CORS_HEADERS, corsPreflight, corsJson, corsError } from '@/lib/widget-cors';
 import { isOriginAllowed } from '@/lib/origin-check';
@@ -46,6 +46,18 @@ export async function GET(
 
   if (!bot)                    return corsError(404, 'BOT_NOT_FOUND');
   if (bot.status !== 'active') return corsError(403, 'BOT_NOT_ACTIVE');
+
+  // Active flow (Feature #1). Owner can flip multiple flows to active but
+  // the widget only runs the first one (by created_at). When present, the
+  // widget walks the script before deferring to the AI engine.
+  const activeFlow = await db.query.flows.findFirst({
+    where: and(
+      eq(schema.flows.botId, id),
+      eq(schema.flows.isActive, true),
+    ),
+    orderBy: [asc(schema.flows.createdAt)],
+    columns: { id: true, name: true, steps: true },
+  });
 
   // Greeting A/B test — weighted random over active variants (Feature #6).
   // If no variants are defined we just return the static greeting from the
@@ -91,6 +103,9 @@ export async function GET(
       /** When set, the widget should display abGreeting.message instead of
        *  greeting[lang] and POST /api/widget/[id]/ab on impression/conversion. */
       abGreeting,
+      /** First active multi-step flow (Feature #1). Widget walks the script
+       *  before falling back to AI free-chat. Null when no flow is active. */
+      activeFlow: activeFlow ?? null,
       suggestions: bot.faqs.map(f => f.question).filter(q => q && q.length < 80),
     },
   });

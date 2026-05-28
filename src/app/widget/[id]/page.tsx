@@ -16,6 +16,15 @@ interface QuickReplyPill {
   value: string;
 }
 
+interface FlowStep {
+  id:         string;
+  type:       'message' | 'input' | 'button';
+  text:       string;
+  variable?:  string;
+  options?:   Array<{ label: string; value: string; nextStepId?: string }>;
+  nextStepId?: string;
+}
+
 interface PublicBot {
   id: string;
   name: string;
@@ -28,6 +37,8 @@ interface PublicBot {
   customCss: string;
   /** A/B greeting variant selected server-side for this session (Feature #6). */
   abGreeting: { id: string; message: string } | null;
+  /** First active multi-step flow (Feature #1). */
+  activeFlow: { id: string; name: string; steps: FlowStep[] } | null;
   suggestions: string[];
 }
 
@@ -241,6 +252,10 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [abVariantId, setAbVariantId] = useState<string | null>(null);
   const [abImpressionSent, setAbImpressionSent] = useState(false);
   const [abConversionSent, setAbConversionSent] = useState(false);
+  /** Multi-step flow runner state (Feature #1). flowStepId === null means
+   *  the flow finished or never started, and AI takes over. */
+  const [flowStepId, setFlowStepId] = useState<string | null>(null);
+  const [flowVars, setFlowVars] = useState<Record<string, string>>({});
 
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
@@ -287,8 +302,15 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         if (!Array.isArray(b.quickReplies)) b.quickReplies = [];
         if (typeof b.customCss !== 'string')  b.customCss = '';
         if (b.abGreeting === undefined)       b.abGreeting = null;
+        if (b.activeFlow === undefined)       b.activeFlow = null;
         setBot(b);
         if (b.abGreeting) setAbVariantId(b.abGreeting.id);
+        // Start the flow on first load — only when there's no restored
+        // transcript so we don't replay the script on every visit.
+        const restoredForFlow = loadMsgs(b.id, queryRef.current.vid);
+        if (b.activeFlow && b.activeFlow.steps.length > 0 && restoredForFlow.length === 0) {
+          setFlowStepId(b.activeFlow.steps[0].id);
+        }
         setActiveLang(b.primaryLang);
 
         // Restore prior conversation if visitor had one
@@ -424,6 +446,66 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   // Posts to the SSE streaming endpoint and progressively updates the
   // in-flight bot message as deltas arrive. Falls back to a single-shot
   // POST to /message if streaming isn't usable (no fetch streams, etc).
+  // ─── Multi-step flow runner (Feature #1) ────────────────────────────────
+  // Walks bot.activeFlow.steps. 'message' steps render and auto-advance;
+  // 'input' steps wait for the visitor to type a reply (we intercept send()
+  // to capture it into flowVars); 'button' steps render pill options that
+  // both record a value AND branch to a chosen nextStepId. Reaching the end
+  // hands control back to the AI engine.
+  const advanceFlow = useCallback((fromId: string, override?: string | undefined) => {
+    if (!bot?.activeFlow) return;
+    const steps = bot.activeFlow.steps;
+    const idx = steps.findIndex(s => s.id === fromId);
+    if (idx < 0) { setFlowStepId(null); return; }
+    const current = steps[idx];
+    const nextId = override
+      ?? current.nextStepId
+      ?? steps[idx + 1]?.id
+      ?? null;
+    if (!nextId) {
+      // End of flow → submit collected variables as a lead, then free-chat.
+      const vars = flowVars;
+      if (bot.leadCapture.enabled && (vars.name || vars.email || vars.phone)) {
+        void fetch(`/api/widget/${id}/lead`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            name:    vars.name,
+            email:   vars.email,
+            phone:   vars.phone,
+            message: vars.message,
+            gdprConsent: true,
+            visitorId:   queryRef.current.vid,
+            conversationId,
+          }),
+        }).catch(() => undefined);
+      }
+      setFlowStepId(null);
+      return;
+    }
+    setFlowStepId(nextId);
+  }, [bot, flowVars, conversationId, id]);
+
+  // Render the current step's text and auto-advance message steps. Runs
+  // whenever flowStepId changes.
+  useEffect(() => {
+    if (!bot?.activeFlow || !flowStepId) return;
+    const step = bot.activeFlow.steps.find(s => s.id === flowStepId);
+    if (!step) { setFlowStepId(null); return; }
+    setMsgs(prev => [...prev, {
+      id: newMsgId(), from: 'bot', text: step.text, timestamp: Date.now(),
+    }]);
+    if (step.type === 'message') {
+      const t = setTimeout(() => advanceFlow(step.id), 600);
+      return () => clearTimeout(t);
+    }
+  }, [bot, flowStepId, advanceFlow]);
+
+  const currentFlowStep: FlowStep | null = (bot?.activeFlow && flowStepId)
+    ? (bot.activeFlow.steps.find(s => s.id === flowStepId) ?? null)
+    : null;
+  const inFlow = !!currentFlowStep;
+
   // ─── Voice input (Feature #4) ───────────────────────────────────────────
   // Web Speech API: feature-detect on mount, hide the mic button entirely
   // when unsupported (the brief calls for graceful degradation, not a
@@ -524,6 +606,20 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text || !bot || sending) return;
+
+    // If we're inside an 'input' step of an active flow (Feature #1), the
+    // visitor's reply feeds the flow variable instead of the AI engine.
+    if (currentFlowStep && currentFlowStep.type === 'input') {
+      setInput('');
+      setMsgs(prev => [...prev, {
+        id: newMsgId(), from: 'user', text, timestamp: Date.now(), status: 'sent',
+      }]);
+      if (currentFlowStep.variable) {
+        setFlowVars(v => ({ ...v, [currentFlowStep.variable!]: text }));
+      }
+      advanceFlow(currentFlowStep.id);
+      return;
+    }
 
     const userMsg: Msg = {
       id: newMsgId(), from: 'user', text, timestamp: Date.now(), status: 'sending',
@@ -987,11 +1083,43 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         </div>
       )}
 
+      {/* Flow button-step options (Feature #1) — shown only when the current
+          step is type='button'. Clicking commits the label as a user message
+          and branches via the option's nextStepId. */}
+      {currentFlowStep && currentFlowStep.type === 'button' && currentFlowStep.options && (
+        <div className="px-3 pb-2 shrink-0 flex flex-wrap gap-1.5">
+          {currentFlowStep.options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setMsgs(prev => [...prev, {
+                  id: newMsgId(), from: 'user', text: opt.label,
+                  timestamp: Date.now(), status: 'sent',
+                }]);
+                if (currentFlowStep.variable) {
+                  setFlowVars(v => ({ ...v, [currentFlowStep.variable!]: opt.value }));
+                }
+                advanceFlow(currentFlowStep.id, opt.nextStepId);
+              }}
+              className="text-xs px-3 py-1.5 rounded-full border transition-all hover:scale-[1.02] active:scale-95"
+              style={{
+                borderColor: `${color}40`,
+                color: color,
+                background: `${color}10`,
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Quick replies — bot-owner-configured pill buttons. Each pill is
           consumed once: on click we record its index in usedQuickReplies and
           hide it. For action='message' we feed the label into send() so the
           chat shows what the visitor "picked" verbatim. */}
-      {bot.quickReplies.length > 0 && !sending && (
+      {bot.quickReplies.length > 0 && !sending && !inFlow && (
         <div className="px-3 pb-2 shrink-0 flex flex-wrap gap-1.5">
           {bot.quickReplies.map((qr, i) => {
             if (usedQuickReplies.has(i)) return null;

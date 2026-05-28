@@ -209,6 +209,41 @@ export const messages = pgTable('messages', {
   sentimentIdx: index('messages_sentiment_idx').on(t.sentiment),
 }));
 
+// ─── flows ─────────────────────────────────────────────────────────────────
+// Multi-step conversation script (Feature #1). When a bot has an active
+// flow, the widget walks through `steps` instead of calling the AI engine
+// on the first visit. Each step is one of:
+//
+//   { id, type: 'message',  text }
+//   { id, type: 'input',    text, variable, nextStepId? }
+//   { id, type: 'button',   text, options: [{ label, value, nextStepId }] }
+//
+// `nextStepId` is the id of the step to advance to; when absent the runner
+// uses the next array index. Reaching the end hands control back to AI.
+
+export interface FlowStep {
+  id:          string;
+  type:        'message' | 'input' | 'button';
+  text:        string;
+  /** For type='input' — the variable name to save the visitor's response under. */
+  variable?:   string;
+  /** For type='button' — the choices that branch the flow. */
+  options?:    Array<{ label: string; value: string; nextStepId?: string }>;
+  /** For type='message' and 'input' — explicit branch target. */
+  nextStepId?: string;
+}
+
+export const flows = pgTable('flows', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  botId:      uuid('bot_id').notNull().references(() => bots.id, { onDelete: 'cascade' }),
+  name:       varchar('name', { length: 120 }).notNull(),
+  steps:      jsonb('steps').$type<FlowStep[]>().notNull().default([]),
+  isActive:   boolean('is_active').notNull().default(false),
+  createdAt:  timestamp('created_at').defaultNow().notNull(),
+}, t => ({
+  botIdx: index('flows_bot_idx').on(t.botId, t.isActive),
+}));
+
 // ─── greeting_variants ─────────────────────────────────────────────────────
 // Per-bot A/B test pool. The widget picks one variant per session via
 // weighted-random selection, records an impression, and (if the visitor
