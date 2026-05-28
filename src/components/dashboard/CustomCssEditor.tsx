@@ -29,7 +29,13 @@ export default function CustomCssEditor({ botId, value, onSave }: Props) {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  useEffect(() => { setDraft(value); }, [value]);
+  // Re-sync the local buffer when the upstream value flips identity
+  // (React 19 derived-state pattern, not setState-in-effect).
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setDraft(value);
+  }
 
   // Debounced postMessage → live preview.
   useEffect(() => {

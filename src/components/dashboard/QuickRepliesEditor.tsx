@@ -4,7 +4,7 @@
 // Keeps a local buffer so the user can edit freely; "Save" pushes to the
 // server, "Discard" reverts. Up/down arrows reorder.
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2, ArrowUp, ArrowDown, MessageSquare, Link as LinkIcon, GitBranch, Loader2, Check } from 'lucide-react';
 import type { QuickReply, QuickReplyAction } from '@/lib/bots';
 
@@ -25,8 +25,14 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   // Re-sync when upstream changes (e.g. after a successful save we get the
-  // fresh list back from the server).
-  useEffect(() => { setDraft(value); }, [value]);
+  // fresh list back from the server). React 19 derived-state pattern —
+  // mutating during render is the supported replacement for the
+  // setState-in-effect anti-pattern the lint rule rejects.
+  const [lastValue, setLastValue] = useState<QuickReply[]>(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setDraft(value);
+  }
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(value);
 

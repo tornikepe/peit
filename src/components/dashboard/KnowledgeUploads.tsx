@@ -3,7 +3,7 @@
 // Feature #9: upload PDF / DOCX / TXT documents as bot knowledge.
 // Renders an upload button + the existing-uploads list with delete.
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Upload, FileText, Trash2, Loader2, Check, AlertCircle, ExternalLink } from 'lucide-react';
 
 interface UploadRow {
@@ -23,15 +23,15 @@ export default function KnowledgeUploads({ botId }: { botId: string }) {
   const [ok, setOk]           = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const res  = await fetch(`/api/bots/${botId}/knowledge/uploads`);
       const data = await res.json();
       if (res.ok && data.ok) setItems(data.uploads);
     } finally { setLoading(false); }
-  }
+  }, [botId]);
 
-  useEffect(() => { refresh(); }, [botId]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

@@ -6,7 +6,7 @@
 // highest CR (min 50 impressions) gets a "Winner" badge.
 
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Loader2, Trophy, Check, Play, Pause } from 'lucide-react';
+import { Plus, Trash2, Loader2, Trophy, Play, Pause } from 'lucide-react';
 
 interface Variant {
   id:          string;

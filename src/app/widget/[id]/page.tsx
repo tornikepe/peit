@@ -349,6 +349,9 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
       }
     })();
     return () => { alive = false; };
+    // Mount-once effect. Adding abImpressionSent / bot here would re-fetch
+    // the config every time we flip a flag below — that's wrong.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // ─── Persist messages locally ───────────────────────────────────────────
@@ -356,6 +359,8 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     if (bot && queryRef.current.vid && msgs.length > 0) {
       saveMsgs(bot.id, queryRef.current.vid, msgs);
     }
+    // We only need bot.id here, not the full object reference.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [msgs, bot?.id]);
 
   // ─── Reset when language changes ────────────────────────────────────────
@@ -486,12 +491,19 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     setFlowStepId(nextId);
   }, [bot, flowVars, conversationId, id]);
 
-  // Render the current step's text and auto-advance message steps. Runs
-  // whenever flowStepId changes.
+  // Render the current step's text and auto-advance message steps. The
+  // renderedStepsRef guard makes the effect idempotent — without it,
+  // React 19 Strict Mode (which mounts → effect → cleanup → effect on
+  // dev) appends each flow message twice.
+  const renderedStepsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!bot?.activeFlow || !flowStepId) return;
+    if (renderedStepsRef.current.has(flowStepId)) return;
     const step = bot.activeFlow.steps.find(s => s.id === flowStepId);
-    if (!step) { setFlowStepId(null); return; }
+    if (!step) return;
+    renderedStepsRef.current.add(flowStepId);
+    // Driving the chat list IS the side effect this hook exists for.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMsgs(prev => [...prev, {
       id: newMsgId(), from: 'bot', text: step.text, timestamp: Date.now(),
     }]);
@@ -506,6 +518,19 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     : null;
   const inFlow = !!currentFlowStep;
 
+  // Safety: a button step authored with zero options would leave the
+  // visitor with nothing to click. Auto-advance past it so the flow never
+  // deadlocks on a misconfiguration the editor accidentally allowed.
+  useEffect(() => {
+    if (currentFlowStep
+      && currentFlowStep.type === 'button'
+      && (!currentFlowStep.options || currentFlowStep.options.length === 0)) {
+      // advanceFlow calls setFlowStepId — that IS this effect's purpose.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      advanceFlow(currentFlowStep.id);
+    }
+  }, [currentFlowStep, advanceFlow]);
+
   // ─── Voice input (Feature #4) ───────────────────────────────────────────
   // Web Speech API: feature-detect on mount, hide the mic button entirely
   // when unsupported (the brief calls for graceful degradation, not a
@@ -515,11 +540,15 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const recognitionRef = useRef<any>(null);
   const autoSubmitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Browser support detection. Done in an effect (not a lazy useState
+  // initializer) so the server render and the first client render agree
+  // — flipping to true on mount avoids a hydration mismatch warning when
+  // the page is server-rendered before we know about window.SpeechRecognition.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any };
-    setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (w.SpeechRecognition || w.webkitSpeechRecognition) setVoiceSupported(true);
   }, []);
 
   const localeForVoice = (l: Lang): string =>
@@ -751,7 +780,14 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     } finally {
       setSending(false);
     }
-  }, [input, bot, sending, id, activeLang, conversationId, isVisible, unread]);
+  }, [
+    input, bot, sending, id, activeLang, conversationId, isVisible, unread,
+    // Flow runner + A/B impression state — without these, send() captures
+    // stale values from the closure and the conversion fires with the wrong
+    // variant or the flow input handoff misses a step transition.
+    currentFlowStep, advanceFlow,
+    abVariantId, abImpressionSent, abConversionSent,
+  ]);
 
   // ─── Retry a failed message ─────────────────────────────────────────────
   const retryMsg = useCallback((msgId: string) => {

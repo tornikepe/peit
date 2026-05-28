@@ -12,7 +12,7 @@
 // whole sweep.
 
 import { NextResponse } from 'next/server';
-import { and, eq, gt, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { analyzeSite, buildKnowledgeChunks } from '@/lib/scraper';
 import { embedBatch, isEmbeddingsAvailable } from '@/lib/embeddings';
@@ -57,7 +57,9 @@ async function handle(req: Request) {
       sql`${schema.bots.websiteUrl} IS NOT NULL AND ${schema.bots.websiteUrl} <> ''`,
       or(
         isNull(schema.bots.lastCrawledAt),
-        sql`${schema.bots.lastCrawledAt} < now() - (${schema.bots.syncIntervalDays} || ' days')::interval`,
+        // Postgres 10+ requires an explicit cast for int || text; without
+        // the ::text the planner errors with "operator does not exist: int || text".
+        sql`${schema.bots.lastCrawledAt} < now() - (${schema.bots.syncIntervalDays}::text || ' days')::interval`,
       ),
     ));
 

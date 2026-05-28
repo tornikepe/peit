@@ -76,9 +76,16 @@ export const POST = withAuth<{ id: string }>(async ({ user, req, params }) => {
 
   const file = form.get('file');
   if (!(file instanceof Blob)) return jsonError(400, 'MISSING_FILE');
-  const filename = 'name' in file && typeof (file as File).name === 'string'
+  const rawName = 'name' in file && typeof (file as File).name === 'string'
     ? (file as File).name
     : 'document';
+  // Strip path separators + control chars + leading dots so the blob path
+  // can't be tricked into escaping bots/<id>/knowledge/.
+  const filename = rawName
+    .replace(/[\\/]/g, '_')
+    .replace(/[\x00-\x1f]/g, '')
+    .replace(/^\.+/, '')
+    .slice(0, 200) || 'document';
   if (file.size > MAX_BYTES) return jsonError(413, 'FILE_TOO_LARGE', 'Max 10 MB.');
 
   const mime = inferMime(filename);
