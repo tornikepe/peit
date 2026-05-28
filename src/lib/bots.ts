@@ -59,6 +59,8 @@ export interface Bot {
   allowedOrigins: string[];
   /** ISO timestamp when the website was last crawled (null = never re-crawled). */
   lastCrawledAt?: string | null;
+  /** Days between auto re-crawls (Feature #8). 0 = disabled. */
+  syncIntervalDays?: number;
   status: BotStatus;
   createdAt: string;
   updatedAt: string;

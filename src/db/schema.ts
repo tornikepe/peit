@@ -115,6 +115,9 @@ export const bots = pgTable('bots', {
   allowedOrigins: jsonb('allowed_origins').$type<string[]>().notNull().default([]),
   /** When the website was last crawled to refresh knowledge chunks. */
   lastCrawledAt: timestamp('last_crawled_at'),
+  /** Cadence for the daily resync cron (Feature #8). Days between auto
+   *  recrawls; 0 = disabled. The cron checks lastCrawledAt + days < now. */
+  syncIntervalDays: integer('sync_interval_days').notNull().default(7),
   status:       botStatusEnum('status').notNull().default('draft'),
   statsCache:   jsonb('stats_cache').$type<{ messages: number; leads: number; conversations: number }>()
                   .notNull().default({ messages: 0, leads: 0, conversations: 0 }),

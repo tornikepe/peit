@@ -446,6 +446,24 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                     ბოლო წაკითხვა: {new Date(bot.lastCrawledAt).toLocaleString('ka-GE')}
                   </p>
                 )}
+
+                {/* Auto-sync cadence (Feature #8). 0 disables the daily cron
+                    sweep; positive values are the days-since-last-crawl
+                    threshold that makes a bot eligible. */}
+                <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between gap-2">
+                  <label className="text-xs text-gray-400">ავტომატური განახლება</label>
+                  <select
+                    value={bot.syncIntervalDays ?? 7}
+                    onChange={e => updateBot(bot.id, { syncIntervalDays: Number(e.target.value) })}
+                    className="bg-black/30 border border-white/[0.08] rounded-md px-2 py-1 text-xs text-gray-100 outline-none focus:border-blue-500/40"
+                  >
+                    <option value={0}>გამორთული</option>
+                    <option value={1}>ყოველდღე</option>
+                    <option value={7}>ყოველ კვირას</option>
+                    <option value={14}>2 კვირაში ერთხელ</option>
+                    <option value={30}>თვეში ერთხელ</option>
+                  </select>
+                </div>
               </div>
             )}
 

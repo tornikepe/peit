@@ -47,6 +47,7 @@ function rowToBot(
     customCss:    row.customCss ?? '',
     allowedOrigins: (row.allowedOrigins as string[]) ?? [],
     lastCrawledAt: row.lastCrawledAt?.toISOString() ?? null,
+    syncIntervalDays: row.syncIntervalDays ?? 7,
     status:       row.status as BotStatus,
     createdAt:    row.createdAt.toISOString(),
     updatedAt:    row.updatedAt.toISOString(),
@@ -204,6 +205,7 @@ export interface UpdateBotInput {
   quickReplies?: Bot['quickReplies'];
   customCss?: string;
   allowedOrigins?: string[];
+  syncIntervalDays?: number;
   status?: BotStatus;
   /** Replace full FAQ list. */
   faqs?: { q: string; a: string }[];
@@ -243,6 +245,9 @@ export async function updateBotForUser(
     if (patch.quickReplies !== undefined) update.quickReplies = patch.quickReplies;
     if (patch.customCss !== undefined) update.customCss = patch.customCss;
     if (patch.allowedOrigins !== undefined) update.allowedOrigins = patch.allowedOrigins;
+    if (patch.syncIntervalDays !== undefined) {
+      update.syncIntervalDays = Math.max(0, Math.min(365, Math.round(patch.syncIntervalDays)));
+    }
     if (patch.status !== undefined)      update.status = patch.status;
     if (patch.stats !== undefined)       update.statsCache = patch.stats;
 
