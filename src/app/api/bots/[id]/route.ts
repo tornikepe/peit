@@ -8,6 +8,7 @@ import {
   type UpdateBotInput,
 } from '@/db/queries/bots';
 import { sanitizeQuickReplies } from '@/lib/quick-replies';
+import { sanitizeCustomCss } from '@/lib/custom-css';
 
 export const runtime = 'nodejs';
 
@@ -28,6 +29,9 @@ export const PATCH = withAuth<{ id: string }>(async ({ user, req, params }) => {
   // Validate untrusted shapes before they hit the DB.
   if (patch.quickReplies !== undefined) {
     patch.quickReplies = sanitizeQuickReplies(patch.quickReplies);
+  }
+  if (patch.customCss !== undefined) {
+    patch.customCss = sanitizeCustomCss(patch.customCss);
   }
 
   const bot = await updateBotForUser(user.id, params.id, patch);

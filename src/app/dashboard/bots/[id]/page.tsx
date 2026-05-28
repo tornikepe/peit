@@ -13,6 +13,7 @@ import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/
 import AllowedOrigins from '@/components/dashboard/AllowedOrigins';
 import ChannelsPanel  from '@/components/dashboard/ChannelsPanel';
 import QuickRepliesEditor from '@/components/dashboard/QuickRepliesEditor';
+import CustomCssEditor    from '@/components/dashboard/CustomCssEditor';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -388,6 +389,15 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               value={bot.quickReplies ?? []}
               onSave={async next => {
                 await updateBot(bot.id, { quickReplies: next });
+              }}
+            />
+
+            {/* Owner-authored CSS with live preview */}
+            <CustomCssEditor
+              botId={bot.id}
+              value={bot.customCss ?? ''}
+              onSave={async next => {
+                await updateBot(bot.id, { customCss: next });
               }}
             />
 

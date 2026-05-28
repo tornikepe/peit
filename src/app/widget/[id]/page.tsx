@@ -25,6 +25,7 @@ interface PublicBot {
   greeting: Partial<Record<Lang, string>>;
   leadCapture: { enabled: boolean; fields: ('name' | 'email' | 'phone')[] };
   quickReplies: QuickReplyPill[];
+  customCss: string;
   suggestions: string[];
 }
 
@@ -259,8 +260,9 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           return;
         }
         const b = data.bot as PublicBot;
-        // Older bots predate quick_replies — default so render is safe.
+        // Older bots predate quick_replies / custom_css — default for safety.
         if (!Array.isArray(b.quickReplies)) b.quickReplies = [];
+        if (typeof b.customCss !== 'string')  b.customCss = '';
         setBot(b);
         setActiveLang(b.primaryLang);
 
@@ -335,6 +337,19 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
           setConversationId(null);
           saveMsgs(bot.id, queryRef.current.vid, [greetMsg]);
         }
+      }
+      // Live CSS preview from the dashboard editor (Feature #10). Strips the
+      // same dangerous constructs the server would strip — we don't trust the
+      // parent frame even when it's our own dashboard, since other tabs on
+      // the same origin can also postMessage.
+      if (e.data.type === 'preview-css' && typeof e.data.css === 'string') {
+        const safe = String(e.data.css).slice(0, 8192)
+          .replace(/@import\b[^;]*;?/gi, '')
+          .replace(/url\s*\([^)]*\)/gi, '')
+          .replace(/expression\s*\([^)]*\)/gi, '')
+          .replace(/<\/?\s*style[^>]*>/gi, '')
+          .replace(/<\s*script[^>]*>/gi, '');
+        setBot(b => b ? { ...b, customCss: safe } : b);
       }
     }
     window.addEventListener('message', onMsg);
@@ -630,7 +645,20 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const isFresh = msgs.length <= 1;
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0d0d1a] text-white overflow-hidden">
+    <div className="peit-widget h-screen w-screen flex flex-col bg-[#0d0d1a] text-white overflow-hidden">
+      {/* Owner-authored CSS — sanitized server-side (Feature #10). The
+          .peit-widget class above is the documented scope; rules outside
+          that selector are still allowed but only this iframe's DOM is in
+          range, so the blast radius is the widget itself. */}
+      {bot.customCss && (
+        <style
+          // suppressHydrationWarning because the SSR HTML doesn't have the
+          // dynamic config yet; the client mount injects it the first time.
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: bot.customCss }}
+        />
+      )}
+
       {/* Header */}
       <header
         className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0 backdrop-blur-md"

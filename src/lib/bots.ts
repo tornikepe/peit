@@ -53,6 +53,8 @@ export interface Bot {
    *  Optional so the many places that construct a Bot from a narrower source
    *  (channel webhooks, message handlers) don't have to know about this field. */
   quickReplies?: QuickReply[];
+  /** Owner-authored CSS injected into the widget. Empty = no override. */
+  customCss?: string;
   /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
   allowedOrigins: string[];
   /** ISO timestamp when the website was last crawled (null = never re-crawled). */

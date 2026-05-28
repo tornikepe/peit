@@ -44,6 +44,7 @@ function rowToBot(
     brandColor:   row.brandColor,
     leadCapture:  row.leadCapture as Bot['leadCapture'],
     quickReplies: (row.quickReplies as Bot['quickReplies']) ?? [],
+    customCss:    row.customCss ?? '',
     allowedOrigins: (row.allowedOrigins as string[]) ?? [],
     lastCrawledAt: row.lastCrawledAt?.toISOString() ?? null,
     status:       row.status as BotStatus,
@@ -201,6 +202,7 @@ export interface UpdateBotInput {
   brandColor?: string;
   leadCapture?: Bot['leadCapture'];
   quickReplies?: Bot['quickReplies'];
+  customCss?: string;
   allowedOrigins?: string[];
   status?: BotStatus;
   /** Replace full FAQ list. */
@@ -239,6 +241,7 @@ export async function updateBotForUser(
     if (patch.brandColor !== undefined)  update.brandColor = patch.brandColor;
     if (patch.leadCapture !== undefined) update.leadCapture = patch.leadCapture;
     if (patch.quickReplies !== undefined) update.quickReplies = patch.quickReplies;
+    if (patch.customCss !== undefined) update.customCss = patch.customCss;
     if (patch.allowedOrigins !== undefined) update.allowedOrigins = patch.allowedOrigins;
     if (patch.status !== undefined)      update.status = patch.status;
     if (patch.stats !== undefined)       update.statsCache = patch.stats;

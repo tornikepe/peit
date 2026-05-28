@@ -105,6 +105,9 @@ export const bots = pgTable('bots', {
     action: 'message' | 'url' | 'flow';
     value: string;
   }>>().notNull().default([]),
+  /** Owner-authored CSS injected into the widget's scoped container.
+   *  Sanitized in sanitizeCustomCss() — see lib/custom-css.ts. */
+  customCss:    text('custom_css').notNull().default(''),
   /** Empty array = allow any domain. Otherwise widget only loads on listed origins. */
   allowedOrigins: jsonb('allowed_origins').$type<string[]>().notNull().default([]),
   /** When the website was last crawled to refresh knowledge chunks. */
