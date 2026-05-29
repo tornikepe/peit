@@ -96,15 +96,22 @@ export const POST = withAuth<{ id: string }>(async ({ user, req, params }) => {
   const bytes = Buffer.from(await file.arrayBuffer());
   let blobUrl = '';
   try {
+    // Store as 'private': the source documents are the customer's own
+    // content and shouldn't be world-readable via a guessable URL. The
+    // store itself is provisioned private, so 'public' here is rejected
+    // with "Cannot use public access on a private store". The server reads
+    // the blob back with the token when re-processing.
     const result = await put(
       `bots/${params.id}/knowledge/${Date.now()}-${filename}`,
       bytes,
-      { access: 'public', contentType: mime, addRandomSuffix: false },
+      { access: 'private', contentType: mime, addRandomSuffix: false },
     );
     blobUrl = result.url;
   } catch (e) {
     console.error('[knowledge/upload] blob put failed:', e);
-    return jsonError(502, 'BLOB_UPLOAD_FAILED');
+    // Surface the underlying message so misconfig (wrong token, store
+    // access mismatch) is diagnosable from the dashboard, not just a log.
+    return jsonError(502, 'BLOB_UPLOAD_FAILED', e instanceof Error ? e.message : undefined);
   }
 
   // 2. Extract text.

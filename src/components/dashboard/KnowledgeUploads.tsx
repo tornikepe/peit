@@ -4,7 +4,7 @@
 // Renders an upload button + the existing-uploads list with delete.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Upload, FileText, Trash2, Loader2, Check, AlertCircle, ExternalLink } from 'lucide-react';
+import { Upload, FileText, Trash2, Loader2, Check, AlertCircle } from 'lucide-react';
 
 interface UploadRow {
   filename:   string;
@@ -124,17 +124,10 @@ export default function KnowledgeUploads({ botId }: { botId: string }) {
                 })}`}
               </p>
             </div>
-            {it.blobUrl && (
-              <a
-                href={it.blobUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5"
-                title="ნახე ფაილი"
-              >
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
+            {/* No external view-link: the Blob store is private, so the URL
+                isn't directly openable. The file's text is already extracted
+                into chunks at upload time — the raw file only matters for
+                server-side re-processing. */}
             <button
               type="button"
               onClick={() => remove(it.filename)}
