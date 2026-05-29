@@ -10,7 +10,8 @@
 // PageHeader gets to own the visual hierarchy.
 
 import Link from 'next/link';
-import { Menu, Search, Bell, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Menu, Search, Bell, Plus, Settings } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import StorageModeBadge from '@/components/dashboard/StorageModeBadge';
 
@@ -53,18 +54,68 @@ export default function Topbar({ onMenuClick }: Props) {
             <Plus className="w-3 h-3" /> ახალი ბოტი
           </Link>
 
-          <button
-            type="button"
-            className="relative p-2 rounded-lg hover:bg-white/[0.05] text-gray-400 hover:text-white"
-            aria-label="notifications"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-violet-500" />
-          </button>
+          <NotificationsBell />
 
           <UserButton />
         </div>
       </div>
     </header>
+  );
+}
+
+// Notifications bell — opens a dropdown panel. There's no notifications
+// backend yet, so it shows an honest empty state plus a shortcut to the
+// notification settings (where email prefs live). The previous version was
+// a dead button with a hardcoded "unread" dot that never did anything.
+function NotificationsBell() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onEsc(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false); }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`relative p-2 rounded-lg hover:bg-white/[0.05] ${open ? 'text-white bg-white/[0.05]' : 'text-gray-400 hover:text-white'}`}
+        aria-label="notifications"
+        aria-expanded={open}
+      >
+        <Bell className="w-4 h-4" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-72 rounded-xl border border-white/[0.08] bg-[#0d0d18] shadow-2xl shadow-black/50 overflow-hidden z-50">
+          <div className="px-4 py-3 border-b border-white/[0.06]">
+            <p className="text-sm font-semibold text-white">შეტყობინებები</p>
+          </div>
+          <div className="px-4 py-8 flex flex-col items-center text-center">
+            <Bell className="w-6 h-6 text-gray-600 mb-2" />
+            <p className="text-xs text-gray-500">ახალი შეტყობინება არ არის</p>
+          </div>
+          <Link
+            href="/dashboard/settings/notifications"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-4 py-3 border-t border-white/[0.06] text-xs text-gray-400 hover:text-white hover:bg-white/[0.03] transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            შეტყობინებების პარამეტრები
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }

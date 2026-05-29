@@ -21,12 +21,15 @@ interface NegativeRow extends Record<string, unknown> {
 export const GET = withAuth(async ({ user }) => {
   const db = requireDb();
 
+  // Group by (content, bot) so we never aggregate a UUID — Postgres has no
+  // MAX(uuid). A negative answer text belongs to one bot anyway, so adding
+  // b.id/b.name to GROUP BY is also more correct than MAX()-ing them.
   const rows = await db.execute<NegativeRow>(sql`
     SELECT
       m.content                    AS content,
       COUNT(*)::int                AS count,
-      MAX(b.id)                    AS bot_id,
-      MAX(b.name)                  AS bot_name,
+      b.id                         AS bot_id,
+      b.name                       AS bot_name,
       MAX(m.created_at)            AS last_at,
       (ARRAY_AGG(c.id ORDER BY m.created_at DESC))[1] AS conversation_id
     FROM ${schema.messages} m
@@ -34,7 +37,7 @@ export const GET = withAuth(async ({ user }) => {
     JOIN ${schema.bots} b ON b.id = c.bot_id
     WHERE m.feedback = 'negative'
       AND b.owner_id = ${user.id}
-    GROUP BY m.content
+    GROUP BY m.content, b.id, b.name
     ORDER BY count DESC, last_at DESC
     LIMIT 200
   `);

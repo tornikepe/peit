@@ -19,6 +19,7 @@ import {
   eq,
   ilike,
   inArray,
+  lt,
   or,
   sql,
 } from "drizzle-orm";
@@ -332,7 +333,10 @@ export async function getUnansweredQuestions(
         and(
           eq(schema.messages.conversationId, f.conversationId),
           eq(schema.messages.fromUser, true),
-          sql`${schema.messages.createdAt} < ${f.createdAt}`,
+          // Use Drizzle's column-aware lt() — a raw sql`< ${date}` binds the
+          // JS Date as an untyped param and the Neon driver throws
+          // "Received an instance of Date". lt() serializes via the column type.
+          lt(schema.messages.createdAt, f.createdAt),
         ),
       )
       .orderBy(desc(schema.messages.createdAt))
