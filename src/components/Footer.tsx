@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Mail } from "lucide-react";
 import { industries } from "./Industries";
 import { useLanguage } from "@/context/LanguageContext";
+import Logo from "@/components/Logo";
 
 const alternativeLinks = [
   { labelKey: 'Tidio ალტერნატივა', href: '/alternatives/tidio' },
@@ -60,13 +61,7 @@ export default function Footer() {
 
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
-              <Link
-                href="/"
-                className="inline-block font-extrabold text-white text-2xl tracking-[-0.04em] leading-none mb-4"
-                aria-label="Peit"
-              >
-                pe<span className="gradient-text">i</span>t
-              </Link>
+              <Logo size="md" className="mb-4" />
               <p className="text-gray-500 text-sm leading-relaxed mb-4">{f.tagline}</p>
               <a href={`mailto:${f.email}`}
                 className="text-violet-400 text-sm hover:text-violet-300 flex items-center gap-1.5">

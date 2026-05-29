@@ -125,6 +125,13 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
         </div>
 
         <div className="relative w-full max-w-md">
+          {/* Our own header — replaces Clerk's default "Create your account".
+              Clerk's card header is hidden via appearance.elements.header. */}
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl font-bold text-white">ანგარიშის შექმნა</h2>
+            <p className="text-gray-400 text-sm mt-1">დაიწყე 7-დღიანი უფასო ტრიალი</p>
+          </div>
+
           <SignUp
             routing="hash"
             forceRedirectUrl={redirectUrl}
@@ -142,6 +149,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
                 fontFamily: "var(--font-geist-sans), sans-serif",
               },
               elements: {
+                header: "hidden",
                 card: "bg-[#0d0d1a] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl",
                 headerTitle: "text-white font-bold text-xl",
                 headerSubtitle: "text-gray-400",

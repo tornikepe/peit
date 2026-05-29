@@ -6,6 +6,7 @@ import { Menu, X, ChevronDown } from "lucide-react";
 import { useAuth, UserButton } from "@clerk/nextjs";
 import { useLanguage } from "@/context/LanguageContext";
 import type { Lang } from "@/lib/i18n";
+import Logo from "@/components/Logo";
 
 const languages: { code: Lang; label: string; flag: string }[] = [
   { code: 'ka', label: 'ქართული', flag: '🇬🇪' },
@@ -32,14 +33,8 @@ export default function Navbar() {
     <header className="fixed top-3 left-3 right-3 sm:top-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 w-auto sm:w-[min(72rem,calc(100%-2rem))]">
       <div className="rounded-2xl border border-white/[0.08] bg-[#07070f]/75 backdrop-blur-xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.5)] px-4 sm:px-6 flex items-center justify-between h-14">
 
-        {/* Logo — text-based with accent letter (matches peit-redesign reference) */}
-        <Link
-          href="/"
-          className="font-extrabold text-white text-2xl tracking-[-0.04em] leading-none cursor-pointer transition-transform hover:-translate-y-px"
-          aria-label="Peit"
-        >
-          pe<span className="gradient-text">i</span>t
-        </Link>
+        {/* Brand mark — shared Logo component, identical to dashboard + auth. */}
+        <Logo size="md" />
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
@@ -105,20 +100,12 @@ export default function Navbar() {
               <UserButton appearance={{ elements: { avatarBox: 'w-8 h-8' } }} />
             </>
           ) : (
-            <>
-              <Link
-                href="/signin"
-                className="text-sm text-gray-400 hover:text-white px-4 py-2 rounded-lg hover:bg-white/[0.05] transition-all"
-              >
-                {t.nav.signIn}
-              </Link>
-              <Link
-                href="/signup"
-                className="btn-primary text-sm font-medium text-white px-5 py-2 rounded-lg"
-              >
-                {t.nav.tryFree}
-              </Link>
-            </>
+            <Link
+              href="/signin"
+              className="text-sm font-medium text-white px-5 py-2 rounded-lg hover:bg-white/[0.05] border border-white/[0.10] hover:border-white/20 transition-all"
+            >
+              {t.nav.signIn}
+            </Link>
           )}
         </div>
 
@@ -177,16 +164,10 @@ export default function Navbar() {
                 <div className="flex justify-center py-2"><UserButton /></div>
               </>
             ) : (
-              <>
-                <Link href="/signin" onClick={() => setOpen(false)}
-                  className="px-4 py-3 text-sm text-gray-400 text-center rounded-lg hover:bg-white/[0.05]">
-                  {t.nav.signIn}
-                </Link>
-                <Link href="/signup" onClick={() => setOpen(false)}
-                  className="btn-primary text-sm font-medium text-white text-center px-4 py-3 rounded-lg">
-                  {t.nav.tryFree}
-                </Link>
-              </>
+              <Link href="/signin" onClick={() => setOpen(false)}
+                className="px-4 py-3 text-sm font-medium text-white text-center rounded-lg border border-white/[0.10] hover:bg-white/[0.05]">
+                {t.nav.signIn}
+              </Link>
             )}
           </div>
         </div>

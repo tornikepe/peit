@@ -101,6 +101,14 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         </Link>
 
         <div className="relative w-full max-w-md">
+          {/* Our own header — replaces Clerk's default "Sign in to My
+              Application" (the Clerk app name leaks through otherwise). The
+              Clerk card header is hidden via appearance.elements.header. */}
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl font-bold text-white">შესვლა</h2>
+            <p className="text-gray-400 text-sm mt-1">შედი შენს Peit ანგარიშში</p>
+          </div>
+
           <SignIn
             routing="hash"
             forceRedirectUrl={redirectUrl}
@@ -118,6 +126,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
                 fontFamily: "var(--font-geist-sans), sans-serif",
               },
               elements: {
+                header: "hidden",
                 card: "bg-[#0d0d1a] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl",
                 headerTitle: "text-white font-bold text-xl",
                 headerSubtitle: "text-gray-400",
