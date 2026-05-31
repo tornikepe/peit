@@ -47,6 +47,11 @@ function Icon({ name, size = 22, sw = 1.6, style }: { name: string; size?: numbe
 function useReveal() {
   useEffect(() => {
     let raf = 0;
+    // Opt into the hidden-then-animate behaviour only now that JS runs.
+    // Until .reveal-ready is present, all [data-reveal] content stays visible,
+    // so a JS/hydration failure can never blank out or freeze the page.
+    const root = document.querySelector('.ms-root');
+    root?.classList.add('reveal-ready');
     const reveal = (el: Element) => {
       el.classList.add('in');
       setTimeout(() => el.classList.add('rv-done'), 820);
@@ -501,10 +506,14 @@ function MarketingNav({ t }: { t: any }) {
 }
 
 function MarketingFooter({ t }: { t: any }) {
+  // Real destinations per column (positional), so no footer link is dead.
   const cols = [
-    { h: t.footer.colProduct, items: t.footer.product },
-    { h: t.footer.colIndustries, items: t.footer.industries },
-    { h: t.footer.colLegal, items: t.footer.legal },
+    { h: t.footer.colProduct, items: t.footer.product,
+      hrefs: ['#features', '/pricing', '#how', '/blog'] },
+    { h: t.footer.colIndustries, items: t.footer.industries,
+      hrefs: ['#industries', '#industries', '#industries', '#industries', '#industries', '#industries'] },
+    { h: t.footer.colLegal, items: t.footer.legal,
+      hrefs: ['/terms', '/privacy', '/gdpr', '/cookies'] },
   ];
   return (
     <footer className="footer">
@@ -518,7 +527,12 @@ function MarketingFooter({ t }: { t: any }) {
           {cols.map((c: any, i: number) => (
             <div key={i} className="footer-col">
               <div className="footer-h">{c.h}</div>
-              {c.items.map((it: string, j: number) => <a key={j} href="#" className="footer-link">{it}</a>)}
+              {c.items.map((it: string, j: number) => {
+                const href = c.hrefs[j] ?? '#';
+                return href.startsWith('#')
+                  ? <a key={j} href={href} className="footer-link">{it}</a>
+                  : <Link key={j} href={href} className="footer-link">{it}</Link>;
+              })}
             </div>
           ))}
         </div>
