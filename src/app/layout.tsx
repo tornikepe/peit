@@ -3,6 +3,7 @@ import { Geist, Noto_Sans_Georgian } from "next/font/google";
 import Providers from "@/components/Providers";
 import JsonLd, { organizationSchema } from "@/components/JsonLd";
 import "./globals.css";
+import "@/styles/midnight.css";
 
 // `next/font/google` self-hosts the font files, applies them via a
 // CSS variable, and emits `font-display: swap` so there's zero
