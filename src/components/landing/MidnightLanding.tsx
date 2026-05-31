@@ -30,6 +30,8 @@ const ICONS: Record<string, string> = {
   send: 'M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z',
   menu: 'M4 7h16 M4 12h16 M4 17h16',
   x: 'M6 6l12 12 M18 6L6 18',
+  sun: 'M12 17a5 5 0 100-10 5 5 0 000 10z M12 1v3 M12 20v3 M4 12H1 M23 12h-3 M5 5l2 2 M17 17l2 2 M19 5l-2 2 M7 17l-2 2',
+  moon: 'M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z',
   tg: 'M22 4L2 11l6 2 2 7 3-4 5 4 4-16z M8 13l9-6',
   ig: 'M7 3h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4z M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z M17 6.5h.01',
   web: 'M3 9h18 M9 21V9 M12 3a9 9 0 100 18 9 9 0 000-18z',
@@ -454,7 +456,7 @@ function FAQ({ t }: { t: any }) {
 const LANGS: { code: 'ka' | 'en' | 'ru'; label: string }[] = [
   { code: 'ka', label: 'ქარ' }, { code: 'en', label: 'EN' }, { code: 'ru', label: 'RU' },
 ];
-function MarketingNav({ t }: { t: any }) {
+function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'light'; toggleTheme: () => void }) {
   const { lang, setLang } = useLanguage();
   const { isSignedIn } = useAuth();
   const [open, setOpen] = useState(false);
@@ -464,11 +466,12 @@ function MarketingNav({ t }: { t: any }) {
     on(); window.addEventListener('scroll', on, { passive: true });
     return () => window.removeEventListener('scroll', on);
   }, []);
+  // All nav targets are in-page sections — they scroll, never open a
+  // separate route. (Blog removed entirely.)
   const links = [
     { label: t.nav.how, href: '#how' },
-    { label: t.nav.pricing, href: '/pricing' },
+    { label: t.nav.pricing, href: '#pricing' },
     { label: t.nav.industries, href: '#industries' },
-    { label: t.nav.blog, href: '/blog' },
   ];
   return (
     <header className={'nav' + (scrolled ? ' scrolled' : '')}>
@@ -484,9 +487,12 @@ function MarketingNav({ t }: { t: any }) {
         <div className="nav-actions">
           <div className="lang-toggle" role="group" aria-label="Language">
             {LANGS.map(l => (
-              <button key={l.code} onClick={() => setLang(l.code)} className={'lang-opt' + (lang === l.code ? ' on' : '')}>{l.label}</button>
+              <button key={l.code} type="button" onClick={() => setLang(l.code)} className={'lang-opt' + (lang === l.code ? ' on' : '')}>{l.label}</button>
             ))}
           </div>
+          <button type="button" className="seg-toggle" onClick={toggleTheme} aria-label="Toggle theme" title="Theme">
+            <Icon name={theme === 'dark' ? 'moon' : 'sun'} size={17} sw={1.7} />
+          </button>
           {/* Auth-aware: signed-in visitors get Dashboard + their account
               button, NOT a "Sign in" link (which would just bounce them
               home since they're already authenticated). */}
@@ -520,10 +526,12 @@ function MarketingNav({ t }: { t: any }) {
 }
 
 function MarketingFooter({ t }: { t: any }) {
-  // Real destinations per column (positional), so no footer link is dead.
+  // In-page anchors for product/industries (no separate routes, no blog);
+  // legal links stay as real pages. Blog item dropped from the product list.
+  const productItems = (t.footer.product as string[]).slice(0, 3); // drop "blog"
   const cols = [
-    { h: t.footer.colProduct, items: t.footer.product,
-      hrefs: ['#features', '/pricing', '#how', '/blog'] },
+    { h: t.footer.colProduct, items: productItems,
+      hrefs: ['#features', '#pricing', '#how'] },
     { h: t.footer.colIndustries, items: t.footer.industries,
       hrefs: ['#industries', '#industries', '#industries', '#industries', '#industries', '#industries'] },
     { h: t.footer.colLegal, items: t.footer.legal,
@@ -564,13 +572,49 @@ export default function MidnightLanding() {
   const { isSignedIn } = useAuth();
   const t: any = LANDING[lang] ?? LANDING.ka;
   useReveal();
+
+  // Light / dark theme — persisted, applied to .ms-root via data-theme.
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('peit-theme');
+      if (saved === 'light' || saved === 'dark') setTheme(saved);
+    } catch { /* no-op */ }
+  }, []);
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('peit-theme', next); } catch { /* no-op */ }
+      return next;
+    });
+  };
+
+  // In-page anchor links scroll smoothly with an offset for the fixed nav,
+  // instead of jumping (or opening a route).
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement)?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
+      if (!a) return;
+      const id = a.getAttribute('href')!.slice(1);
+      if (!id) return;
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      const top = target.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top, behavior: 'smooth' });
+    };
+    const root = document.querySelector('.ms-root');
+    root?.addEventListener('click', onClick as EventListener);
+    return () => root?.removeEventListener('click', onClick as EventListener);
+  }, []);
+
   // Signed-in visitors should land in the dashboard, not /signup (which
   // bounces them home since they're already authenticated).
   const ctaHref = isSignedIn ? '/dashboard' : '/signup';
   return (
-    <div className="ms-root">
+    <div className="ms-root" data-theme={theme}>
       <div className="bg-grid" />
-      <MarketingNav t={t} />
+      <MarketingNav t={t} theme={theme} toggleTheme={toggleTheme} />
       <main>
         <Hero t={t} ctaHref={ctaHref} />
         <SocialProof t={t} />

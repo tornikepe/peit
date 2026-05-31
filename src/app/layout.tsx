@@ -106,11 +106,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://img.clerk.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://api.lemonsqueezy.com" />
 
-        {/* x-default hreflang — points to the canonical (Georgian) site. */}
+        {/* Single canonical site — language switches in-page (ka/en/ru),
+            not via separate /en /ru routes. */}
         <link rel="alternate" hrefLang="x-default" href={SITE_URL + '/'} />
         <link rel="alternate" hrefLang="ka"        href={SITE_URL + '/'} />
-        <link rel="alternate" hrefLang="en"        href={SITE_URL + '/en'} />
-        <link rel="alternate" hrefLang="ru"        href={SITE_URL + '/ru'} />
         {/* Organization JSON-LD — present on every page so AI / search
             engines have a stable entity to attach reviews + sameAs to. */}
         <JsonLd data={ld} />

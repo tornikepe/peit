@@ -9,7 +9,6 @@
 
 import type { MetadataRoute } from 'next';
 import { industries } from '@/components/Industries';
-import { POSTS } from '@/lib/blog';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://peit.vercel.app';
 
@@ -20,26 +19,11 @@ const ALTERNATIVE_SLUGS = ['tidio', 'drift', 'intercom'] as const;
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
+  // Pricing + how-it-works are now in-page sections on the homepage, and
+  // the blog has been removed — so only the homepage itself is listed here.
   const core: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`,             changeFrequency: 'daily',   priority: 1.00, lastModified: now },
-    { url: `${SITE_URL}/pricing`,      changeFrequency: 'weekly',  priority: 0.90, lastModified: now },
-    { url: `${SITE_URL}/how-it-works`, changeFrequency: 'weekly',  priority: 0.90, lastModified: now },
-    { url: `${SITE_URL}/blog`,         changeFrequency: 'daily',   priority: 0.80, lastModified: now },
-    { url: `${SITE_URL}/en/blog`,      changeFrequency: 'daily',   priority: 0.80, lastModified: now },
-    { url: `${SITE_URL}/ru/blog`,      changeFrequency: 'daily',   priority: 0.80, lastModified: now },
+    { url: `${SITE_URL}/`, changeFrequency: 'daily', priority: 1.00, lastModified: now },
   ];
-
-  // Blog posts × 3 languages — 36 URLs total. Per-post lastModified
-  // uses publishedAt so search engines see the actual content date,
-  // not the build time.
-  const blogPosts: MetadataRoute.Sitemap = POSTS.flatMap(post => {
-    const lastMod = new Date(post.publishedAt);
-    return [
-      { url: `${SITE_URL}/blog/${post.slug}`,        changeFrequency: 'weekly', priority: 0.70, lastModified: lastMod },
-      { url: `${SITE_URL}/en/blog/${post.slug}`,     changeFrequency: 'weekly', priority: 0.70, lastModified: lastMod },
-      { url: `${SITE_URL}/ru/blog/${post.slug}`,     changeFrequency: 'weekly', priority: 0.70, lastModified: lastMod },
-    ] satisfies MetadataRoute.Sitemap;
-  });
 
   const industryPages: MetadataRoute.Sitemap = industries.map(i => ({
     url:             `${SITE_URL}/industries/${i.slug}`,
@@ -63,5 +47,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/cookies`, changeFrequency: 'monthly', priority: 0.30, lastModified: now },
   ];
 
-  return [...core, ...blogPosts, ...industryPages, ...alternativePages, ...legal];
+  return [...core, ...industryPages, ...alternativePages, ...legal];
 }

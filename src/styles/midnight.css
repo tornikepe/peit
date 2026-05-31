@@ -347,3 +347,35 @@
 }
 
 .ms-root { min-height: 100vh; position: relative; }
+
+/* ─── Light theme — applied when .ms-root has data-theme="light" ─── */
+.ms-root[data-theme="light"] {
+  --bg:           oklch(0.985 0.004 264);
+  --bg-deep:      oklch(0.955 0.005 264);
+  --panel:        oklch(1 0 0);
+  --panel-2:      oklch(0.975 0.004 264);
+  --panel-hi:     oklch(0.955 0.006 264);
+  --line:         oklch(0.2 0.02 264 / 0.12);
+  --line-strong:  oklch(0.2 0.02 264 / 0.2);
+  --text:         oklch(0.21 0.015 264);
+  --text-muted:   oklch(0.44 0.014 264);
+  --text-faint:   oklch(0.58 0.012 264);
+  --accent:       oklch(0.56 0.2 280);
+  --accent-bright:oklch(0.52 0.21 280);
+  --accent-deep:  oklch(0.48 0.21 282);
+  --accent-soft:  oklch(0.56 0.2 280 / 0.1);
+  --accent-line:  oklch(0.56 0.2 280 / 0.28);
+  --live:         oklch(0.58 0.16 165);
+  --live-soft:    oklch(0.58 0.16 165 / 0.12);
+  --glow-a: oklch(0.7 0.18 280 / 0.22);
+  --glow-b: oklch(0.75 0.13 215 / 0.18);
+  --shadow-lg: 0 30px 80px -28px oklch(0.5 0.05 264 / 0.28);
+  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.6) inset, 0 18px 44px -30px oklch(0.3 0.05 264 / 0.35);
+}
+.ms-root #how, .ms-root #features, .ms-root #industries,
+.ms-root #pricing, .ms-root #faq { scroll-margin-top: 80px; }
+
+/* Light mode: the shared Logo uses text-white — make the wordmark dark so
+   it's visible on the light background (the gradient "i" is unaffected). */
+.ms-root[data-theme="light"] a[aria-label="Peit"] > span,
+.ms-root[data-theme="light"] span[aria-label="Peit"] > span { color: var(--text) !important; }
