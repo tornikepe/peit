@@ -10,8 +10,9 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Bot, MessageSquare, BarChart3, Users, CreditCard,
-  Settings, ShieldCheck, Zap, ChevronRight, X, ThumbsDown,
+  Settings, ShieldCheck, ChevronRight, X, ThumbsDown,
 } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { href: '/dashboard',               label: 'მთავარი',     icon: LayoutDashboard },
@@ -82,12 +83,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
     <>
       {/* ── Desktop column ─────────────────────────────────────────────── */}
       <aside className="hidden md:flex md:flex-col w-[240px] shrink-0 border-r border-white/[0.06] bg-[#0a0a14] sticky top-0 h-screen">
-        <Link href="/" className="flex items-center gap-2 px-5 py-5 border-b border-white/[0.04]">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 grid place-items-center">
-            <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-bold text-white text-lg tracking-tight">Peit</span>
-        </Link>
+        <div className="px-5 py-5 border-b border-white/[0.04]">
+          <Logo size="md" />
+        </div>
 
         <nav className="p-3 flex-1 overflow-y-auto">{items}</nav>
 
@@ -105,12 +103,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           />
           <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#0a0a14] border-r border-white/[0.06] flex flex-col">
             <div className="flex items-center justify-between px-5 py-5 border-b border-white/[0.04]">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 grid place-items-center">
-                  <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="font-bold text-white text-lg">Peit</span>
-              </Link>
+              <Logo size="md" />
               <button
                 type="button"
                 onClick={onMobileClose}

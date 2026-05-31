@@ -1,6 +1,6 @@
 import { SignUp } from "@clerk/nextjs";
-import Link from "next/link";
-import { Zap, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import Logo from "@/components/Logo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -49,12 +49,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-purple-600/8 blur-[100px] pointer-events-none" />
 
         {/* Logo */}
-        <Link href="/" className="relative flex items-center gap-2.5 group w-fit">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-shadow">
-            <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-bold text-white text-xl tracking-tight">Peit</span>
-        </Link>
+        <Logo size="lg" className="relative w-fit" />
 
         {/* Mid */}
         <div className="relative">
@@ -110,12 +105,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
         <div className="absolute inset-0 hero-glow opacity-20 pointer-events-none" />
 
         {/* Mobile logo */}
-        <Link href="/" className="relative flex items-center gap-2 mb-6 lg:hidden">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-bold text-white text-xl">Peit</span>
-        </Link>
+        <Logo size="md" className="relative mb-6 lg:hidden" />
 
         {/* Mobile trial badge */}
         <div className="mb-5 lg:hidden">
