@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import Link from 'next/link';
+import { useAuth, UserButton } from '@clerk/nextjs';
 import { useLanguage } from '@/context/LanguageContext';
 import { LANDING } from '@/lib/landing-content';
 import Logo from '@/components/Logo';
@@ -180,7 +181,7 @@ function ChatDemo({ t }: { t: any }) {
   );
 }
 
-function Hero({ t }: { t: any }) {
+function Hero({ t, ctaHref }: { t: any; ctaHref: string }) {
   const stats = [
     { v: t.hero.stat1, l: t.hero.stat1l },
     { v: t.hero.stat2, l: t.hero.stat2l },
@@ -201,7 +202,7 @@ function Hero({ t }: { t: any }) {
           </h1>
           <p className="lede" data-reveal data-delay="2" style={{ marginTop: 22 }}>{t.hero.sub}</p>
           <div className="hero-cta" data-reveal data-delay="3">
-            <Link href="/signup" className="btn btn-primary btn-lg">{t.hero.cta1}<Icon name="arrow" size={18} sw={2} /></Link>
+            <Link href={ctaHref} className="btn btn-primary btn-lg">{t.hero.cta1}<Icon name="arrow" size={18} sw={2} /></Link>
             <a href="#how" className="btn btn-ghost btn-lg">
               <span className="play-dot"><Icon name="bolt" size={14} sw={2} /></span>{t.hero.cta2}
             </a>
@@ -312,14 +313,14 @@ function HowItWorks({ t }: { t: any }) {
   );
 }
 
-function Industries({ t }: { t: any }) {
+function Industries({ t, ctaHref }: { t: any; ctaHref: string }) {
   return (
     <section className="section" id="industries">
       <div className="wrap">
         <SectionHead kicker={t.industries.kicker} title={t.industries.title} sub={t.industries.sub} />
         <div className="ind-grid" style={{ marginTop: 56 }}>
           {t.industries.items.map((it: any, i: number) => (
-            <Link href="/signup" className="ind-card card" key={i} data-reveal data-delay={(i % 4) + 1}>
+            <Link href={ctaHref} className="ind-card card" key={i} data-reveal data-delay={(i % 4) + 1}>
               <div className="ind-top">
                 <span className="ind-name">{it.t}</span>
                 <span className="ind-arrow"><Icon name="arrowUpRight" size={16} sw={1.8} /></span>
@@ -360,7 +361,7 @@ function Testimonials({ t }: { t: any }) {
   );
 }
 
-function Pricing({ t }: { t: any }) {
+function Pricing({ t, ctaHref }: { t: any; ctaHref: string }) {
   return (
     <section className="section pricing" id="pricing">
       <div className="wrap">
@@ -387,7 +388,7 @@ function Pricing({ t }: { t: any }) {
               </div>
               {p.trial && <div className="plan-trial mono">{p.trial}</div>}
               <p className="plan-desc">{p.desc}</p>
-              <Link href="/signup" className={'btn ' + (p.popular ? 'btn-primary' : 'btn-ghost')} style={{ width: '100%' }}>{p.cta}</Link>
+              <Link href={ctaHref} className={'btn ' + (p.popular ? 'btn-primary' : 'btn-ghost')} style={{ width: '100%' }}>{p.cta}</Link>
               <div className="rule" style={{ margin: '22px 0 18px' }} />
               <ul className="plan-feats">
                 {p.feats.map((f: string, j: number) => (
@@ -404,7 +405,7 @@ function Pricing({ t }: { t: any }) {
   );
 }
 
-function FinalCTA({ t }: { t: any }) {
+function FinalCTA({ t, ctaHref }: { t: any; ctaHref: string }) {
   return (
     <section className="section">
       <div className="wrap">
@@ -414,7 +415,7 @@ function FinalCTA({ t }: { t: any }) {
             {t.finalCta.title1}<br /><span className="text-grad">{t.finalCta.title2}</span>
           </h2>
           <p className="lede" style={{ marginInline: 'auto', marginTop: 18 }}>{t.finalCta.sub}</p>
-          <Link href="/signup" className="btn btn-primary btn-lg" style={{ marginTop: 30 }}>{t.finalCta.cta}<Icon name="arrow" size={18} sw={2} /></Link>
+          <Link href={ctaHref} className="btn btn-primary btn-lg" style={{ marginTop: 30 }}>{t.finalCta.cta}<Icon name="arrow" size={18} sw={2} /></Link>
           <div className="hero-note mono" style={{ marginTop: 18 }}>{t.finalCta.note}</div>
           <div className="final-join">{t.finalCta.join}</div>
         </div>
@@ -455,6 +456,7 @@ const LANGS: { code: 'ka' | 'en' | 'ru'; label: string }[] = [
 ];
 function MarketingNav({ t }: { t: any }) {
   const { lang, setLang } = useLanguage();
+  const { isSignedIn } = useAuth();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -485,7 +487,17 @@ function MarketingNav({ t }: { t: any }) {
               <button key={l.code} onClick={() => setLang(l.code)} className={'lang-opt' + (lang === l.code ? ' on' : '')}>{l.label}</button>
             ))}
           </div>
-          <Link href="/signin" className="nav-link nav-signin">{t.nav.signin}</Link>
+          {/* Auth-aware: signed-in visitors get Dashboard + their account
+              button, NOT a "Sign in" link (which would just bounce them
+              home since they're already authenticated). */}
+          {isSignedIn ? (
+            <>
+              <Link href="/dashboard" className="nav-link nav-signin">{t.nav.dashboard}</Link>
+              <UserButton appearance={{ elements: { avatarBox: 'w-8 h-8' } }} />
+            </>
+          ) : (
+            <Link href="/signin" className="nav-link nav-signin">{t.nav.signin}</Link>
+          )}
           <button className="nav-burger" onClick={() => setOpen(o => !o)} aria-label="Menu">
             <Icon name={open ? 'x' : 'menu'} size={20} />
           </button>
@@ -498,7 +510,9 @@ function MarketingNav({ t }: { t: any }) {
               ? <a key={l.label} href={l.href} onClick={() => setOpen(false)}>{l.label}</a>
               : <Link key={l.label} href={l.href} onClick={() => setOpen(false)}>{l.label}</Link>
           ))}
-          <Link href="/signin" onClick={() => setOpen(false)}>{t.nav.signin}</Link>
+          {isSignedIn
+            ? <Link href="/dashboard" onClick={() => setOpen(false)}>{t.nav.dashboard}</Link>
+            : <Link href="/signin" onClick={() => setOpen(false)}>{t.nav.signin}</Link>}
         </div>
       )}
     </header>
@@ -547,21 +561,25 @@ function MarketingFooter({ t }: { t: any }) {
 
 export default function MidnightLanding() {
   const { lang } = useLanguage();
+  const { isSignedIn } = useAuth();
   const t: any = LANDING[lang] ?? LANDING.ka;
   useReveal();
+  // Signed-in visitors should land in the dashboard, not /signup (which
+  // bounces them home since they're already authenticated).
+  const ctaHref = isSignedIn ? '/dashboard' : '/signup';
   return (
     <div className="ms-root">
       <div className="bg-grid" />
       <MarketingNav t={t} />
       <main>
-        <Hero t={t} />
+        <Hero t={t} ctaHref={ctaHref} />
         <SocialProof t={t} />
         <Features t={t} />
         <HowItWorks t={t} />
-        <Industries t={t} />
+        <Industries t={t} ctaHref={ctaHref} />
         <Testimonials t={t} />
-        <Pricing t={t} />
-        <FinalCTA t={t} />
+        <Pricing t={t} ctaHref={ctaHref} />
+        <FinalCTA t={t} ctaHref={ctaHref} />
         <FAQ t={t} />
       </main>
       <MarketingFooter t={t} />
