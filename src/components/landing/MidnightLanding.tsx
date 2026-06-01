@@ -153,7 +153,7 @@ function ChatDemo({ t }: { t: any }) {
     <div className="chat-card" data-reveal data-delay="2">
       <div className="chat-top">
         <div className="chat-id">
-          <span className="chat-ava"><Icon name="spark" size={17} sw={1.8} /></span>
+          <span className="chat-ava"><span className="ava-logo">pe<span className="ava-logo-i">i</span>t</span></span>
           <div>
             <div className="chat-name">{t.chat.name}</div>
             <div className="chat-status"><span className="dot-live" />{t.chat.status}</div>
@@ -164,13 +164,13 @@ function ChatDemo({ t }: { t: any }) {
       <div className="chat-body" ref={boxRef}>
         {msgs.map((m, i) => shown.includes(i) && (
           <div key={i} className={'bubble-row ' + m.who}>
-            {m.who === 'bot' && <span className="bubble-ava"><Icon name="spark" size={13} sw={2} /></span>}
+            {m.who === 'bot' && <span className="bubble-ava"><span className="ava-logo-sm">p</span></span>}
             <div className={'bubble ' + m.who}>{m.t}</div>
           </div>
         ))}
         {typing && (
           <div className="bubble-row bot">
-            <span className="bubble-ava"><Icon name="spark" size={13} sw={2} /></span>
+            <span className="bubble-ava"><span className="ava-logo-sm">p</span></span>
             <div className="bubble bot typing"><span /><span /><span /></div>
           </div>
         )}
