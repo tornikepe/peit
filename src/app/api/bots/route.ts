@@ -54,7 +54,7 @@ export const POST = withAuth(async ({ user, req }) => {
     greeting:       body.greeting ?? {},
     fallback:       body.fallback ?? {},
     websiteUrl:     body.websiteUrl,
-    brandColor:     body.brandColor ?? '#7c3aed',
+    brandColor:     body.brandColor ?? '#14b8a6',
     leadCapture:    body.leadCapture ?? { enabled: true, fields: ['name', 'email'] },
     quickReplies:   sanitizeQuickReplies(body.quickReplies),
     allowedOrigins: limits.domainAllowlist ? (body.allowedOrigins ?? []) : [],

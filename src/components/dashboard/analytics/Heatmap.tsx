@@ -65,7 +65,7 @@ export default function Heatmap({ cells }: Props) {
                       key={h}
                       className="aspect-square rounded-sm relative group"
                       style={{
-                        backgroundColor: v === 0 ? 'rgba(255,255,255,0.03)' : `rgba(167, 139, 250, ${opacity})`,
+                        backgroundColor: v === 0 ? 'rgba(255,255,255,0.03)' : `rgba(20, 184, 166, ${opacity})`,
                       }}
                       title={`${DOW_LABEL[rowIdx]} ${String(h).padStart(2, '0')}:00 — ${v} საუბარი`}
                     />
@@ -80,7 +80,7 @@ export default function Heatmap({ cells }: Props) {
                   <div
                     key={o}
                     className="w-3 h-3 rounded-sm"
-                    style={{ backgroundColor: `rgba(167, 139, 250, ${o})` }}
+                    style={{ backgroundColor: `rgba(20, 184, 166, ${o})` }}
                   />
                 ))}
               </div>

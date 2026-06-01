@@ -128,7 +128,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
             signInForceRedirectUrl={redirectUrl}
             appearance={{
               variables: {
-                colorPrimary: "#7c3aed",
+                colorPrimary: "#14b8a6",
                 colorBackground: "#0d0d1a",
                 colorInputBackground: "#13131f",
                 colorInputText: "#ffffff",

@@ -102,7 +102,7 @@ export const DEFAULT_FALLBACKS: Record<BotLang, string> = {
 };
 
 export const BRAND_COLORS = [
-  '#7c3aed', '#2563eb', '#0891b2', '#059669',
+  '#14b8a6', '#2563eb', '#0891b2', '#059669',
   '#ea580c', '#dc2626', '#db2777', '#475569',
 ];
 
@@ -146,7 +146,7 @@ export function makeNewBot(partial: Partial<Bot> = {}): Bot {
     fallback: { ka: DEFAULT_FALLBACKS.ka },
     faqs: [],
     knowledgeChunks: [],
-    brandColor: '#7c3aed',
+    brandColor: '#14b8a6',
     leadCapture: { enabled: true, fields: ['name', 'email'] },
     quickReplies: [],
     allowedOrigins: [],

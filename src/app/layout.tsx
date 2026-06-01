@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Noto_Sans_Georgian } from "next/font/google";
+import { Geist, Noto_Sans, Noto_Sans_Georgian } from "next/font/google";
 import Providers from "@/components/Providers";
 import JsonLd, { organizationSchema } from "@/components/JsonLd";
 import "./globals.css";
@@ -18,6 +18,19 @@ import "@/styles/midnight.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+// Cyrillic face for Russian content. Neither Geist nor Noto Sans
+// Georgian ships Cyrillic glyphs, and the landing's FiraGO CDN bundle
+// only ships Latin — so without this, Russian text fell back to an
+// arbitrary system font and rendered inconsistently / barely legibly.
+// Noto Sans is the Latin/Cyrillic sibling of Noto Sans Georgian, so the
+// three Noto faces sit together as one harmonized superfamily.
+const notoSans = Noto_Sans({
+  variable: "--font-noto-sans",
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -97,7 +110,7 @@ export default function RootLayout({
 }>) {
   const ld = organizationSchema();
   return (
-    <html lang="ka" className={`${geistSans.variable} ${notoSansGeorgian.variable}`}>
+    <html lang="ka" className={`${geistSans.variable} ${notoSans.variable} ${notoSansGeorgian.variable}`}>
       <head>
         {/* Preconnect to the third-party domains the very first request
             already hits. Saves ~100-300ms of TCP+TLS handshake time on

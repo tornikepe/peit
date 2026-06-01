@@ -4,7 +4,7 @@
 //   <script src="https://peit.vercel.app/widget.js" data-bot-id="xxx" defer></script>
 //
 // Optional data-* attributes:
-//   data-color="#7c3aed"        — overrides launcher color
+//   data-color="#14b8a6"        — overrides launcher color
 //   data-position="left|right"  — corner position (default: right)
 //   data-welcome-delay="6000"   — ms before welcome bubble pops (0 = disabled)
 //   data-greeting="custom..."   — overrides greeting in welcome bubble
@@ -51,7 +51,7 @@ if (!current) { console.warn('[Peit] could not detect script tag'); return; }
 var BOT_ID = current.getAttribute('data-bot-id');
 if (!BOT_ID) { console.warn('[Peit] missing data-bot-id'); return; }
 
-var BRAND_COLOR    = current.getAttribute('data-color') || '#7c3aed';
+var BRAND_COLOR    = current.getAttribute('data-color') || '#14b8a6';
 var POSITION       = (current.getAttribute('data-position') || 'right').toLowerCase();
 var WELCOME_DELAY  = parseInt(current.getAttribute('data-welcome-delay') || '6000', 10);
 var ORIGIN         = ${JSON.stringify(origin)};

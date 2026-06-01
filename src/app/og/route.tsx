@@ -23,8 +23,8 @@ export const runtime = 'edge';
 const BG    = '#0a0a0a';
 const FG    = '#f5f3ee';
 const DIM   = '#9ca3af';
-const BRAND = '#7c3aed';
-const BRAND_LIGHT = '#a78bfa';
+const BRAND = '#14b8a6';
+const BRAND_LIGHT = '#5eead4';
 
 export async function GET(req: Request) {
   const url   = new URL(req.url);

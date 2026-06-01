@@ -4,7 +4,10 @@
 @import url("https://cdn.jsdelivr.net/npm/@fontsource/firago/600.css");
 @import url("https://cdn.jsdelivr.net/npm/@fontsource/firago/700.css");
 
-.ms-root { --font-sans: "FiraGO", "Noto Sans Georgian", system-ui, -apple-system, sans-serif;
+/* Font chain by script: FiraGO covers Latin (only subset its CDN ships),
+   Noto Sans covers Cyrillic (Russian), Noto Sans Georgian covers Georgian.
+   Each script falls through to the first family that actually has its glyphs. */
+.ms-root { --font-sans: "FiraGO", var(--font-noto-sans), "Noto Sans Georgian", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   
@@ -20,17 +23,18 @@
   --text-faint:   oklch(0.56 0.013 264);
 
   
-  --accent:       oklch(0.68 0.19 280);
-  --accent-bright:oklch(0.74 0.18 280);
-  --accent-deep:  oklch(0.58 0.2 282);
-  --accent-soft:  oklch(0.68 0.19 280 / 0.14);
-  --accent-line:  oklch(0.68 0.19 280 / 0.34);
-  
-  --live:         oklch(0.82 0.16 168);
-  --live-soft:    oklch(0.82 0.16 168 / 0.16);
+  /* Accent: teal → cyan (replaces the old violet/purple). */
+  --accent:       oklch(0.72 0.13 200);
+  --accent-bright:oklch(0.80 0.13 198);
+  --accent-deep:  oklch(0.60 0.12 205);
+  --accent-soft:  oklch(0.72 0.13 200 / 0.14);
+  --accent-line:  oklch(0.72 0.13 200 / 0.34);
 
-  --glow-a: oklch(0.68 0.19 280 / 0.5);
-  --glow-b: oklch(0.72 0.15 215 / 0.4);
+  --live:         oklch(0.82 0.16 162);
+  --live-soft:    oklch(0.82 0.16 162 / 0.16);
+
+  --glow-a: oklch(0.72 0.14 200 / 0.5);
+  --glow-b: oklch(0.74 0.13 220 / 0.4);
 
   --shadow-lg: 0 30px 80px -20px oklch(0.1 0.02 264 / 0.7);
   --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.04) inset, 0 20px 50px -30px oklch(0 0 0 / 0.8);
@@ -216,13 +220,14 @@
 .ms-root .chat-card { border-radius: var(--radius-lg); border: 1px solid var(--line-strong);
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
   box-shadow: var(--shadow-lg); overflow: hidden; position: relative;
+  width: 100%; max-width: 440px; margin-inline: auto;
   animation: float 7s ease-in-out infinite; }
 .ms-root .chat-top { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--line); background: color-mix(in oklch, var(--panel-hi) 50%, transparent); }
 .ms-root .chat-id { display: flex; align-items: center; gap: 11px; }
 .ms-root .chat-ava { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(150deg, var(--accent-bright), var(--accent-deep)); display: grid; place-items: center; color: #fff; box-shadow: 0 4px 14px -4px var(--glow-a); }
 .ms-root .chat-name { font-weight: 600; font-size: 14.5px; }
 .ms-root .chat-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.ms-root .chat-body { padding: 20px 18px; display: flex; flex-direction: column; gap: 14px; height: 340px; overflow: hidden; }
+.ms-root .chat-body { padding: 20px 18px; display: flex; flex-direction: column; gap: 14px; height: 420px; overflow: hidden; }
 .ms-root .bubble-row { display: flex; gap: 8px; align-items: flex-end; animation: bubbleIn 0.45s cubic-bezier(.2,.8,.3,1); }
 .ms-root .bubble-row.user { justify-content: flex-end; }
 

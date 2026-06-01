@@ -205,9 +205,6 @@ function Hero({ t, ctaHref }: { t: any; ctaHref: string }) {
           <p className="lede" data-reveal data-delay="2" style={{ marginTop: 22 }}>{t.hero.sub}</p>
           <div className="hero-cta" data-reveal data-delay="3">
             <Link href={ctaHref} className="btn btn-primary btn-lg">{t.hero.cta1}<Icon name="arrow" size={18} sw={2} /></Link>
-            <a href="#how" className="btn btn-ghost btn-lg">
-              <span className="play-dot"><Icon name="bolt" size={14} sw={2} /></span>{t.hero.cta2}
-            </a>
           </div>
           <div className="hero-note mono" data-reveal data-delay="4">{t.hero.note}</div>
           <div className="hero-stats" data-reveal data-delay="4">

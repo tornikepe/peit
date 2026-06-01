@@ -32,7 +32,7 @@ export const POST = withAuth(async ({ user, req }) => {
         greeting:     b.greeting || {},
         fallback:     b.fallback || {},
         websiteUrl:   b.websiteUrl,
-        brandColor:   b.brandColor || '#7c3aed',
+        brandColor:   b.brandColor || '#14b8a6',
         leadCapture:  b.leadCapture || { enabled: true, fields: ['name', 'email'] },
         status:       b.status || 'active',
         faqs:         (b.faqs || []).map(f => ({ q: f.q, a: f.a })),

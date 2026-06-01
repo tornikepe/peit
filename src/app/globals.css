@@ -1,30 +1,76 @@
 @import "tailwindcss";
 
+/* ─── Brand palette remap ──────────────────────────────────────────────
+   The product was built on Tailwind's `violet`/`purple` (purple) and
+   `fuchsia` (pink) scales — used in ~500 utility classes across the
+   dashboard, widget and marketing components. Rather than editing every
+   file, we remap those three scales here so the whole app reskins from
+   one place: violet + purple → teal, fuchsia → cyan. Every existing
+   `text-violet-400`, `bg-violet-500`, `fuchsia-500`, etc. now renders
+   teal/cyan. (Tailwind v4 generates color utilities from these tokens.) */
+@theme {
+  --color-violet-50:  #f0fdfa;
+  --color-violet-100: #ccfbf1;
+  --color-violet-200: #99f6e4;
+  --color-violet-300: #5eead4;
+  --color-violet-400: #2dd4bf;
+  --color-violet-500: #14b8a6;
+  --color-violet-600: #0d9488;
+  --color-violet-700: #0f766e;
+  --color-violet-800: #115e59;
+  --color-violet-900: #134e4a;
+  --color-violet-950: #042f2e;
+
+  --color-purple-50:  #f0fdfa;
+  --color-purple-100: #ccfbf1;
+  --color-purple-200: #99f6e4;
+  --color-purple-300: #5eead4;
+  --color-purple-400: #2dd4bf;
+  --color-purple-500: #14b8a6;
+  --color-purple-600: #0d9488;
+  --color-purple-700: #0f766e;
+  --color-purple-800: #115e59;
+  --color-purple-900: #134e4a;
+  --color-purple-950: #042f2e;
+
+  --color-fuchsia-50:  #ecfeff;
+  --color-fuchsia-100: #cffafe;
+  --color-fuchsia-200: #a5f3fc;
+  --color-fuchsia-300: #67e8f9;
+  --color-fuchsia-400: #22d3ee;
+  --color-fuchsia-500: #06b6d4;
+  --color-fuchsia-600: #0891b2;
+  --color-fuchsia-700: #0e7490;
+  --color-fuchsia-800: #155e75;
+  --color-fuchsia-900: #164e63;
+  --color-fuchsia-950: #083344;
+}
+
 :root {
   --bg: #07070f;
   --bg-soft: #0d0d1a;
   --border: rgba(255, 255, 255, 0.08);
-  /* Refined two-tone violet — slightly cooler than the previous flat #7c3aed
-     so it sits next to the cyan accent without feeling muddy. */
-  --primary:        #8b5cf6;
-  --primary-soft:   #a78bfa;
-  --primary-deep:   #5b21b6;
-  --primary-glow:   #c4b5fd;
-  /* Cyan accent kept; added a teal mid-tone for gradient crossovers. */
+  /* Two-tone teal — the brand primary (replaces the old violet). Pairs with
+     the cyan accent for cool-toned gradients without any pink/purple. */
+  --primary:        #14b8a6;
+  --primary-soft:   #5eead4;
+  --primary-deep:   #0f766e;
+  --primary-glow:   #99f6e4;
+  /* Cyan accent for gradient crossovers and bright highlights. */
   --accent:         #06b6d4;
   --accent-bright:  #22d3ee;
   --accent-deep:    #0e7490;
-  /* New: a fuchsia mid-tone we use sparingly to brighten "popular" pricing
-     glow + highlight states. Brings warmth without breaking the cool theme. */
-  --highlight:      #d946ef;
-  --highlight-soft: #f0abfc;
+  /* Bright cyan used sparingly to brighten "popular" pricing glow +
+     highlight states (was a fuchsia/pink — now stays within the cool theme). */
+  --highlight:      #22d3ee;
+  --highlight-soft: #a5f3fc;
   --text:           #f9fafb;
   --text-muted:     #9ca3af;
   /* Canonical brand gradient — used by .gradient-text, primary CTAs, pricing
      popular badge, dashboard sidebar active indicator. Defined once here so
      a single edit reskins the product. */
-  --grad-brand:     linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 35%, #6d28d9 70%, #22d3ee 100%);
-  --grad-brand-soft: linear-gradient(135deg, #ede9fe 0%, #c4b5fd 50%, #a78bfa 100%);
+  --grad-brand:     linear-gradient(135deg, #99f6e4 0%, #14b8a6 35%, #0f766e 70%, #22d3ee 100%);
+  --grad-brand-soft: linear-gradient(135deg, #cffafe 0%, #99f6e4 50%, #5eead4 100%);
 }
 
 * {
@@ -39,7 +85,7 @@ html {
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: var(--font-noto-georgian), var(--font-geist-sans), "Inter",
+  font-family: var(--font-noto-georgian), var(--font-noto-sans), var(--font-geist-sans), "Inter",
     system-ui, -apple-system, "Segoe UI", sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
@@ -68,7 +114,7 @@ h1, h2, h3, h4 {
 
 .glass:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(124, 58, 237, 0.3);
+  border-color: rgba(20, 184, 166, 0.3);
 }
 
 .glass-strong {
@@ -81,7 +127,7 @@ h1, h2, h3, h4 {
 /* ─── Gradients & accents ───────────────────────────────────────────── */
 
 .gradient-text {
-  background: linear-gradient(135deg, #f5e8ff 0%, #c084fc 35%, #7c3aed 70%, #22d3ee 100%);
+  background: linear-gradient(135deg, #ecfeff 0%, #5eead4 35%, #14b8a6 70%, #22d3ee 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -89,7 +135,7 @@ h1, h2, h3, h4 {
 }
 
 .gradient-text-cyan {
-  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #7c3aed 100%);
+  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #14b8a6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -98,10 +144,10 @@ h1, h2, h3, h4 {
 /* Animated mesh-gradient background — used by Hero */
 .mesh-bg {
   background:
-    radial-gradient(at 18% 22%,  rgba(124, 58, 237, 0.35) 0px, transparent 50%),
+    radial-gradient(at 18% 22%,  rgba(20, 184, 166, 0.35) 0px, transparent 50%),
     radial-gradient(at 82% 15%,  rgba(34, 211, 238, 0.18) 0px, transparent 45%),
-    radial-gradient(at 50% 90%,  rgba(168, 85, 247, 0.22) 0px, transparent 55%),
-    radial-gradient(at 90% 75%,  rgba(99, 102, 241, 0.2)  0px, transparent 50%);
+    radial-gradient(at 50% 90%,  rgba(13, 148, 136, 0.22) 0px, transparent 55%),
+    radial-gradient(at 90% 75%,  rgba(6, 182, 212, 0.2)  0px, transparent 50%);
   animation: mesh-shift 18s ease-in-out infinite;
 }
 
@@ -125,19 +171,19 @@ h1, h2, h3, h4 {
 
 .btn-primary {
   position: relative;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
   box-shadow:
-    0 0 0 1px rgba(167, 139, 250, 0.3) inset,
-    0 10px 32px -10px rgba(124, 58, 237, 0.65),
-    0 0 40px rgba(124, 58, 237, 0.3);
+    0 0 0 1px rgba(94, 234, 212, 0.3) inset,
+    0 10px 32px -10px rgba(20, 184, 166, 0.65),
+    0 0 40px rgba(20, 184, 166, 0.3);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btn-primary:hover {
   box-shadow:
-    0 0 0 1px rgba(167, 139, 250, 0.45) inset,
-    0 14px 36px -10px rgba(124, 58, 237, 0.8),
-    0 0 56px rgba(124, 58, 237, 0.45);
+    0 0 0 1px rgba(94, 234, 212, 0.45) inset,
+    0 14px 36px -10px rgba(20, 184, 166, 0.8),
+    0 0 56px rgba(20, 184, 166, 0.45);
   transform: translateY(-2px);
 }
 
@@ -164,7 +210,7 @@ h1, h2, h3, h4 {
 /* Hero glow — replaces older flat radial-gradient */
 .hero-glow {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(20, 184, 166, 0.3) 0%, transparent 60%),
     radial-gradient(ellipse 40% 30% at 80% 20%,  rgba(6, 182, 212, 0.15) 0%, transparent 60%);
 }
 
@@ -177,17 +223,17 @@ h1, h2, h3, h4 {
   background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.4);
+  background: rgba(20, 184, 166, 0.4);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 58, 237, 0.6);
+  background: rgba(20, 184, 166, 0.6);
 }
 
 /* ─── Accessibility ───────────────────────────────────────────────── */
 
 :focus-visible {
-  outline: 2px solid rgba(167, 139, 250, 0.8);
+  outline: 2px solid rgba(94, 234, 212, 0.8);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -351,11 +397,11 @@ h1, h2, h3, h4 {
   padding: 1px;
   background:
     conic-gradient(from 0deg,
-      #8b5cf6 0deg,
+      #14b8a6 0deg,
       #22d3ee 90deg,
-      #d946ef 180deg,
-      #8b5cf6 270deg,
-      #8b5cf6 360deg);
+      #06b6d4 180deg,
+      #14b8a6 270deg,
+      #14b8a6 360deg);
   -webkit-mask:
     linear-gradient(#000, #000) content-box,
     linear-gradient(#000, #000);
@@ -378,8 +424,8 @@ h1, h2, h3, h4 {
 }
 .hover-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 18px 40px -20px rgba(139, 92, 246, 0.45);
-  border-color: rgba(167, 139, 250, 0.35);
+  box-shadow: 0 18px 40px -20px rgba(20, 184, 166, 0.45);
+  border-color: rgba(94, 234, 212, 0.35);
 }
 
 /* ─── Shimmer headline — slow gradient slide on accent words ──────────── */
@@ -423,8 +469,8 @@ h1, h2, h3, h4 {
   inset: -40px;
   z-index: -1;
   background: radial-gradient(50% 60% at 50% 30%,
-    rgba(167, 139, 250, 0.38) 0%,
-    rgba(217, 70, 239, 0.18) 40%,
+    rgba(94, 234, 212, 0.38) 0%,
+    rgba(34, 211, 238, 0.18) 40%,
     transparent 70%);
   filter: blur(40px);
   border-radius: 50%;
@@ -447,9 +493,9 @@ h1, h2, h3, h4 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: linear-gradient(135deg,
-    rgba(139, 92, 246, 0.15),
+    rgba(20, 184, 166, 0.15),
     rgba(34, 211, 238, 0.10));
-  border: 1px solid rgba(139, 92, 246, 0.30);
+  border: 1px solid rgba(20, 184, 166, 0.30);
   color: var(--primary-glow);
 }
 .brand-chip-dot {
@@ -478,18 +524,18 @@ h1, h2, h3, h4 {
   width: 2px;
   border-radius: 2px;
   background: var(--grad-brand);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.65);
+  box-shadow: 0 0 8px rgba(20, 184, 166, 0.65);
 }
 
 /* ─── Polished refresh of legacy primary button ───────────────────────── */
 .btn-primary-v2 {
   position: relative;
-  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #6d28d9 100%);
+  background: linear-gradient(135deg, #5eead4 0%, #14b8a6 45%, #0f766e 100%);
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.25),
-    0 14px 36px -14px rgba(124, 58, 237, 0.7),
-    0 0 0 1px rgba(167, 139, 250, 0.45);
+    0 14px 36px -14px rgba(20, 184, 166, 0.7),
+    0 0 0 1px rgba(94, 234, 212, 0.45);
   transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 .btn-primary-v2:hover {
@@ -497,8 +543,8 @@ h1, h2, h3, h4 {
   filter: brightness(1.08);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.35),
-    0 20px 44px -14px rgba(124, 58, 237, 0.85),
-    0 0 0 1px rgba(167, 139, 250, 0.6);
+    0 20px 44px -14px rgba(20, 184, 166, 0.85),
+    0 0 0 1px rgba(94, 234, 212, 0.6);
 }
 
 /* ─── Number counter — tabular alignment for animated stats ───────────── */
@@ -521,8 +567,8 @@ h1, h2, h3, h4 {
   }
   .text-white, .text-gray-200, .text-gray-300, .text-gray-400 { color: #111 !important; }
   .text-gray-500, .text-gray-600 { color: #555 !important; }
-  .text-violet-300, .text-violet-400 { color: #6d28d9 !important; }
-  a { color: #6d28d9 !important; text-decoration: none !important; }
+  .text-violet-300, .text-violet-400 { color: #0f766e !important; }
+  a { color: #0f766e !important; text-decoration: none !important; }
   /* Force charts to fit one page nicely. */
   svg { max-height: 200px !important; }
   /* Allow grid sections to wrap on narrow paper widths. */

@@ -13,9 +13,9 @@ const config: Config = {
         "bg-card": "rgba(255,255,255,0.04)",
         "bg-card-hover": "rgba(255,255,255,0.07)",
         border: "rgba(255,255,255,0.08)",
-        primary: "#7c3aed",
-        "primary-hover": "#6d28d9",
-        accent: "#a855f7",
+        primary: "#14b8a6",
+        "primary-hover": "#0f766e",
+        accent: "#06b6d4",
         muted: "#6b7280",
       },
       fontFamily: {
@@ -23,9 +23,9 @@ const config: Config = {
       },
       backgroundImage: {
         "hero-glow":
-          "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,58,237,0.3) 0%, transparent 60%)",
+          "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(20,184,166,0.3) 0%, transparent 60%)",
         "card-gradient":
-          "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(168,85,247,0.04) 100%)",
+          "linear-gradient(135deg, rgba(20,184,166,0.08) 0%, rgba(6,182,212,0.04) 100%)",
       },
     },
   },
