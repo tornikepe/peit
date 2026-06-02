@@ -68,7 +68,6 @@ export async function POST(
   catch { return corsError(400, 'INVALID_JSON'); }
 
   const attachments = sanitizeAttachments(body.attachments);
-  console.log('[widget/stream] attachments parsed:', attachments.length, 'rawType:', Array.isArray(body.attachments) ? 'array' : typeof body.attachments);
   const text = (body.text ?? '').trim();
   // Empty text is allowed when the visitor sent a file on its own.
   if (!text && attachments.length === 0) return corsError(400, 'EMPTY_TEXT');
@@ -218,9 +217,8 @@ export async function POST(
         // store — so plain chat keeps working even before the 0020 migration
         // adds the column.
         ...(attachments.length ? { attachments } : {}),
-      }).returning({ id: schema.messages.id, attachments: schema.messages.attachments });
+      }).returning({ id: schema.messages.id });
       userMessageId = inserted[0]?.id ?? null;
-      console.log('[widget/stream] inserted attachments:', JSON.stringify(inserted[0]?.attachments));
     } catch (e) {
       console.error('[widget/stream] user message insert failed:', e);
     }
