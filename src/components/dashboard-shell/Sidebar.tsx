@@ -69,7 +69,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
                   : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
               }`}
             >
-              <Icon className={`w-4 h-4 transition-colors ${active ? 'text-violet-300 drop-shadow-[0_0_6px_rgba(94,234,212,0.55)]' : 'text-gray-500 group-hover:text-violet-300'}`} />
+              <Icon className={`w-4 h-4 transition-colors ${active ? 'text-violet-300 drop-shadow-[0_0_6px_rgba(147, 197, 253,0.55)]' : 'text-gray-500 group-hover:text-violet-300'}`} />
               <span className="flex-1">{label}</span>
               {active && <ChevronRight className="w-3 h-3 text-violet-400" />}
             </Link>

@@ -197,7 +197,7 @@ function AnimatedChat() {
         Real-time
       </div>
 
-      <div className="relative glass-strong rounded-3xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(20,184,166,0.4)]">
+      <div className="relative glass-strong rounded-3xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(37, 99, 235,0.4)]">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] bg-white/[0.02]">
           <div className="relative">

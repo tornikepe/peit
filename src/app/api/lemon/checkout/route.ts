@@ -78,7 +78,7 @@ export const POST = withAuth(async ({ user, req }) => {
               media:        false,
               dark:         true,
               // Disable test card warnings in test mode — they look spammy.
-              button_color: '#14b8a6',
+              button_color: '#2563eb',
             },
           },
           relationships: {

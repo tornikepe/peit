@@ -162,8 +162,8 @@ h1{margin:0 0 10px;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#
 p{margin:0 0 8px;font-size:14px;line-height:1.6;color:#9ca3af;}
 .row{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;}
 a.btn{display:inline-flex;align-items:center;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all .2s;}
-a.btn.primary{background:#14b8a6;color:#fff;}
-a.btn.primary:hover{background:#0f766e;}
+a.btn.primary{background:#2563eb;color:#fff;}
+a.btn.primary:hover{background:#1e40af;}
 a.btn.ghost{background:rgba(255,255,255,.04);color:#d1d5db;border:1px solid rgba(255,255,255,.08);}
 a.btn.ghost:hover{background:rgba(255,255,255,.08);}
 </style>

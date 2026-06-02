@@ -5,72 +5,72 @@
    `fuchsia` (pink) scales — used in ~500 utility classes across the
    dashboard, widget and marketing components. Rather than editing every
    file, we remap those three scales here so the whole app reskins from
-   one place: violet + purple → teal, fuchsia → cyan. Every existing
+   one place: violet + purple → blue, fuchsia → sky. Every existing
    `text-violet-400`, `bg-violet-500`, `fuchsia-500`, etc. now renders
-   teal/cyan. (Tailwind v4 generates color utilities from these tokens.) */
+   blue/sky. (Tailwind v4 generates color utilities from these tokens.) */
 @theme {
-  --color-violet-50:  #f0fdfa;
-  --color-violet-100: #ccfbf1;
-  --color-violet-200: #99f6e4;
-  --color-violet-300: #5eead4;
-  --color-violet-400: #2dd4bf;
-  --color-violet-500: #14b8a6;
-  --color-violet-600: #0d9488;
-  --color-violet-700: #0f766e;
-  --color-violet-800: #115e59;
-  --color-violet-900: #134e4a;
-  --color-violet-950: #042f2e;
+  --color-violet-50:  #eff6ff;
+  --color-violet-100: #dbeafe;
+  --color-violet-200: #bfdbfe;
+  --color-violet-300: #93c5fd;
+  --color-violet-400: #60a5fa;
+  --color-violet-500: #2563eb;
+  --color-violet-600: #1d4ed8;
+  --color-violet-700: #1e40af;
+  --color-violet-800: #1e3a8a;
+  --color-violet-900: #172554;
+  --color-violet-950: #172554;
 
-  --color-purple-50:  #f0fdfa;
-  --color-purple-100: #ccfbf1;
-  --color-purple-200: #99f6e4;
-  --color-purple-300: #5eead4;
-  --color-purple-400: #2dd4bf;
-  --color-purple-500: #14b8a6;
-  --color-purple-600: #0d9488;
-  --color-purple-700: #0f766e;
-  --color-purple-800: #115e59;
-  --color-purple-900: #134e4a;
-  --color-purple-950: #042f2e;
+  --color-purple-50:  #eff6ff;
+  --color-purple-100: #dbeafe;
+  --color-purple-200: #bfdbfe;
+  --color-purple-300: #93c5fd;
+  --color-purple-400: #60a5fa;
+  --color-purple-500: #2563eb;
+  --color-purple-600: #1d4ed8;
+  --color-purple-700: #1e40af;
+  --color-purple-800: #1e3a8a;
+  --color-purple-900: #172554;
+  --color-purple-950: #172554;
 
-  --color-fuchsia-50:  #ecfeff;
-  --color-fuchsia-100: #cffafe;
-  --color-fuchsia-200: #a5f3fc;
-  --color-fuchsia-300: #67e8f9;
-  --color-fuchsia-400: #22d3ee;
-  --color-fuchsia-500: #06b6d4;
-  --color-fuchsia-600: #0891b2;
-  --color-fuchsia-700: #0e7490;
-  --color-fuchsia-800: #155e75;
-  --color-fuchsia-900: #164e63;
-  --color-fuchsia-950: #083344;
+  --color-fuchsia-50:  #f0f9ff;
+  --color-fuchsia-100: #e0f2fe;
+  --color-fuchsia-200: #bae6fd;
+  --color-fuchsia-300: #7dd3fc;
+  --color-fuchsia-400: #38bdf8;
+  --color-fuchsia-500: #0ea5e9;
+  --color-fuchsia-600: #0284c7;
+  --color-fuchsia-700: #0369a1;
+  --color-fuchsia-800: #075985;
+  --color-fuchsia-900: #0c4a6e;
+  --color-fuchsia-950: #082f49;
 }
 
 :root {
   --bg: #07070f;
   --bg-soft: #0d0d1a;
   --border: rgba(255, 255, 255, 0.08);
-  /* Two-tone teal — the brand primary (replaces the old violet). Pairs with
-     the cyan accent for cool-toned gradients without any pink/purple. */
-  --primary:        #14b8a6;
-  --primary-soft:   #5eead4;
-  --primary-deep:   #0f766e;
-  --primary-glow:   #99f6e4;
-  /* Cyan accent for gradient crossovers and bright highlights. */
-  --accent:         #06b6d4;
-  --accent-bright:  #22d3ee;
-  --accent-deep:    #0e7490;
-  /* Bright cyan used sparingly to brighten "popular" pricing glow +
+  /* Two-tone blue — the brand primary (replaces the old violet). Pairs with
+     the sky accent for cool-toned gradients without any pink/purple. */
+  --primary:        #2563eb;
+  --primary-soft:   #93c5fd;
+  --primary-deep:   #1e40af;
+  --primary-glow:   #bfdbfe;
+  /* Sky-blue accent for gradient crossovers and bright highlights. */
+  --accent:         #0ea5e9;
+  --accent-bright:  #38bdf8;
+  --accent-deep:    #0369a1;
+  /* Bright sky-blue used sparingly to brighten "popular" pricing glow +
      highlight states (was a fuchsia/pink — now stays within the cool theme). */
-  --highlight:      #22d3ee;
-  --highlight-soft: #a5f3fc;
+  --highlight:      #38bdf8;
+  --highlight-soft: #bae6fd;
   --text:           #f9fafb;
   --text-muted:     #9ca3af;
   /* Canonical brand gradient — used by .gradient-text, primary CTAs, pricing
      popular badge, dashboard sidebar active indicator. Defined once here so
      a single edit reskins the product. */
-  --grad-brand:     linear-gradient(135deg, #99f6e4 0%, #14b8a6 35%, #0f766e 70%, #22d3ee 100%);
-  --grad-brand-soft: linear-gradient(135deg, #cffafe 0%, #99f6e4 50%, #5eead4 100%);
+  --grad-brand:     linear-gradient(135deg, #bfdbfe 0%, #2563eb 35%, #1e40af 70%, #38bdf8 100%);
+  --grad-brand-soft: linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 50%, #93c5fd 100%);
 }
 
 * {
@@ -114,7 +114,7 @@ h1, h2, h3, h4 {
 
 .glass:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(20, 184, 166, 0.3);
+  border-color: rgba(37, 99, 235, 0.3);
 }
 
 .glass-strong {
@@ -127,7 +127,7 @@ h1, h2, h3, h4 {
 /* ─── Gradients & accents ───────────────────────────────────────────── */
 
 .gradient-text {
-  background: linear-gradient(135deg, #ecfeff 0%, #5eead4 35%, #14b8a6 70%, #22d3ee 100%);
+  background: linear-gradient(135deg, #f0f9ff 0%, #93c5fd 35%, #2563eb 70%, #38bdf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -135,7 +135,7 @@ h1, h2, h3, h4 {
 }
 
 .gradient-text-cyan {
-  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #14b8a6 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 60%, #2563eb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -144,10 +144,10 @@ h1, h2, h3, h4 {
 /* Animated mesh-gradient background — used by Hero */
 .mesh-bg {
   background:
-    radial-gradient(at 18% 22%,  rgba(20, 184, 166, 0.35) 0px, transparent 50%),
-    radial-gradient(at 82% 15%,  rgba(34, 211, 238, 0.18) 0px, transparent 45%),
-    radial-gradient(at 50% 90%,  rgba(13, 148, 136, 0.22) 0px, transparent 55%),
-    radial-gradient(at 90% 75%,  rgba(6, 182, 212, 0.2)  0px, transparent 50%);
+    radial-gradient(at 18% 22%,  rgba(37, 99, 235, 0.35) 0px, transparent 50%),
+    radial-gradient(at 82% 15%,  rgba(56, 189, 248, 0.18) 0px, transparent 45%),
+    radial-gradient(at 50% 90%,  rgba(29, 78, 216, 0.22) 0px, transparent 55%),
+    radial-gradient(at 90% 75%,  rgba(14, 165, 233, 0.2)  0px, transparent 50%);
   animation: mesh-shift 18s ease-in-out infinite;
 }
 
@@ -171,19 +171,19 @@ h1, h2, h3, h4 {
 
 .btn-primary {
   position: relative;
-  background: linear-gradient(135deg, #14b8a6, #0f766e);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
   box-shadow:
-    0 0 0 1px rgba(94, 234, 212, 0.3) inset,
-    0 10px 32px -10px rgba(20, 184, 166, 0.65),
-    0 0 40px rgba(20, 184, 166, 0.3);
+    0 0 0 1px rgba(147, 197, 253, 0.3) inset,
+    0 10px 32px -10px rgba(37, 99, 235, 0.65),
+    0 0 40px rgba(37, 99, 235, 0.3);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btn-primary:hover {
   box-shadow:
-    0 0 0 1px rgba(94, 234, 212, 0.45) inset,
-    0 14px 36px -10px rgba(20, 184, 166, 0.8),
-    0 0 56px rgba(20, 184, 166, 0.45);
+    0 0 0 1px rgba(147, 197, 253, 0.45) inset,
+    0 14px 36px -10px rgba(37, 99, 235, 0.8),
+    0 0 56px rgba(37, 99, 235, 0.45);
   transform: translateY(-2px);
 }
 
@@ -192,26 +192,26 @@ h1, h2, h3, h4 {
 }
 
 .btn-accent {
-  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
   color: #06203a;
   box-shadow:
-    0 0 0 1px rgba(34, 211, 238, 0.4) inset,
-    0 8px 24px -8px rgba(6, 182, 212, 0.5);
+    0 0 0 1px rgba(56, 189, 248, 0.4) inset,
+    0 8px 24px -8px rgba(14, 165, 233, 0.5);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btn-accent:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 0 0 1px rgba(34, 211, 238, 0.5) inset,
-    0 12px 32px -8px rgba(6, 182, 212, 0.7);
+    0 0 0 1px rgba(56, 189, 248, 0.5) inset,
+    0 12px 32px -8px rgba(14, 165, 233, 0.7);
 }
 
 /* Hero glow — replaces older flat radial-gradient */
 .hero-glow {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(20, 184, 166, 0.3) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 80% 20%,  rgba(6, 182, 212, 0.15) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 20%,  rgba(14, 165, 233, 0.15) 0%, transparent 60%);
 }
 
 /* ─── Scrollbar ───────────────────────────────────────────────────── */
@@ -223,17 +223,17 @@ h1, h2, h3, h4 {
   background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(20, 184, 166, 0.4);
+  background: rgba(37, 99, 235, 0.4);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(20, 184, 166, 0.6);
+  background: rgba(37, 99, 235, 0.6);
 }
 
 /* ─── Accessibility ───────────────────────────────────────────────── */
 
 :focus-visible {
-  outline: 2px solid rgba(94, 234, 212, 0.8);
+  outline: 2px solid rgba(147, 197, 253, 0.8);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -397,11 +397,11 @@ h1, h2, h3, h4 {
   padding: 1px;
   background:
     conic-gradient(from 0deg,
-      #14b8a6 0deg,
-      #22d3ee 90deg,
-      #06b6d4 180deg,
-      #14b8a6 270deg,
-      #14b8a6 360deg);
+      #2563eb 0deg,
+      #38bdf8 90deg,
+      #0ea5e9 180deg,
+      #2563eb 270deg,
+      #2563eb 360deg);
   -webkit-mask:
     linear-gradient(#000, #000) content-box,
     linear-gradient(#000, #000);
@@ -424,8 +424,8 @@ h1, h2, h3, h4 {
 }
 .hover-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 18px 40px -20px rgba(20, 184, 166, 0.45);
-  border-color: rgba(94, 234, 212, 0.35);
+  box-shadow: 0 18px 40px -20px rgba(37, 99, 235, 0.45);
+  border-color: rgba(147, 197, 253, 0.35);
 }
 
 /* ─── Shimmer headline — slow gradient slide on accent words ──────────── */
@@ -469,8 +469,8 @@ h1, h2, h3, h4 {
   inset: -40px;
   z-index: -1;
   background: radial-gradient(50% 60% at 50% 30%,
-    rgba(94, 234, 212, 0.38) 0%,
-    rgba(34, 211, 238, 0.18) 40%,
+    rgba(147, 197, 253, 0.38) 0%,
+    rgba(56, 189, 248, 0.18) 40%,
     transparent 70%);
   filter: blur(40px);
   border-radius: 50%;
@@ -493,9 +493,9 @@ h1, h2, h3, h4 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: linear-gradient(135deg,
-    rgba(20, 184, 166, 0.15),
-    rgba(34, 211, 238, 0.10));
-  border: 1px solid rgba(20, 184, 166, 0.30);
+    rgba(37, 99, 235, 0.15),
+    rgba(56, 189, 248, 0.10));
+  border: 1px solid rgba(37, 99, 235, 0.30);
   color: var(--primary-glow);
 }
 .brand-chip-dot {
@@ -524,18 +524,18 @@ h1, h2, h3, h4 {
   width: 2px;
   border-radius: 2px;
   background: var(--grad-brand);
-  box-shadow: 0 0 8px rgba(20, 184, 166, 0.65);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.65);
 }
 
 /* ─── Polished refresh of legacy primary button ───────────────────────── */
 .btn-primary-v2 {
   position: relative;
-  background: linear-gradient(135deg, #5eead4 0%, #14b8a6 45%, #0f766e 100%);
+  background: linear-gradient(135deg, #93c5fd 0%, #2563eb 45%, #1e40af 100%);
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.25),
-    0 14px 36px -14px rgba(20, 184, 166, 0.7),
-    0 0 0 1px rgba(94, 234, 212, 0.45);
+    0 14px 36px -14px rgba(37, 99, 235, 0.7),
+    0 0 0 1px rgba(147, 197, 253, 0.45);
   transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 .btn-primary-v2:hover {
@@ -543,8 +543,8 @@ h1, h2, h3, h4 {
   filter: brightness(1.08);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.35),
-    0 20px 44px -14px rgba(20, 184, 166, 0.85),
-    0 0 0 1px rgba(94, 234, 212, 0.6);
+    0 20px 44px -14px rgba(37, 99, 235, 0.85),
+    0 0 0 1px rgba(147, 197, 253, 0.6);
 }
 
 /* ─── Number counter — tabular alignment for animated stats ───────────── */
@@ -567,8 +567,8 @@ h1, h2, h3, h4 {
   }
   .text-white, .text-gray-200, .text-gray-300, .text-gray-400 { color: #111 !important; }
   .text-gray-500, .text-gray-600 { color: #555 !important; }
-  .text-violet-300, .text-violet-400 { color: #0f766e !important; }
-  a { color: #0f766e !important; text-decoration: none !important; }
+  .text-violet-300, .text-violet-400 { color: #1e40af !important; }
+  a { color: #1e40af !important; text-decoration: none !important; }
   /* Force charts to fit one page nicely. */
   svg { max-height: 200px !important; }
   /* Allow grid sections to wrap on narrow paper widths. */

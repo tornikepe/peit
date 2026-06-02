@@ -33,8 +33,8 @@ export interface LayoutOptions {
   appUrl:      string;
 }
 
-const BRAND      = '#14b8a6';
-const BRAND_DARK = '#0f766e';
+const BRAND      = '#2563eb';
+const BRAND_DARK = '#1e40af';
 
 export function renderLayout(opts: LayoutOptions): string {
   const t = layoutCopy[opts.lang];

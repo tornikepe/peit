@@ -175,7 +175,7 @@ export async function sendNewLeadEmail({ to, botName, botId, lead }: SendLeadArg
     renderCta(dashboardUrl, t.cta),
     `<p style="margin:18px 0 0;font-size:12px;color:#9ca3af;line-height:1.6;">
       ${escapeHtml(t.metaSeenAt(formatDateTime(lead.createdAt, lang)))}<br/>
-      ${escapeHtml(t.metaBot(botName))} — <a href="${escapeHtml(botUrl)}" style="color:#14b8a6;text-decoration:none;">${escapeHtml(t.viewBot)}</a>
+      ${escapeHtml(t.metaBot(botName))} — <a href="${escapeHtml(botUrl)}" style="color:#2563eb;text-decoration:none;">${escapeHtml(t.viewBot)}</a>
     </p>`,
   ].join('\n');
 

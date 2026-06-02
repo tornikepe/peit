@@ -99,7 +99,7 @@ export const bots = pgTable('bots', {
   greeting:     jsonb('greeting').$type<Record<string, string>>().notNull().default({}),
   fallback:     jsonb('fallback').$type<Record<string, string>>().notNull().default({}),
   websiteUrl:   text('website_url'),
-  brandColor:   varchar('brand_color', { length: 16 }).notNull().default('#14b8a6'),
+  brandColor:   varchar('brand_color', { length: 16 }).notNull().default('#2563eb'),
   leadCapture:  jsonb('lead_capture').$type<{ enabled: boolean; fields: string[] }>()
                   .notNull().default({ enabled: true, fields: ['name', 'email'] }),
   /** Pill-buttons rendered above the widget input. See QuickReply in lib/bots.ts. */

@@ -113,7 +113,7 @@ export default function ConversationsChart({ points, channel }: Props) {
             {/* Area fill */}
             <path d={areaPath} fill="url(#convoGradient)" />
             {/* Line */}
-            <path d={linePath} fill="none" stroke="#5eead4" strokeWidth={2} strokeLinejoin="round" />
+            <path d={linePath} fill="none" stroke="#93c5fd" strokeWidth={2} strokeLinejoin="round" />
             {/* Hover dots */}
             {points.map((p, i) => {
               const cx = scaleX(i, points.length);
@@ -124,7 +124,7 @@ export default function ConversationsChart({ points, channel }: Props) {
                   cx={cx}
                   cy={cy}
                   r={hover?.p.day === p.day ? 4 : 2}
-                  fill="#5eead4"
+                  fill="#93c5fd"
                   className="cursor-pointer"
                   onMouseEnter={() => setHover({ x: cx, y: cy, p })}
                   onMouseLeave={() => setHover(null)}
@@ -149,8 +149,8 @@ export default function ConversationsChart({ points, channel }: Props) {
             })}
             <defs>
               <linearGradient id="convoGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor="#5eead4" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#5eead4" stopOpacity="0" />
+                <stop offset="0%"   stopColor="#93c5fd" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#93c5fd" stopOpacity="0" />
               </linearGradient>
             </defs>
           </svg>

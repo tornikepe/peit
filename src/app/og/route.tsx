@@ -23,8 +23,8 @@ export const runtime = 'edge';
 const BG    = '#0a0a0a';
 const FG    = '#f5f3ee';
 const DIM   = '#9ca3af';
-const BRAND = '#14b8a6';
-const BRAND_LIGHT = '#5eead4';
+const BRAND = '#2563eb';
+const BRAND_LIGHT = '#93c5fd';
 
 export async function GET(req: Request) {
   const url   = new URL(req.url);
@@ -49,7 +49,7 @@ export async function GET(req: Request) {
           position: 'absolute', inset: 0, pointerEvents: 'none',
           background:
             `radial-gradient(60% 60% at 10% 0%, ${BRAND}55 0%, transparent 60%),` +
-            `radial-gradient(50% 50% at 100% 100%, #22d3ee44 0%, transparent 60%)`,
+            `radial-gradient(50% 50% at 100% 100%, #38bdf844 0%, transparent 60%)`,
         }} />
         {/* Subtle dot grid */}
         <div style={{
@@ -127,7 +127,7 @@ export async function GET(req: Request) {
           </div>
           <div style={{
             height: 6, width: 220, borderRadius: 999,
-            background: `linear-gradient(90deg, ${BRAND}, #22d3ee, ${BRAND})`,
+            background: `linear-gradient(90deg, ${BRAND}, #38bdf8, ${BRAND})`,
           }} />
         </div>
       </div>
