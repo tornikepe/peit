@@ -224,9 +224,12 @@ export const messages = pgTable('messages', {
    *  before the answer engine runs; null on bot messages or when the
    *  classifier wasn't available. */
   sentiment:      messageSentimentEnum('sentiment'),
-  /** Files the visitor attached to this message (Feature #3) —
-   *  images and documents. See MessageAttachment in lib/bots.ts. */
-  attachments:    jsonb('attachments').$type<MessageAttachment[]>().notNull().default([]),
+  /** Files the visitor attached to this message (Feature #3) — images and
+   *  documents. Nullable + no client default ON PURPOSE: Drizzle then omits
+   *  the column from inserts that don't set it, so ordinary chat keeps
+   *  working even before the 0020 migration adds the column. The DB-side
+   *  DEFAULT '[]' (from the migration) fills it for those rows. */
+  attachments:    jsonb('attachments').$type<MessageAttachment[]>(),
   createdAt:      timestamp('created_at').defaultNow().notNull(),
 }, t => ({
   convoIdx:     index('messages_convo_idx').on(t.conversationId),
