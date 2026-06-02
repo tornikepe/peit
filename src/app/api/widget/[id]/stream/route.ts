@@ -68,6 +68,7 @@ export async function POST(
   catch { return corsError(400, 'INVALID_JSON'); }
 
   const attachments = sanitizeAttachments(body.attachments);
+  console.log('[widget/stream] attachments parsed:', attachments.length, 'rawType:', Array.isArray(body.attachments) ? 'array' : typeof body.attachments);
   const text = (body.text ?? '').trim();
   // Empty text is allowed when the visitor sent a file on its own.
   if (!text && attachments.length === 0) return corsError(400, 'EMPTY_TEXT');
