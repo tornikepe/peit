@@ -63,6 +63,10 @@ interface AnswerInput {
   websiteUrl?:  string;
   /** Past turns for conversational continuity — newest last. */
   history?:     { role: 'user' | 'assistant'; content: string }[];
+  /** Images the visitor attached (Feature #3) — base64, for vision. */
+  images?:      { mediaType: string; data: string }[];
+  /** Text extracted from attached documents (PDF/DOCX), injected as context. */
+  docText?:     string;
 }
 
 /**
@@ -100,9 +104,25 @@ function buildSystem(input: AnswerInput): Anthropic.TextBlockParam[] {
 }
 
 function buildMessages(input: AnswerInput): Anthropic.MessageParam[] {
+  // Compose the final user turn. When the visitor attached a document we
+  // inject its extracted text; when they attached images we add image
+  // blocks so Haiku can actually see them (Feature #3).
+  const questionText = input.docText
+    ? `${input.question}\n\n[Attached document content]\n${input.docText.slice(0, 8000)}`
+    : input.question;
+
+  const images = input.images ?? [];
+  const userContent: Anthropic.ContentBlockParam[] = [
+    { type: 'text', text: questionText || '(see attached image)' },
+    ...images.slice(0, 4).map((img): Anthropic.ImageBlockParam => ({
+      type: 'image',
+      source: { type: 'base64', media_type: img.mediaType as 'image/jpeg', data: img.data },
+    })),
+  ];
+
   return [
     ...(input.history ?? []).slice(-6),
-    { role: 'user', content: input.question },
+    { role: 'user', content: images.length > 0 ? userContent : questionText },
   ];
 }
 

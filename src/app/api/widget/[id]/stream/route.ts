@@ -13,7 +13,7 @@
 // which case the whole reply arrives as a single "delta".
 
 import { eq, desc, and } from 'drizzle-orm';
-import { getDb, schema } from '@/db';
+import { getDb, schema, type MessageAttachment } from '@/db';
 import { corsPreflight, corsError, CORS_HEADERS } from '@/lib/widget-cors';
 import { answer } from '@/lib/answer-engine';
 import { streamAnswer, isLLMAvailable } from '@/lib/llm';
@@ -24,6 +24,7 @@ import { checkRateLimit, getClientIp, rateLimitKey } from '@/lib/rate-limit';
 import { isOriginAllowed } from '@/lib/origin-check';
 import { extractGeo } from '@/lib/geoip';
 import { classifySentiment } from '@/lib/sentiment';
+import { resolveAttachments, sanitizeAttachments } from '@/lib/chat-attachments';
 import {
   getSubscriptionForBot, incrementMessageCount, incrementTokenUsage,
 } from '@/db/queries/subscriptions';
@@ -43,6 +44,8 @@ interface MessageBody {
   visitorId?: string;
   pageUrl?: string;
   pageTitle?: string;
+  /** Files the visitor attached to this turn (Feature #3). */
+  attachments?: MessageAttachment[];
 }
 
 const enc = new TextEncoder();
@@ -64,8 +67,10 @@ export async function POST(
   try { body = await req.json(); }
   catch { return corsError(400, 'INVALID_JSON'); }
 
+  const attachments = sanitizeAttachments(body.attachments);
   const text = (body.text ?? '').trim();
-  if (!text)              return corsError(400, 'EMPTY_TEXT');
+  // Empty text is allowed when the visitor sent a file on its own.
+  if (!text && attachments.length === 0) return corsError(400, 'EMPTY_TEXT');
   if (text.length > 2000) return corsError(400, 'TEXT_TOO_LONG');
 
   // Same rate limits as /message — keep semantics identical so we can't be
@@ -206,7 +211,12 @@ export async function POST(
   if (conversationId) {
     try {
       const inserted = await db.insert(schema.messages).values({
-        conversationId, fromUser: true, content: text,
+        conversationId, fromUser: true,
+        content: text || (attachments.length ? `📎 ${attachments.map(a => a.filename).join(', ')}` : ''),
+        // Only reference the attachments column when there's something to
+        // store — so plain chat keeps working even before the 0020 migration
+        // adds the column.
+        ...(attachments.length ? { attachments } : {}),
       }).returning({ id: schema.messages.id });
       userMessageId = inserted[0]?.id ?? null;
     } catch (e) {
@@ -291,8 +301,17 @@ export async function POST(
             ];
           }
 
+          // Resolve any attached files (Feature #3): images → base64 for
+          // vision, documents → extracted text. When the visitor attached
+          // something we always go to the AI (an FAQ match can't "see" a file).
+          const resolved = await resolveAttachments(attachments);
+          const hasAttachmentContent = resolved.images.length > 0 || resolved.docText.length > 0;
+
           // Try FAQ exact-match first — short-circuits to instant reply
-          const faqResult = await answer({ query: text, bot, lang, history });
+          // (skipped when there's a file to look at).
+          const faqResult = hasAttachmentContent
+            ? { source: 'none' as const, text: '' }
+            : await answer({ query: text, bot, lang, history });
           if (faqResult.source === 'faq') {
             replyText = faqResult.text;
             source    = 'faq';
@@ -301,7 +320,7 @@ export async function POST(
             // Stream from Claude
             source = 'ai';
             for await (const evt of streamAnswer({
-              question:   text,
+              question:   text || 'Please look at the attached file and respond.',
               chunks,
               botName:    bot.name,
               industry:   bot.industry,
@@ -309,6 +328,8 @@ export async function POST(
               lang,
               websiteUrl: bot.websiteUrl,
               history,
+              images:     resolved.images,
+              docText:    resolved.docText || undefined,
             })) {
               if (evt.type === 'delta') {
                 replyText += evt.text;

@@ -36,6 +36,10 @@ export interface AnswerInput {
   lang:         BotLang;
   websiteUrl?:  string;
   history?:     { role: 'user' | 'assistant'; content: string }[];
+  /** Visitor-attached images (base64) — only Claude consumes these. */
+  images?:      { mediaType: string; data: string }[];
+  /** Text extracted from attached documents, injected as context. */
+  docText?:     string;
 }
 
 /** Identifier of the provider that will handle the next request, or null. */

@@ -4,7 +4,7 @@ import { use, useEffect, useRef, useState, useCallback } from 'react';
 import {
   Bot as BotIcon, Send, X, Mail, Phone, User as UserIcon,
   Loader2, AlertCircle, Sparkles, Check, RefreshCw,
-  ThumbsUp, ThumbsDown, Mic,
+  ThumbsUp, ThumbsDown, Mic, Paperclip, FileText,
 } from 'lucide-react';
 import { renderMd } from '@/lib/md-mini';
 
@@ -42,6 +42,17 @@ interface PublicBot {
   suggestions: string[];
 }
 
+/** A file the visitor attached to a message (Feature #3). */
+interface ChatAttachment {
+  url: string;
+  pathname: string;
+  filename: string;
+  mimeType: string;
+  kind: 'image' | 'document';
+  /** Local object URL for image thumbnails (private blob isn't viewable). */
+  previewUrl?: string;
+}
+
 interface Msg {
   id: string;
   from: 'user' | 'bot';
@@ -54,6 +65,8 @@ interface Msg {
   serverId?: string | null;
   /** Visitor's vote on this message. Hides the thumbs row once set. */
   feedback?: 'positive' | 'negative' | null;
+  /** Files attached to this (user) message. */
+  attachments?: ChatAttachment[];
 }
 
 const I18N: Record<Lang, {
@@ -88,6 +101,7 @@ const I18N: Record<Lang, {
   listenStart:   string;
   listenStop:    string;
   listening:     string;
+  attachFile:    string;
 }> = {
   ka: {
     online:       'ონლაინ',
@@ -121,6 +135,7 @@ const I18N: Record<Lang, {
     listenStart:  'ხმოვანი შეტყობინება',
     listenStop:   'შეჩერება',
     listening:    'მისმენთ...',
+    attachFile:   'ფაილის მიმაგრება',
   },
   en: {
     online:       'Online',
@@ -154,6 +169,7 @@ const I18N: Record<Lang, {
     listenStart:  'Voice message',
     listenStop:   'Stop',
     listening:    'Listening...',
+    attachFile:   'Attach file',
   },
   ru: {
     online:       'Онлайн',
@@ -187,6 +203,7 @@ const I18N: Record<Lang, {
     listenStart:  'Голосовое сообщение',
     listenStop:   'Стоп',
     listening:    'Слушаю...',
+    attachFile:   'Прикрепить файл',
   },
 };
 
@@ -238,6 +255,10 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  /** Pending file attachments (Feature #3) — uploaded, awaiting send. */
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
@@ -632,9 +653,51 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     }
   }, [id]);
 
+  // ─── File attachments (Feature #3) ──────────────────────────────────────
+  const MAX_FILE = 10 * 1024 * 1024;
+  async function onFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (e.target) e.target.value = ''; // allow re-picking the same file
+    if (files.length === 0 || uploading) return;
+    setUploading(true);
+    for (const file of files.slice(0, 4)) {
+      if (file.size > MAX_FILE) {
+        setMsgs(prev => [...prev, { id: newMsgId(), from: 'bot', text: `⚠ ${file.name}: max 10MB`, source: 'fallback', timestamp: Date.now() }]);
+        continue;
+      }
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch(`/api/widget/${id}/upload`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          setMsgs(prev => [...prev, { id: newMsgId(), from: 'bot', text: `⚠ ${file.name}: ${data.error || 'upload failed'}`, source: 'fallback', timestamp: Date.now() }]);
+          continue;
+        }
+        const att: ChatAttachment = {
+          ...data.attachment,
+          previewUrl: data.attachment.kind === 'image' ? URL.createObjectURL(file) : undefined,
+        };
+        setAttachments(prev => [...prev, att]);
+      } catch {
+        setMsgs(prev => [...prev, { id: newMsgId(), from: 'bot', text: `⚠ ${file.name}: network error`, source: 'fallback', timestamp: Date.now() }]);
+      }
+    }
+    setUploading(false);
+  }
+  function removeAttachment(idx: number) {
+    setAttachments(prev => {
+      const a = prev[idx];
+      if (a?.previewUrl) URL.revokeObjectURL(a.previewUrl);
+      return prev.filter((_, i) => i !== idx);
+    });
+  }
+
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
-    if (!text || !bot || sending) return;
+    const outgoing = attachments;
+    // Allow sending a file on its own (no text).
+    if ((!text && outgoing.length === 0) || !bot || sending) return;
 
     // If we're inside an 'input' step of an active flow (Feature #1), the
     // visitor's reply feeds the flow variable instead of the AI engine.
@@ -652,12 +715,14 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
 
     const userMsg: Msg = {
       id: newMsgId(), from: 'user', text, timestamp: Date.now(), status: 'sending',
+      attachments: outgoing.length ? outgoing : undefined,
     };
     const botMsgId = newMsgId();
     const botMsg: Msg = {
       id: botMsgId, from: 'bot', text: '', timestamp: Date.now(),
     };
     setInput('');
+    setAttachments([]);
     setSending(true);
     setMsgs(prev => [...prev, userMsg, botMsg]);
 
@@ -679,6 +744,9 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
       visitorId: queryRef.current.vid,
       pageUrl:   queryRef.current.page,
       pageTitle: queryRef.current.title,
+      // Strip the local-only previewUrl before sending to the server.
+      attachments: outgoing.map(({ url, pathname, filename, mimeType, kind }) =>
+        ({ url, pathname, filename, mimeType, kind })),
     });
 
     let buffered = '';
@@ -787,6 +855,7 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
     // variant or the flow input handoff misses a step transition.
     currentFlowStep, advanceFlow,
     abVariantId, abImpressionSent, abConversionSent,
+    attachments,
   ]);
 
   // ─── Retry a failed message ─────────────────────────────────────────────
@@ -989,7 +1058,25 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
                 </div>
               )}
 
-              <div className="max-w-[78%] flex flex-col items-start">
+              <div className="max-w-[78%] flex flex-col items-start gap-1.5">
+                {/* Attachments (Feature #3) — image thumbnails / file chips */}
+                {m.attachments && m.attachments.length > 0 && (
+                  <div className={`flex flex-col gap-1.5 ${m.from === 'user' ? 'self-end items-end' : ''}`}>
+                    {m.attachments.map((a, ai) => (
+                      a.kind === 'image' && a.previewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={ai} src={a.previewUrl} alt={a.filename}
+                          className="max-w-[180px] max-h-[180px] rounded-xl border border-white/10 object-cover" />
+                      ) : (
+                        <div key={ai} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-xs text-gray-200 max-w-[200px]">
+                          <FileText className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{a.filename}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                )}
+                {(m.text || m.from === 'bot') && (
                 <div
                   className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm ${
                     m.from === 'user'
@@ -1003,6 +1090,7 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
                 >
                   {m.from === 'bot' ? renderMd(m.text) : m.text}
                 </div>
+                )}
 
                 {/* Status / source indicators */}
                 {m.from === 'user' && m.status === 'failed' && (
@@ -1200,8 +1288,60 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         </div>
       )}
 
+      {/* Pending attachments preview (Feature #3) */}
+      {(attachments.length > 0 || uploading) && (
+        <div className="px-3 pt-2 shrink-0 flex flex-wrap gap-2 border-t border-white/[0.06] bg-white/[0.02]">
+          {attachments.map((a, i) => (
+            <div key={i} className="relative group">
+              {a.kind === 'image' && a.previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={a.previewUrl} alt={a.filename} className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+              ) : (
+                <div className="h-12 px-2.5 flex items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-[11px] text-gray-200 max-w-[120px]">
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{a.filename}</span>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => removeAttachment(i)}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-900 border border-white/20 text-gray-300 hover:text-white flex items-center justify-center"
+                aria-label="remove"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          ))}
+          {uploading && (
+            <div className="w-12 h-12 rounded-lg bg-white/[0.04] border border-white/10 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t border-white/[0.06] p-3 flex items-end gap-2 shrink-0 bg-white/[0.02]">
+        {/* Hidden file input + paperclip (Feature #3) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.docx,image/*"
+          multiple
+          onChange={onFilePick}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={sending || uploading}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-30 shrink-0 hover:scale-105 active:scale-95 border border-white/[0.08] text-gray-300 hover:text-white"
+          aria-label={ui.attachFile}
+          title={ui.attachFile}
+        >
+          <Paperclip className="w-3.5 h-3.5" />
+        </button>
+
         <textarea
           ref={textareaRef}
           rows={1}
@@ -1245,9 +1385,9 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
 
         <button
           onClick={() => send()}
-          disabled={!input.trim() || sending}
+          disabled={(!input.trim() && attachments.length === 0) || sending || uploading}
           className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-30 shrink-0 hover:scale-105 active:scale-95"
-          style={{ background: color, boxShadow: input.trim() ? `0 2px 8px ${color}55` : 'none' }}
+          style={{ background: color, boxShadow: (input.trim() || attachments.length) ? `0 2px 8px ${color}55` : 'none' }}
           aria-label={ui.send}
         >
           {sending

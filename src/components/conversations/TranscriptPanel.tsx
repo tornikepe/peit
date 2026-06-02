@@ -21,6 +21,7 @@ interface Message {
   source:    string | null;
   feedback:  'positive' | 'negative' | null;
   sentiment: 'positive' | 'neutral' | 'negative' | 'frustrated' | null;
+  attachments?: { filename: string; mimeType: string; kind: 'image' | 'document' }[];
   createdAt: string;
 }
 
@@ -236,6 +237,19 @@ function Bubble({ message }: { message: Message }) {
         <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
           {message.content}
         </p>
+        {/* Attachments (Feature #3) — the private blob isn't viewable, so we
+            show a filename chip rather than the image. */}
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {message.attachments.map((a, i) => (
+              <span key={i} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] ${
+                isUser ? 'bg-white/15' : 'bg-white/[0.06] border border-white/10'
+              }`} title={a.mimeType}>
+                {a.kind === 'image' ? '🖼' : '📎'} {a.filename}
+              </span>
+            ))}
+          </div>
+        )}
         <div className={`text-[10px] mt-1 flex items-center gap-1.5 ${
           isUser ? 'text-violet-100/70' : 'text-gray-500'
         }`}>

@@ -56,3 +56,4 @@ export function requireDb(): DB {
 }
 
 export { schema };
+export type { MessageAttachment } from './schema';

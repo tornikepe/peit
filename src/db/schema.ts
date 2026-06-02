@@ -10,6 +10,18 @@ import { relations } from 'drizzle-orm';
 // Voyage AI embedding dimensions (voyage-3, voyage-3-lite — both 1024)
 export const EMBEDDING_DIMS = 1024;
 
+/** A file a visitor attached to a chat message (Feature #3). Defined here
+ *  (not lib/bots) so the schema has no client-side import. */
+export interface MessageAttachment {
+  /** Vercel Blob URL (private — not directly viewable). */
+  url:       string;
+  /** Blob pathname, used to re-read the bytes server-side. */
+  pathname:  string;
+  filename:  string;
+  mimeType:  string;
+  kind:      'image' | 'document';
+}
+
 // ─── Enums ─────────────────────────────────────────────────────────────────
 
 export const botStatusEnum = pgEnum('bot_status', ['draft', 'active', 'paused']);
@@ -212,6 +224,9 @@ export const messages = pgTable('messages', {
    *  before the answer engine runs; null on bot messages or when the
    *  classifier wasn't available. */
   sentiment:      messageSentimentEnum('sentiment'),
+  /** Files the visitor attached to this message (Feature #3) —
+   *  images and documents. See MessageAttachment in lib/bots.ts. */
+  attachments:    jsonb('attachments').$type<MessageAttachment[]>().notNull().default([]),
   createdAt:      timestamp('created_at').defaultNow().notNull(),
 }, t => ({
   convoIdx:     index('messages_convo_idx').on(t.conversationId),

@@ -138,6 +138,7 @@ export interface ConversationDetail {
     source:    string | null;
     feedback:  'positive' | 'negative' | null;
     sentiment: 'positive' | 'neutral' | 'negative' | 'frustrated' | null;
+    attachments: { filename: string; mimeType: string; kind: 'image' | 'document' }[];
     createdAt: Date;
   }>;
 }
@@ -192,6 +193,9 @@ export async function getConversationDetail(
       source:    m.source,
       feedback:  m.feedback ?? null,
       sentiment: m.sentiment ?? null,
+      attachments: (m.attachments ?? []).map(a => ({
+        filename: a.filename, mimeType: a.mimeType, kind: a.kind,
+      })),
       createdAt: m.createdAt,
     })),
   };
