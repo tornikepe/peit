@@ -15,8 +15,8 @@ const SURFACE_INPUT = '#13131f'; // inputs
 export const clerkAppearance = {
   variables: {
     colorPrimary:         '#2563eb',
-    colorText:            '#f3f4f6',
-    colorTextSecondary:   '#9aa3b2',
+    colorText:            '#f5f6f8',
+    colorTextSecondary:   '#aeb6c4',
     colorBackground:      SURFACE,
     colorInputBackground: SURFACE_INPUT,
     colorInputText:       '#ffffff',
@@ -36,6 +36,14 @@ export const clerkAppearance = {
     // Header
     headerTitle:                'text-white font-semibold',
     headerSubtitle:             'text-gray-400',
+
+    // UserProfile ("Manage account") readability
+    pageScrollBox:              'bg-transparent',
+    scrollBox:                  'bg-transparent',
+    profileSection:             'border-white/[0.06]',
+    profileSectionTitleText:    'text-white font-medium',
+    profileSectionPrimaryButton:'text-blue-400 hover:text-blue-300',
+    profileSectionContent:      'text-gray-200',
 
     // Primary action — brand blue gradient, matches dashboard CTAs
     formButtonPrimary:
@@ -67,8 +75,8 @@ export const clerkAppearance = {
 
     // UserProfile ("Manage account") modal navigation
     navbar:                     'bg-[#0a0a12] border-r border-white/[0.06]',
-    navbarButton:               'text-gray-300 hover:text-white',
-    profileSectionTitleText:    'text-white',
+    navbarButton:               'text-gray-200 hover:text-white',
+    navbarButtonText:           'text-gray-200',
     accordionTriggerButton:     'text-gray-200 hover:bg-white/[0.04]',
     badge:                      'bg-blue-500/15 text-blue-300 border border-blue-500/20',
     menuButton:                 'text-gray-200 hover:bg-white/[0.05]',
