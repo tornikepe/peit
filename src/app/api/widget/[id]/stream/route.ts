@@ -218,8 +218,9 @@ export async function POST(
         // store — so plain chat keeps working even before the 0020 migration
         // adds the column.
         ...(attachments.length ? { attachments } : {}),
-      }).returning({ id: schema.messages.id });
+      }).returning({ id: schema.messages.id, attachments: schema.messages.attachments });
       userMessageId = inserted[0]?.id ?? null;
+      console.log('[widget/stream] inserted attachments:', JSON.stringify(inserted[0]?.attachments));
     } catch (e) {
       console.error('[widget/stream] user message insert failed:', e);
     }
