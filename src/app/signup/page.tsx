@@ -127,37 +127,11 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
             forceRedirectUrl={redirectUrl}
             signInForceRedirectUrl={redirectUrl}
             appearance={{
-              variables: {
-                colorPrimary: "#2563eb",
-                colorBackground: "#0d0d1a",
-                colorInputBackground: "#13131f",
-                colorInputText: "#ffffff",
-                colorText: "#ffffff",
-                colorTextSecondary: "#9ca3af",
-                colorDanger: "#ef4444",
-                borderRadius: "0.75rem",
-                fontFamily: "var(--font-geist-sans), sans-serif",
-              },
+              // Inherit the shared on-brand dark theme from ClerkProvider;
+              // only hide Clerk's own header since this page renders its own.
               elements: {
                 header: "hidden",
-                card: "bg-[#0d0d1a] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl",
-                headerTitle: "text-white font-bold text-xl",
-                headerSubtitle: "text-gray-400",
-                socialButtonsBlockButton:
-                  "bg-white/[0.05] border border-white/10 text-white hover:bg-white/[0.08] transition-all rounded-xl",
-                socialButtonsBlockButtonText: "text-white font-medium",
-                dividerLine: "bg-white/10",
-                dividerText: "text-gray-500",
-                formFieldLabel: "text-gray-300 font-medium",
-                formFieldInput:
-                  "bg-[#13131f] border border-white/10 text-white rounded-xl focus:border-violet-500/60 focus:ring-violet-500/20",
-                formButtonPrimary:
-                  "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/30",
-                footerActionLink: "text-violet-400 hover:text-violet-300 transition-colors",
-                identityPreviewEditButton: "text-violet-400 hover:text-violet-300",
-                formFieldAction: "text-violet-400 hover:text-violet-300 text-sm",
-                alertText: "text-red-400",
-                formResendCodeLink: "text-violet-400 hover:text-violet-300",
+                card: "bg-[#0c0c16] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl",
               },
             }}
           />

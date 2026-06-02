@@ -3,12 +3,13 @@
 import { ClerkProvider } from '@clerk/nextjs';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { BotsProvider } from '@/context/BotsContext';
+import { clerkAppearance } from '@/lib/clerk-appearance';
 import CookieConsent from './CookieConsent';
 import type { ReactNode } from 'react';
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={clerkAppearance}>
       <LanguageProvider>
         <BotsProvider>
           {children}
