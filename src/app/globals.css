@@ -574,3 +574,95 @@ h1, h2, h3, h4 {
   /* Allow grid sections to wrap on narrow paper widths. */
   section { break-inside: avoid; }
 }
+
+/* =====================================================================
+   Clerk dark theme — global !important overrides.
+   Clerk's CSS-in-JS wins over the appearance-prop element classes, so we
+   force the dark/readable surface here. Targets stable .cl-* semantic
+   classes (safe: this prefix is Clerk-only). Search: "Clerk dark theme".
+   ===================================================================== */
+
+/* Surfaces: popover, cards, modal */
+.cl-userButtonPopoverCard,
+.cl-card,
+.cl-cardBox,
+.cl-modalContent,
+.cl-popoverBox,
+.cl-menuList {
+  background-color: #0c0c16 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Modal left navigation / sidebar */
+.cl-navbar { background: #0a0a12 !important; border-color: rgba(255,255,255,0.06) !important; }
+
+/* Primary (bright) text */
+.cl-userButtonPopoverActionButton,
+.cl-userButtonPopoverActionButton *,
+.cl-userPreviewMainIdentifier,
+.cl-userPreviewMainIdentifier *,
+.cl-headerTitle,
+.cl-navbarTitle,
+.cl-navbarButton,
+.cl-navbarButtonText,
+.cl-profileSectionTitleText,
+.cl-accordionTriggerButton,
+.cl-accordionTriggerButton *,
+.cl-menuButton,
+.cl-formFieldLabel,
+.cl-breadcrumbsItem {
+  color: #e8edf4 !important;
+}
+
+/* Secondary (muted) text */
+.cl-userPreviewSecondaryIdentifier,
+.cl-headerSubtitle,
+.cl-dividerText,
+.cl-formFieldHintText,
+.cl-profileSectionContent,
+.cl-profileSectionContent *,
+.cl-formFieldSuccessText,
+.cl-tableHead {
+  color: #aeb6c4 !important;
+}
+
+/* Icons */
+.cl-userButtonPopoverActionButtonIcon,
+.cl-navbarButtonIcon,
+.cl-accordionTriggerButton svg { color: #aeb6c4 !important; }
+
+/* Hover states */
+.cl-userButtonPopoverActionButton:hover,
+.cl-navbarButton:hover,
+.cl-accordionTriggerButton:hover,
+.cl-menuButton:hover { background-color: rgba(255, 255, 255, 0.05) !important; }
+
+/* Accent links / buttons */
+.cl-footerActionLink,
+.cl-profileSectionPrimaryButton,
+.cl-formFieldAction,
+.cl-identityPreviewEditButton,
+.cl-formResendCodeLink,
+.cl-badge { color: #60a5fa !important; }
+.cl-badge { background: rgba(59,130,246,0.15) !important; border-color: rgba(59,130,246,0.25) !important; }
+
+/* Inputs */
+.cl-formFieldInput,
+.cl-input,
+.cl-selectButton {
+  background-color: #13131f !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* Dividers / borders / footer */
+.cl-dividerLine { background-color: rgba(255, 255, 255, 0.1) !important; }
+.cl-userButtonPopoverFooter,
+.cl-profileSection { border-color: rgba(255, 255, 255, 0.06) !important; }
+
+/* Transparent inner scroll areas so the card surface shows through */
+.cl-pageScrollBox,
+.cl-scrollBox,
+.cl-profilePage,
+.cl-userButtonPopoverMain,
+.cl-userButtonPopoverActions { background-color: transparent !important; }
