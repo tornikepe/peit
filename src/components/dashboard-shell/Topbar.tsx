@@ -98,7 +98,7 @@ function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-72 rounded-xl border border-white/[0.08] bg-[#0d0d18] shadow-2xl shadow-black/50 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-72 rounded-xl border border-white/[0.08] bg-[#0d0d1a] shadow-2xl shadow-black/50 overflow-hidden z-50">
           <div className="px-4 py-3 border-b border-white/[0.06]">
             <p className="text-sm font-semibold text-white">შეტყობინებები</p>
           </div>
