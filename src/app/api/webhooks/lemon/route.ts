@@ -15,6 +15,7 @@ import crypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { snapshotFromLsSub } from '@/lib/lemon-mapper';
+import { rewardReferralOnPayment } from '@/lib/referral';
 import {
   syncLsSubscription,
   markSubscriptionCanceled,
@@ -210,6 +211,10 @@ async function handleEvent(envelope: LsWebhookEnvelope): Promise<void> {
       // Renewal receipt — read fresh plan from our DB (it was just synced
       // by the corresponding subscription_updated event in 99% of cases).
       void dispatchReceiptEmailForUser(userId);
+      // Referral reward: if THIS payer was referred, credit their referrer one
+      // free month (idempotent — only the first pending→rewarded flip counts).
+      void rewardReferralOnPayment(userId).catch(e =>
+        console.error('[lemon] referral reward failed:', e));
     }
     return;
   }

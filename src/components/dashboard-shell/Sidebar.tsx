@@ -10,7 +10,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Bot, MessageSquare, BarChart3, Users, CreditCard,
-  Settings, ShieldCheck, ChevronRight, X, ThumbsDown,
+  Settings, ShieldCheck, ChevronRight, X, ThumbsDown, Gift,
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 
@@ -21,6 +21,7 @@ const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ clas
   { href: '/dashboard/leads',         label: 'ლიდები',      icon: Users           },
   { href: '/dashboard/analytics',     label: 'ანალიტიკა',   icon: BarChart3       },
   { href: '/dashboard/billing',       label: 'გადახდები',   icon: CreditCard      },
+  { href: '/dashboard/referral',      label: 'მოწვევა',     icon: Gift            },
   { href: '/dashboard/settings/profile', label: 'პარამეტრები', icon: Settings     },
   { href: '/dashboard/privacy',       label: 'GDPR',         icon: ShieldCheck    },
 ];

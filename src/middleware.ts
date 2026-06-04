@@ -40,6 +40,20 @@ export default clerkMiddleware(async (auth, req) => {
   if (isWidgetRoute(req)) {
     return withWidgetHeaders(NextResponse.next());
   }
+
+  // Attribution capture: a ?ref=<code> on any public link (e.g. the shared
+  // /signup?ref=tornike-x7k2) is stored in a 30-day cookie. Lazy user
+  // provisioning later reads it to credit the referrer. Literal cookie name —
+  // middleware runs on the edge and must not import DB code.
+  const ref = req.nextUrl.searchParams.get('ref');
+  if (ref) {
+    const res = NextResponse.next();
+    res.cookies.set('peit_ref', ref.trim().toLowerCase().slice(0, 40), {
+      httpOnly: true, sameSite: 'lax', secure: true, path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return res;
+  }
 });
 
 export const config = {

@@ -91,11 +91,36 @@ export const users = pgTable('users', {
   locale:    varchar('locale', { length: 4 }).notNull().default('ka'),
   /** Per-category opt-in toggles. See EmailPrefs above. */
   emailPrefs: jsonb('email_prefs').$type<EmailPrefs>().notNull().default(DEFAULT_EMAIL_PREFS),
+  /** Unique referral code, e.g. "tornike-x7k2". Generated on first provisioning. */
+  referralCode: varchar('referral_code', { length: 40 }),
+  /** Who invited this user (FK → users.id), set once at provisioning from ?ref. */
+  referredBy:   uuid('referred_by'),
+  /** Free months credited to this user as a referrer (applied on next renewal). */
+  freeMonthsEarned: integer('free_months_earned').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, t => ({
   clerkIdx: uniqueIndex('users_clerk_id_idx').on(t.clerkId),
   emailIdx: index('users_email_idx').on(t.email),
+  referralCodeIdx: uniqueIndex('users_referral_code_idx').on(t.referralCode),
+}));
+
+// ─── referrals ───────────────────────────────────────────────────────────────
+// One row per referred user. Created at provisioning when a ?ref code resolves;
+// marked 'rewarded' on the referred user's first successful payment.
+
+export const referralStatusEnum = pgEnum('referral_status', ['pending', 'rewarded', 'expired']);
+
+export const referrals = pgTable('referrals', {
+  id:          uuid('id').primaryKey().defaultRandom(),
+  referrerId:  uuid('referrer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  referredId:  uuid('referred_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  status:      referralStatusEnum('status').notNull().default('pending'),
+  rewardedAt:  timestamp('rewarded_at'),
+  createdAt:   timestamp('created_at').defaultNow().notNull(),
+}, t => ({
+  referredIdx: uniqueIndex('referrals_referred_idx').on(t.referredId),
+  referrerIdx: index('referrals_referrer_idx').on(t.referrerId),
 }));
 
 // ─── bots ──────────────────────────────────────────────────────────────────

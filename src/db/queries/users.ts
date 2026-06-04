@@ -2,10 +2,37 @@
 // Looks up (or creates) the DB user row keyed by Clerk's userId.
 
 import { eq } from 'drizzle-orm';
+import { cookies } from 'next/headers';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { requireDb, schema } from '@/db';
 import { sendWelcomeEmail, isEmailAvailable } from '@/lib/email';
 import { normalizeLang } from '@/lib/email/i18n';
+import {
+  REFERRAL_COOKIE, generateUniqueReferralCode, resolveReferrer,
+} from '@/lib/referral';
+
+/**
+ * Best-effort: if a ?ref code was stored in a cookie at signup, link this new
+ * user to their referrer and open a pending referral row. Never throws — a
+ * failed attribution must not block provisioning.
+ */
+async function attachReferral(newUserId: string): Promise<void> {
+  try {
+    const code = (await cookies()).get(REFERRAL_COOKIE)?.value;
+    if (!code) return;
+    const referrerId = await resolveReferrer(code, newUserId);
+    if (!referrerId) return;
+    const db = requireDb();
+    await db.update(schema.users)
+      .set({ referredBy: referrerId })
+      .where(eq(schema.users.id, newUserId));
+    await db.insert(schema.referrals)
+      .values({ referrerId, referredId: newUserId })
+      .onConflictDoNothing();
+  } catch (e) {
+    console.error('[users] referral attribution failed:', e);
+  }
+}
 
 /**
  * Fire a welcome email after first provisioning. Best-effort — runs in the
@@ -45,6 +72,8 @@ export async function getCurrentUserOrThrow() {
   const rawLocale = (clerk?.publicMetadata?.locale as string | undefined) ?? 'ka';
   const locale    = normalizeLang(rawLocale);
 
+  const referralCode = await generateUniqueReferralCode(name ?? email);
+
   const [created] = await db.insert(schema.users)
     .values({
       clerkId:  userId,
@@ -52,8 +81,12 @@ export async function getCurrentUserOrThrow() {
       name,
       imageUrl: clerk?.imageUrl ?? null,
       locale,
+      referralCode,
     })
     .returning();
+
+  // Link to a referrer if a ?ref cookie is present (best-effort).
+  await attachReferral(created.id);
 
   // Fire-and-forget — never block auth on email delivery.
   dispatchWelcomeEmail(created);
