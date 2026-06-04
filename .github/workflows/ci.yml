@@ -1,0 +1,49 @@
+name: CI
+
+# Validates every push to master and every PR targeting it.
+# Hard gates: type-check + build (both green today). Lint is informational —
+# the codebase has pre-existing lint findings; we surface them without
+# blocking merges until they're cleaned up.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (informational)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # The app is designed to build without secrets (DB/LLM/billing all
+          # degrade gracefully), so the build gate needs no real credentials.
+          # Only the public site URL is referenced at build time.
+          NEXT_PUBLIC_APP_URL: https://peit.vercel.app
+          NEXT_TELEMETRY_DISABLED: "1"
