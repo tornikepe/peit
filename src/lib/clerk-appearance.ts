@@ -16,5 +16,10 @@ export const clerkAppearance = {
   elements: {
     formButtonPrimary:
       'bg-gradient-to-b from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white font-semibold shadow-lg shadow-blue-600/25 normal-case',
+    // Hide Clerk's "Secured by Clerk" footer so the auth cards and the
+    // account menu read as first-party. (The orange "Development mode"
+    // badge is intrinsic to dev keys and fully disappears with production
+    // Clerk keys.)
+    footer: 'hidden',
   },
 };
