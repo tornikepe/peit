@@ -1,87 +1,26 @@
-// Shared Clerk appearance — one dark, on-brand theme applied globally so the
-// UserButton popover, the "Manage account" (UserProfile) modal, and the
-// sign-in / sign-up cards all match the Midnight Signal dashboard instead of
-// rendering as a stock white Clerk widget.
+// Shared Clerk appearance — Clerk's built-in `dark` baseTheme (correct,
+// readable dark contrast everywhere) layered with the Peit brand blue.
+// Applied globally on ClerkProvider so the UserButton popover, the
+// "Manage account" (UserProfile) modal, and the sign-in / sign-up cards all
+// match the Midnight Signal dashboard.
 //
-// The brand accent is a clean blue (blue-600 #2563eb), matching
-// `--accent` in src/styles/midnight.css. Setting `variables` here is what
-// makes the whole Clerk surface dark — Clerk derives its modal, popover and
-// form chrome from these tokens. The `elements` overrides then sharpen a few
-// high-touch pieces (primary button, popover action rows, footer).
+// We rely on `baseTheme: dark` for text/background contrast (hand-rolled
+// Tailwind overrides don't win specificity inside Clerk's own styles), and
+// only override the accent colour + primary button to stay on-brand.
 
-const SURFACE       = '#0c0c16'; // card / popover background
-const SURFACE_INPUT = '#13131f'; // inputs
+import { dark } from '@clerk/themes';
 
 export const clerkAppearance = {
+  baseTheme: dark,
   variables: {
-    colorPrimary:         '#2563eb',
-    colorText:            '#f5f6f8',
-    colorTextSecondary:   '#c4ccda',
-    colorBackground:      SURFACE,
-    colorInputBackground: SURFACE_INPUT,
-    colorInputText:       '#ffffff',
-    colorDanger:          '#ef4444',
-    colorSuccess:         '#22c55e',
-    colorWarning:         '#f59e0b',
-    borderRadius:         '0.7rem',
-    fontFamily:           'var(--font-geist-sans), system-ui, sans-serif',
+    colorPrimary:    '#3b82f6', // brand blue (blue-500) — used for links, focus, accents
+    colorBackground: '#0c0c16', // card / popover / modal surface
+    borderRadius:    '0.7rem',
+    fontFamily:      'var(--font-geist-sans), system-ui, sans-serif',
   },
   elements: {
-    // Cards / popovers / modals
-    card:                       'bg-[#0c0c16] border border-white/[0.08] shadow-2xl shadow-black/60',
-    rootBox:                    'text-gray-100',
-    modalContent:               'bg-transparent',
-    modalCloseButton:           'text-gray-400 hover:text-white',
-
-    // Header
-    headerTitle:                'text-white font-semibold',
-    headerSubtitle:             'text-gray-400',
-    navbarTitle:                'text-white font-semibold',
-    navbarTitleText:            'text-white',
-
-    // UserProfile ("Manage account") readability
-    pageScrollBox:              'bg-transparent',
-    scrollBox:                  'bg-transparent',
-    profileSection:             'border-white/[0.06]',
-    profileSectionTitleText:    'text-white font-medium',
-    profileSectionPrimaryButton:'text-blue-400 hover:text-blue-300',
-    profileSectionContent:      'text-gray-200',
-
-    // Primary action — brand blue gradient, matches dashboard CTAs
+    // Keep the primary CTA on the dashboard's blue gradient.
     formButtonPrimary:
-      'bg-gradient-to-b from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/25 normal-case',
-    formFieldInput:
-      'bg-[#13131f] border border-white/10 text-white rounded-xl focus:border-blue-500/60 focus:ring-blue-500/20',
-    formFieldLabel:             'text-gray-300 font-medium',
-    formFieldAction:            'text-blue-400 hover:text-blue-300',
-    formResendCodeLink:         'text-blue-400 hover:text-blue-300',
-    identityPreviewEditButton:  'text-blue-400 hover:text-blue-300',
-    footerActionLink:           'text-blue-400 hover:text-blue-300',
-
-    // Social / dividers
-    socialButtonsBlockButton:
-      'bg-white/[0.05] border border-white/10 text-white hover:bg-white/[0.08] transition-all rounded-xl',
-    socialButtonsBlockButtonText: 'text-white font-medium',
-    dividerLine:                'bg-white/10',
-    dividerText:                'text-gray-500',
-    alertText:                  'text-red-400',
-
-    // UserButton popover (the menu in the screenshot)
-    userButtonPopoverCard:         'bg-[#0c0c16] border border-white/[0.08] shadow-2xl shadow-black/60',
-    userButtonPopoverActionButton: 'text-gray-200 hover:bg-white/[0.05] hover:text-white',
-    userButtonPopoverActionButtonText: 'text-gray-200',
-    userButtonPopoverActionButtonIcon: 'text-gray-400',
-    userButtonPopoverFooter:       'border-t border-white/[0.06]',
-    userPreviewMainIdentifier:     'text-white font-medium',
-    userPreviewSecondaryIdentifier:'text-gray-400',
-
-    // UserProfile ("Manage account") modal navigation
-    navbar:                     'bg-[#0a0a12] border-r border-white/[0.06]',
-    navbarButton:               'text-gray-200 hover:text-white',
-    navbarButtonText:           'text-gray-200',
-    accordionTriggerButton:     'text-gray-200 hover:bg-white/[0.04]',
-    badge:                      'bg-blue-500/15 text-blue-300 border border-blue-500/20',
-    menuButton:                 'text-gray-200 hover:bg-white/[0.05]',
-    menuList:                   'bg-[#0c0c16] border border-white/[0.08]',
+      'bg-gradient-to-b from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white font-semibold shadow-lg shadow-blue-600/25 normal-case',
   },
 };

@@ -499,7 +499,10 @@ function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'ligh
               <UserButton appearance={{ elements: { avatarBox: 'w-8 h-8' } }} />
             </>
           ) : (
-            <Link href="/signin" className="nav-link nav-signin">{t.nav.signin}</Link>
+            <>
+              <Link href="/signin" className="nav-link nav-signin">{t.nav.signin}</Link>
+              <Link href="/signup" className="nav-signup">{t.nav.signup}</Link>
+            </>
           )}
           <button className="nav-burger" onClick={() => setOpen(o => !o)} aria-label="Menu">
             <Icon name={open ? 'x' : 'menu'} size={20} />
@@ -515,7 +518,10 @@ function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'ligh
           ))}
           {isSignedIn
             ? <Link href="/dashboard" onClick={() => setOpen(false)}>{t.nav.dashboard}</Link>
-            : <Link href="/signin" onClick={() => setOpen(false)}>{t.nav.signin}</Link>}
+            : <>
+                <Link href="/signin" onClick={() => setOpen(false)}>{t.nav.signin}</Link>
+                <Link href="/signup" className="nav-signup" onClick={() => setOpen(false)}>{t.nav.signup}</Link>
+              </>}
         </div>
       )}
     </header>

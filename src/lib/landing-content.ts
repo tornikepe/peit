@@ -3,7 +3,7 @@
 /* eslint-disable */
 const RAW = {
   ka: {
-    nav: { how: "როგორ მუშაობს", pricing: "ფასები", industries: "ინდუსტრიები", blog: "ბლოგი", signin: "შესვლა", signup: "უფასოდ სცადე", dashboard: "Dashboard" },
+    nav: { how: "როგორ მუშაობს", pricing: "ფასები", industries: "ინდუსტრიები", blog: "ბლოგი", signin: "შესვლა", signup: "რეგისტრაცია", dashboard: "Dashboard" },
     hero: {
       badge: "+12 ლიდი კვირაში — ღამეული ტრაფიკიდან",
       title1: "კლიენტი გელოდება.",
@@ -159,7 +159,7 @@ const RAW = {
   },
 
   en: {
-    nav: { how: "How it works", pricing: "Pricing", industries: "Industries", blog: "Blog", signin: "Sign in", signup: "Try free", dashboard: "Dashboard" },
+    nav: { how: "How it works", pricing: "Pricing", industries: "Industries", blog: "Blog", signin: "Sign in", signup: "Sign up", dashboard: "Dashboard" },
     hero: {
       badge: "+12 leads/week — from after-hours traffic",
       title1: "Your customer is waiting.",
@@ -317,7 +317,7 @@ const RAW = {
 
 // Russian translation (real, not an English fallback).
 const RU = {
-  nav: { how: "Как работает", pricing: "Цены", industries: "Отрасли", blog: "Блог", signin: "Войти", signup: "Попробовать бесплатно", dashboard: "Панель" },
+  nav: { how: "Как работает", pricing: "Цены", industries: "Отрасли", blog: "Блог", signin: "Войти", signup: "Регистрация", dashboard: "Панель" },
   hero: {
     badge: "+12 лидов в неделю — из ночного трафика",
     title1: "Клиент ждёт.",
