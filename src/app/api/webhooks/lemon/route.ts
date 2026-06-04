@@ -16,6 +16,7 @@ import { eq } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { snapshotFromLsSub } from '@/lib/lemon-mapper';
 import { rewardReferralOnPayment } from '@/lib/referral';
+import { logger } from '@/lib/logger';
 import {
   syncLsSubscription,
   markSubscriptionCanceled,
@@ -155,6 +156,7 @@ async function loadRecipient(userId: string): Promise<{
 async function handleEvent(envelope: LsWebhookEnvelope): Promise<void> {
   const event = envelope.meta.event_name;
   const customUserId = envelope.meta.custom_data?.user_id ?? null;
+  logger.info('lemon webhook received', { route: '/api/webhooks/lemon', event });
 
   // Resolve userId: prefer custom_data (set during checkout), fall back to
   // looking up by LS customer_id (for events after the first one).
