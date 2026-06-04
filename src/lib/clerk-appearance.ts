@@ -16,7 +16,7 @@ export const clerkAppearance = {
   variables: {
     colorPrimary:         '#2563eb',
     colorText:            '#f5f6f8',
-    colorTextSecondary:   '#aeb6c4',
+    colorTextSecondary:   '#c4ccda',
     colorBackground:      SURFACE,
     colorInputBackground: SURFACE_INPUT,
     colorInputText:       '#ffffff',
@@ -36,6 +36,8 @@ export const clerkAppearance = {
     // Header
     headerTitle:                'text-white font-semibold',
     headerSubtitle:             'text-gray-400',
+    navbarTitle:                'text-white font-semibold',
+    navbarTitleText:            'text-white',
 
     // UserProfile ("Manage account") readability
     pageScrollBox:              'bg-transparent',
