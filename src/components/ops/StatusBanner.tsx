@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 
 const CACHE_KEY = 'peit_health';
 const CACHE_MS  = 60_000;
-const SLOW_MS   = 3_000;
 
 type Lang = 'ka' | 'en' | 'ru';
 const COPY: Record<Lang, string> = {
@@ -40,17 +39,19 @@ export default function StatusBanner() {
       }
     } catch { /* ignore */ }
 
-    const started = Date.now();
+    // Only flag a genuine outage: /api/health returns 503 when the database
+    // is down (status "down"). A healthy-but-cold response is 200 — we must
+    // NOT scare users on a normal cold start, so latency is not a trigger.
     fetch('/api/health', { cache: 'no-store' })
-      .then(res => {
-        const slow = Date.now() - started > SLOW_MS;
-        const bad  = !res.ok || slow;
+      .then(async res => {
+        let down = !res.ok;
+        try { const j = await res.json(); down = down || j?.status === 'down'; } catch { /* keep res.ok verdict */ }
         if (!cancelled) {
-          setDegraded(bad);
-          try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), degraded: bad })); } catch { /* ignore */ }
+          setDegraded(down);
+          try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), degraded: down })); } catch { /* ignore */ }
         }
       })
-      .catch(() => { if (!cancelled) setDegraded(true); });
+      .catch(() => { /* network error from the client side — don't assume the service is down */ });
 
     return () => { cancelled = true; };
   }, []);

@@ -668,8 +668,14 @@ h1, h2, h3, h4 {
 .cl-userButtonPopoverActions { background-color: transparent !important; }
 
 /* Hide Clerk's "Secured by Clerk" + dev-mode footer so auth reads first-party.
-   (The dev badge also disappears entirely once production Clerk keys are set.) */
+   The badge lives in .cl-footer AND in .cl-footerItem rows (popover + modal).
+   (It also disappears entirely once production Clerk keys are set.) */
 .cl-footer,
-.cl-userButtonPopoverFooter,
-.cl-internal-uy4tjh,
-[class*="cl-internal-"][class*="DevBanner"] { display: none !important; }
+.cl-footerItem,
+.cl-userButtonPopoverFooter { display: none !important; }
+
+/* Brighten the UserProfile ("Manage account") header so it's clearly legible. */
+.cl-navbarTitle,
+.cl-navbarTitle * { color: #ffffff !important; }
+.cl-navbarTitleDescription,
+.cl-headerSubtitle { color: #aeb6c4 !important; }
