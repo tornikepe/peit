@@ -3,7 +3,7 @@
 
 import {
   pgTable, pgEnum, text, timestamp, integer, jsonb, boolean,
-  uuid, varchar, index, uniqueIndex, vector,
+  uuid, varchar, index, uniqueIndex, vector, bigint,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -121,6 +121,25 @@ export const referrals = pgTable('referrals', {
 }, t => ({
   referredIdx: uniqueIndex('referrals_referred_idx').on(t.referredId),
   referrerIdx: index('referrals_referrer_idx').on(t.referrerId),
+}));
+
+// ─── backup_logs ─────────────────────────────────────────────────────────────
+// Daily backup-health audit trail written by /api/cron/backup. Neon provides
+// the actual backups + point-in-time recovery; this records that the check ran,
+// the DB was reachable, and its size — surfaced in the admin panel.
+
+export const backupStatusEnum = pgEnum('backup_status', ['success', 'failed']);
+
+export const backupLogs = pgTable('backup_logs', {
+  id:          uuid('id').primaryKey().defaultRandom(),
+  status:      backupStatusEnum('status').notNull(),
+  sizeBytes:   bigint('size_bytes', { mode: 'number' }),
+  durationMs:  integer('duration_ms'),
+  storagePath: text('storage_path'),
+  error:       text('error'),
+  createdAt:   timestamp('created_at').defaultNow().notNull(),
+}, t => ({
+  createdIdx: index('backup_logs_created_idx').on(t.createdAt),
 }));
 
 // ─── bots ──────────────────────────────────────────────────────────────────
