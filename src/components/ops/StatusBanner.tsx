@@ -1,0 +1,68 @@
+'use client';
+
+// Lightweight client-side health probe. On first load it pings /api/health
+// once; if the service is down (non-200) or slow (>3s), it shows a localized
+// "service is slow" banner. The result is cached in sessionStorage for 60s so
+// route changes don't spam the endpoint.
+
+import { useEffect, useState } from 'react';
+
+const CACHE_KEY = 'peit_health';
+const CACHE_MS  = 60_000;
+const SLOW_MS   = 3_000;
+
+type Lang = 'ka' | 'en' | 'ru';
+const COPY: Record<Lang, string> = {
+  ka: 'სერვისი ნელა მუშაობს — ვმუშაობთ გამოსასწორებლად',
+  en: 'The service is running slowly — we’re working on it',
+  ru: 'Сервис работает медленно — мы уже работаем над этим',
+};
+
+function pickLang(): Lang {
+  if (typeof document === 'undefined') return 'ka';
+  const l = (document.documentElement.lang || 'ka').slice(0, 2);
+  return (l === 'en' || l === 'ru') ? l : 'ka';
+}
+
+export default function StatusBanner() {
+  const [degraded, setDegraded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Honor a fresh cached verdict to avoid re-probing on every navigation.
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null') as
+        | { at: number; degraded: boolean } | null;
+      if (cached && Date.now() - cached.at < CACHE_MS) {
+        setDegraded(cached.degraded);
+        return;
+      }
+    } catch { /* ignore */ }
+
+    const started = Date.now();
+    fetch('/api/health', { cache: 'no-store' })
+      .then(res => {
+        const slow = Date.now() - started > SLOW_MS;
+        const bad  = !res.ok || slow;
+        if (!cancelled) {
+          setDegraded(bad);
+          try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), degraded: bad })); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { if (!cancelled) setDegraded(true); });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!degraded) return null;
+
+  return (
+    <div
+      role="status"
+      className="fixed bottom-0 left-0 right-0 z-[9998] bg-amber-400 text-black text-center text-xs py-1.5 px-3 font-medium"
+    >
+      {COPY[pickLang()]}
+    </div>
+  );
+}

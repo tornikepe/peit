@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Noto_Sans, Noto_Sans_Georgian } from "next/font/google";
 import Providers from "@/components/Providers";
 import JsonLd, { organizationSchema } from "@/components/JsonLd";
+import StatusBanner from "@/components/ops/StatusBanner";
+import StagingBanner from "@/components/ops/StagingBanner";
 import "./globals.css";
 import "@/styles/midnight.css";
 
@@ -128,7 +130,9 @@ export default function RootLayout({
         <JsonLd data={ld} />
       </head>
       <body className="flex flex-col min-h-screen">
+        <StagingBanner />
         <Providers>{children}</Providers>
+        <StatusBanner />
       </body>
     </html>
   );

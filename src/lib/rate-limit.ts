@@ -97,3 +97,36 @@ export function getClientIp(req: Request): string {
   if (real) return real.trim();
   return 'unknown';
 }
+
+/** Standard rate-limit response headers (RFC-style) for a given result. */
+export function rateLimitHeaders(r: RateLimitResult): Record<string, string> {
+  const resetUnix = Math.ceil((Date.now() + r.resetInMs) / 1000);
+  return {
+    'X-RateLimit-Limit':     String(r.max),
+    'X-RateLimit-Remaining': String(Math.max(0, r.max - r.count)),
+    'X-RateLimit-Reset':     String(resetUnix),
+  };
+}
+
+/**
+ * Build a 429 Too Many Requests response with Retry-After + X-RateLimit-*
+ * headers from a (failed) rate-limit result. Use when `result.allowed` is
+ * false:
+ *
+ *   const rl = await checkRateLimit(key, 30, 60);
+ *   if (!rl.allowed) return tooManyRequests(rl);
+ */
+export function tooManyRequests(r: RateLimitResult): Response {
+  const retryAfter = Math.max(1, Math.ceil(r.resetInMs / 1000));
+  return new Response(
+    JSON.stringify({ error: 'RATE_LIMITED', message: 'Too many requests.' }),
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(retryAfter),
+        ...rateLimitHeaders(r),
+      },
+    },
+  );
+}
