@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useAuth, UserButton, SignInButton, SignUpButton } from '@clerk/nextjs';
 import { useLanguage } from '@/context/LanguageContext';
-import { LANDING } from '@/lib/landing-content';
+import { LANDING, type LandingContent } from '@/lib/landing-content';
 import Logo from '@/components/Logo';
 
 /* ---------- icons ---------- */
@@ -115,7 +115,7 @@ function CountUp({ value, className }: { value: string; className?: string }) {
 }
 
 /* ---------- chat demo (fixed-height card — never overflows below) ---------- */
-function ChatDemo({ t }: { t: any }) {
+function ChatDemo({ t }: { t: LandingContent }) {
   const msgs: { who: string; t: string }[] = t.chat.msgs;
   const [shown, setShown] = useState<number[]>([]);
   const [typing, setTyping] = useState(false);
@@ -183,7 +183,7 @@ function ChatDemo({ t }: { t: any }) {
   );
 }
 
-function Hero({ t, ctaHref }: { t: any; ctaHref: string }) {
+function Hero({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
   const stats = [
     { v: t.hero.stat1, l: t.hero.stat1l },
     { v: t.hero.stat2, l: t.hero.stat2l },
@@ -229,7 +229,7 @@ function Hero({ t, ctaHref }: { t: any; ctaHref: string }) {
   );
 }
 
-function SocialProof({ t }: { t: any }) {
+function SocialProof({ t }: { t: LandingContent }) {
   const logos: string[] = [...t.social.logos, ...t.social.logos];
   return (
     <section className="social">
@@ -272,13 +272,13 @@ function SectionHead({ kicker, title, sub, center }: { kicker: string; title: st
 }
 
 const FEAT_ICONS = ['clock', 'channels', 'globe', 'lead', 'chart', 'plug', 'bolt', 'shield'];
-function Features({ t }: { t: any }) {
+function Features({ t }: { t: LandingContent }) {
   return (
     <section className="section" id="features">
       <div className="wrap">
         <SectionHead kicker={t.features.kicker} title={t.features.title} sub={t.features.sub} />
         <div className="feat-grid" style={{ marginTop: 56 }}>
-          {t.features.items.map((f: any, i: number) => (
+          {t.features.items.map((f, i) => (
             <div className="feat-card card" key={i} data-reveal data-delay={(i % 4) + 1}>
               <span className="feat-ico"><Icon name={FEAT_ICONS[i]} size={22} sw={1.6} /></span>
               <h3 className="feat-t">{f.t}</h3>
@@ -291,14 +291,14 @@ function Features({ t }: { t: any }) {
   );
 }
 
-function HowItWorks({ t }: { t: any }) {
+function HowItWorks({ t }: { t: LandingContent }) {
   return (
     <section className="section how" id="how">
       <div className="glow" style={{ width: 500, height: 500, top: '20%', right: '-10%', background: 'radial-gradient(circle, var(--glow-a), transparent 70%)', opacity: 0.4 }} />
       <div className="wrap">
         <SectionHead kicker={t.how.kicker} title={t.how.title} sub={t.how.sub} center />
         <div className="how-grid" style={{ marginTop: 64 }}>
-          {t.how.steps.map((s: any, i: number) => (
+          {t.how.steps.map((s, i) => (
             <div className="how-step" key={i} data-reveal data-delay={i + 1}>
               <div className="how-num mono">0{i + 1}</div>
               <h3 className="how-t">{s.t}</h3>
@@ -312,13 +312,13 @@ function HowItWorks({ t }: { t: any }) {
   );
 }
 
-function Industries({ t, ctaHref }: { t: any; ctaHref: string }) {
+function Industries({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
   return (
     <section className="section" id="industries">
       <div className="wrap">
         <SectionHead kicker={t.industries.kicker} title={t.industries.title} sub={t.industries.sub} />
         <div className="ind-grid" style={{ marginTop: 56 }}>
-          {t.industries.items.map((it: any, i: number) => (
+          {t.industries.items.map((it, i) => (
             <Link href={ctaHref} className="ind-card card" key={i} data-reveal data-delay={(i % 4) + 1}>
               <div className="ind-top">
                 <span className="ind-name">{it.t}</span>
@@ -334,13 +334,13 @@ function Industries({ t, ctaHref }: { t: any; ctaHref: string }) {
   );
 }
 
-function Testimonials({ t }: { t: any }) {
+function Testimonials({ t }: { t: LandingContent }) {
   return (
     <section className="section" id="testimonials">
       <div className="wrap">
         <SectionHead kicker={t.testimonials.kicker} title={t.testimonials.title} sub={t.testimonials.sub} />
         <div className="testi-grid" style={{ marginTop: 56 }}>
-          {t.testimonials.items.map((it: any, i: number) => (
+          {t.testimonials.items.map((it, i) => (
             <figure className="testi-card card" key={i} data-reveal data-delay={i + 1}>
               <span className="testi-metric mono">{it.metric}</span>
               <blockquote className="testi-quote">{it.quote}</blockquote>
@@ -360,7 +360,7 @@ function Testimonials({ t }: { t: any }) {
   );
 }
 
-function Pricing({ t, ctaHref }: { t: any; ctaHref: string }) {
+function Pricing({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
   return (
     <section className="section pricing" id="pricing">
       <div className="wrap">
@@ -377,7 +377,7 @@ function Pricing({ t, ctaHref }: { t: any; ctaHref: string }) {
           </div>
         </div>
         <div className="plan-grid" style={{ marginTop: 48 }}>
-          {t.pricing.plans.map((p: any, i: number) => (
+          {t.pricing.plans.map((p, i) => (
             <div className={'plan card' + (p.popular ? ' popular' : '') + (p.enterprise ? ' enterprise' : '')} key={i} data-reveal data-delay={(i % 4) + 1}>
               {p.popular && <span className="plan-badge mono">{t.pricing.popular}</span>}
               <div className="plan-name">{p.name}</div>
@@ -404,7 +404,7 @@ function Pricing({ t, ctaHref }: { t: any; ctaHref: string }) {
   );
 }
 
-function FinalCTA({ t, ctaHref }: { t: any; ctaHref: string }) {
+function FinalCTA({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
   return (
     <section className="section">
       <div className="wrap">
@@ -423,7 +423,7 @@ function FinalCTA({ t, ctaHref }: { t: any; ctaHref: string }) {
   );
 }
 
-function FAQ({ t }: { t: any }) {
+function FAQ({ t }: { t: LandingContent }) {
   const [open, setOpen] = useState(0);
   return (
     <section className="section faq" id="faq">
@@ -434,7 +434,7 @@ function FAQ({ t }: { t: any }) {
           <p className="text-muted" style={{ marginTop: 16 }}>{t.faq.note} <a href="mailto:info@peit.ge" className="text-accent">{t.faq.noteLink}</a></p>
         </div>
         <div className="faq-list" data-reveal data-delay="1">
-          {t.faq.items.map((it: any, i: number) => (
+          {t.faq.items.map((it, i) => (
             <div className={'faq-item' + (open === i ? ' open' : '')} key={i}>
               <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
                 <span>{it.q}</span>
@@ -453,7 +453,7 @@ function FAQ({ t }: { t: any }) {
 const LANGS: { code: 'ka' | 'en' | 'ru'; label: string }[] = [
   { code: 'ka', label: 'ქარ' }, { code: 'en', label: 'EN' }, { code: 'ru', label: 'RU' },
 ];
-function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'light'; toggleTheme: () => void }) {
+function MarketingNav({ t, theme, toggleTheme }: { t: LandingContent; theme: 'dark' | 'light'; toggleTheme: () => void }) {
   const { lang, setLang } = useLanguage();
   const { isSignedIn } = useAuth();
   const [open, setOpen] = useState(false);
@@ -545,7 +545,7 @@ function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'ligh
   );
 }
 
-function MarketingFooter({ t }: { t: any }) {
+function MarketingFooter({ t }: { t: LandingContent }) {
   // In-page anchors for product/industries (no separate routes, no blog);
   // legal links stay as real pages. Blog item dropped from the product list.
   const productItems = (t.footer.product as string[]).slice(0, 3); // drop "blog"
@@ -566,7 +566,7 @@ function MarketingFooter({ t }: { t: any }) {
             <p className="text-muted" style={{ maxWidth: '34ch', marginTop: 16, fontSize: 15 }}>{t.footer.tagline}</p>
             <a href="mailto:info@peit.ge" className="footer-mail mono">info@peit.ge</a>
           </div>
-          {cols.map((c: any, i: number) => (
+          {cols.map((c, i) => (
             <div key={i} className="footer-col">
               <div className="footer-h">{c.h}</div>
               {c.items.map((it: string, j: number) => {
@@ -590,7 +590,7 @@ function MarketingFooter({ t }: { t: any }) {
 export default function MidnightLanding() {
   const { lang } = useLanguage();
   const { isSignedIn } = useAuth();
-  const t: any = LANDING[lang] ?? LANDING.ka;
+  const t: LandingContent = LANDING[lang] ?? LANDING.ka;
   useReveal();
 
   // Light / dark theme — persisted, applied to .ms-root via data-theme.
@@ -598,6 +598,9 @@ export default function MidnightLanding() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('peit-theme');
+      // Intentional: read persisted theme after mount to avoid a hydration
+      // mismatch (server can't know localStorage).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved === 'light' || saved === 'dark') setTheme(saved);
     } catch { /* no-op */ }
   }, []);

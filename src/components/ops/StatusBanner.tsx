@@ -34,6 +34,8 @@ export default function StatusBanner() {
       const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null') as
         | { at: number; degraded: boolean } | null;
       if (cached && Date.now() - cached.at < CACHE_MS) {
+        // Intentional: apply the cached verdict on mount (client-only).
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDegraded(cached.degraded);
         return;
       }
