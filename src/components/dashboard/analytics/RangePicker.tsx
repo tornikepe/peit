@@ -76,7 +76,10 @@ export default function RangePicker({ current }: Props) {
         </div>
       </details>
 
-      {pending && <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500" />}
+      {/* Fixed-width slot so the spinner appearing never reflows the buttons. */}
+      <span className="w-4 h-4 shrink-0 flex items-center justify-center" aria-hidden={!pending}>
+        {pending && <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500" />}
+      </span>
     </div>
   );
 }

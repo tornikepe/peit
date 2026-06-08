@@ -283,11 +283,9 @@ function FilterMenu({
             ))}
           </div>
         </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">ჭდე</p>
-          {allTags.length === 0 ? (
-            <p className="text-[11px] text-gray-600">ჭდეები ჯერ არ გაქვს</p>
-          ) : (
+        {allTags.length > 0 && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">ჭდე</p>
             <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
               <ChipBtn active={!tag} onClick={() => onChange('tag', undefined)}>ყველა</ChipBtn>
               {allTags.map(t => (
@@ -296,8 +294,8 @@ function FilterMenu({
                 </ChipBtn>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </details>
   );

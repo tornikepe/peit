@@ -59,7 +59,7 @@ export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: P
             <button
               type="button"
               onClick={onToggleTheme}
-              className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400 hover:text-white"
+              className="p-2 rounded-lg text-gray-400 transition-colors hover:bg-white/[0.1] hover:text-white"
               aria-label={theme === 'dark' ? 'ნათელ თემაზე გადართვა' : 'მუქ თემაზე გადართვა'}
               title="თემა"
             >
@@ -103,7 +103,7 @@ function NotificationsBell() {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`relative p-2 rounded-lg hover:bg-white/[0.05] ${open ? 'text-white bg-white/[0.05]' : 'text-gray-400 hover:text-white'}`}
+        className={`relative p-2 rounded-lg transition-colors hover:bg-white/[0.1] ${open ? 'text-white bg-white/[0.1]' : 'text-gray-400 hover:text-white'}`}
         aria-label="notifications"
         aria-expanded={open}
       >

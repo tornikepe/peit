@@ -229,37 +229,6 @@ function Hero({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
   );
 }
 
-function SocialProof({ t }: { t: LandingContent }) {
-  const logos: string[] = [...t.social.logos, ...t.social.logos];
-  return (
-    <section className="social">
-      <div className="wrap">
-        <div className="social-head" data-reveal>
-          <div className="social-trust">
-            <div className="avatars">
-              {['SM', 'DC', 'MR', 'AK', 'LW', 'PS'].map((a, i) => <span key={i} className="ava-sm" style={{ zIndex: 6 - i }}>{a}</span>)}
-            </div>
-            <div>
-              <div className="social-trust-t">{t.social.trust}</div>
-              <div className="social-trust-s">{t.social.sub}</div>
-            </div>
-          </div>
-          <div className="social-rating">
-            <div className="stars">{[0, 1, 2, 3, 4].map(i => <Icon key={i} name="star" size={16} sw={1.4} style={{ fill: 'var(--accent-bright)', color: 'var(--accent-bright)' }} />)}</div>
-            <span className="rating-v mono">{t.social.rating}</span>
-            <span className="rating-n">{t.social.ratingNote}</span>
-          </div>
-        </div>
-        <div className="marquee-wrap" data-reveal>
-          <div className="marquee">
-            {logos.map((l, i) => <span key={i} className="marquee-logo">{l}</span>)}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function Kicker({ children }: { children: React.ReactNode }) { return <span className="kicker">{children}</span>; }
 function SectionHead({ kicker, title, sub, center }: { kicker: string; title: string; sub?: string; center?: boolean }) {
   return (
@@ -647,7 +616,6 @@ export default function MidnightLanding() {
       <MarketingNav t={t} theme={theme} toggleTheme={toggleTheme} />
       <main>
         <Hero t={t} ctaHref={ctaHref} />
-        <SocialProof t={t} />
         <Features t={t} />
         <HowItWorks t={t} />
         <Industries t={t} ctaHref={ctaHref} />

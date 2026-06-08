@@ -32,6 +32,29 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
 
+  // ─── Security headers ───────────────────────────────────────────────────
+  // Applied to every response. Frame protection (X-Frame-Options / CSP
+  // frame-ancestors) is handled in middleware instead, because the widget
+  // pages must be embeddable cross-origin while the rest of the site must not.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // Force HTTPS for 2 years (incl. subdomains) — eligible for preload.
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          // Stop MIME-type sniffing.
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Leak only the origin on cross-site navigations.
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Drop powerful browser features we never use.
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+        ],
+      },
+    ];
+  },
+
   // NOTE: tried setting `turbopack.root: path.resolve(import.meta.dirname)`
   // here to silence the local-dev "multiple lockfiles" warning, but it
   // caused MIDDLEWARE_INVOCATION_FAILED on Vercel — the resolved path
