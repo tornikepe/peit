@@ -82,16 +82,21 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
 
   return (
     <>
-      {/* ── Desktop column ─────────────────────────────────────────────── */}
-      <aside className="hidden md:flex md:flex-col w-[240px] shrink-0 border-r border-white/[0.06] bg-[#0a0a14] sticky top-0 h-screen">
-        <div className="px-5 py-5 border-b border-white/[0.04]">
-          <Logo size="md" />
-        </div>
+      {/* ── Desktop column ─────────────────────────────────────────────────
+          The <aside> stretches to the full flex-container height (so its
+          background always reaches the page bottom — no mid-page seam), while
+          the inner column is sticky h-screen so the nav stays in view. */}
+      <aside className="hidden md:block w-[240px] shrink-0 border-r border-white/[0.06] bg-[#0a0a14]">
+        <div className="sticky top-0 h-screen flex flex-col">
+          <div className="px-5 py-5 border-b border-white/[0.04]">
+            <Logo size="md" />
+          </div>
 
-        <nav className="p-3 flex-1 overflow-y-auto">{items}</nav>
+          <nav className="p-3 flex-1 overflow-y-auto">{items}</nav>
 
-        <div className="p-4 border-t border-white/[0.04] text-[10px] text-gray-600 leading-relaxed">
-          © 2026 Peit · ვერსია 1.0
+          <div className="p-4 border-t border-white/[0.04] text-[10px] text-gray-600 leading-relaxed">
+            © 2026 Peit · ვერსია 1.0
+          </div>
         </div>
       </aside>
 
