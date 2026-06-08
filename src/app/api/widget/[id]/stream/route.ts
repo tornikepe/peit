@@ -67,7 +67,8 @@ export async function POST(
   try { body = await req.json(); }
   catch { return corsError(400, 'INVALID_JSON'); }
 
-  const attachments = sanitizeAttachments(body.attachments);
+  // Scope attachments to this bot's own upload folder (cross-tenant guard).
+  const attachments = sanitizeAttachments(body.attachments, id);
   const text = (body.text ?? '').trim();
   // Empty text is allowed when the visitor sent a file on its own.
   if (!text && attachments.length === 0) return corsError(400, 'EMPTY_TEXT');

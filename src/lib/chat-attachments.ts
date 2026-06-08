@@ -59,15 +59,25 @@ export async function resolveAttachments(
   return { images, docText: docParts.join('\n\n') };
 }
 
-/** Lightweight server-side validation of the client-sent attachment refs. */
-export function sanitizeAttachments(raw: unknown): MessageAttachment[] {
+/**
+ * Lightweight server-side validation of the client-sent attachment refs.
+ *
+ * SECURITY: the pathname must live under this bot's own upload prefix
+ * (`chat/<botId>/`). The upload endpoint always writes there, so this rejects
+ * a crafted ref that points at another tenant's private blob (cross-tenant
+ * read). Pass the bot id from the route to enforce it.
+ */
+export function sanitizeAttachments(raw: unknown, botId?: string): MessageAttachment[] {
   if (!Array.isArray(raw)) return [];
+  const prefix = botId ? `chat/${botId}/` : null;
   const out: MessageAttachment[] = [];
   for (const a of raw.slice(0, 5)) {
     if (!a || typeof a !== 'object') continue;
     const o = a as Record<string, unknown>;
     if (typeof o.url !== 'string' || typeof o.pathname !== 'string') continue;
     if (o.kind !== 'image' && o.kind !== 'document') continue;
+    // Reject refs that don't belong to this bot's own upload folder.
+    if (prefix && !o.pathname.startsWith(prefix)) continue;
     out.push({
       url:      o.url.slice(0, 1000),
       pathname: o.pathname.slice(0, 500),
