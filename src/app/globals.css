@@ -765,3 +765,35 @@ html[data-theme="light"] .cl-socialButtonsBlockButton {
 html[data-theme="light"] .cl-dividerLine { background-color: rgba(0, 0, 0, 0.1) !important; }
 html[data-theme="light"] .cl-modalCloseButton,
 html[data-theme="light"] .cl-modalCloseButton svg { color: #3a3f4a !important; }
+
+/* ===== Dashboard LIGHT theme =====================================
+   The dashboard is dark-by-default with hardcoded colors. When the Shell sets
+   data-theme="light" on .dash-root we repaint the finite set of surfaces, text
+   shades and white overlays here, scoped so dark mode and the rest of the app
+   are untouched. Blue accents work on both themes, so they're left alone. */
+.dash-root[data-theme="light"] { background-color: #f4f5f8 !important; color: #111827; }
+
+/* Surfaces (match regardless of any /opacity suffix). */
+.dash-root[data-theme="light"] [class*="bg-[#07070f]"] { background-color: #f4f5f8 !important; }
+.dash-root[data-theme="light"] [class*="bg-[#0a0a14]"] { background-color: #ffffff !important; }
+.dash-root[data-theme="light"] [class*="bg-[#0d0d1a]"] { background-color: #ffffff !important; }
+.dash-root[data-theme="light"] [class*="bg-[#13131f]"] { background-color: #eceff3 !important; }
+
+/* Text shades → dark equivalents. */
+.dash-root[data-theme="light"] .text-white    { color: #111827 !important; }
+.dash-root[data-theme="light"] .text-gray-100 { color: #111827 !important; }
+.dash-root[data-theme="light"] .text-gray-200 { color: #1f2937 !important; }
+.dash-root[data-theme="light"] .text-gray-300 { color: #374151 !important; }
+.dash-root[data-theme="light"] .text-gray-400 { color: #4b5563 !important; }
+.dash-root[data-theme="light"] .text-gray-500 { color: #6b7280 !important; }
+.dash-root[data-theme="light"] .text-gray-600 { color: #7b8494 !important; }
+.dash-root[data-theme="light"] .text-gray-700 { color: #99a1ad !important; }
+
+/* White overlays (fills + borders) → subtle dark so they show on a light bg. */
+.dash-root[data-theme="light"] [class*="bg-white/"]     { background-color: rgba(17, 24, 39, 0.035) !important; }
+.dash-root[data-theme="light"] [class*="border-white/"] { border-color: rgba(17, 24, 39, 0.10) !important; }
+.dash-root[data-theme="light"] [class*="hover:bg-white/"]:hover { background-color: rgba(17, 24, 39, 0.06) !important; }
+
+/* The glass utility uses a white film — flip it for light mode. */
+.dash-root[data-theme="light"] .glass { background: rgba(17, 24, 39, 0.025) !important; border-color: rgba(17,24,39,0.08) !important; }
+.dash-root[data-theme="light"] .glass:hover { background: rgba(17, 24, 39, 0.045) !important; }

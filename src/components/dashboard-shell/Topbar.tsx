@@ -11,13 +11,17 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Menu, Search, Bell, Plus, Settings } from 'lucide-react';
+import { Menu, Search, Bell, Plus, Settings, Sun, Moon } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import StorageModeBadge from '@/components/dashboard/StorageModeBadge';
 
-interface Props { onMenuClick: () => void }
+interface Props {
+  onMenuClick: () => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
+}
 
-export default function Topbar({ onMenuClick }: Props) {
+export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: Props) {
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#07070f]/85 backdrop-blur-xl">
       <div className="h-14 px-4 sm:px-6 flex items-center gap-3">
@@ -53,6 +57,18 @@ export default function Topbar({ onMenuClick }: Props) {
           >
             <Plus className="w-3 h-3" /> ახალი ბოტი
           </Link>
+
+          {onToggleTheme && (
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400 hover:text-white"
+              aria-label={theme === 'dark' ? 'ნათელ თემაზე გადართვა' : 'მუქ თემაზე გადართვა'}
+              title="თემა"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          )}
 
           <NotificationsBell />
 
