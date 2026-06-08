@@ -93,10 +93,6 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           </div>
 
           <nav className="p-3 flex-1 overflow-y-auto">{items}</nav>
-
-          <div className="p-4 border-t border-white/[0.04] text-[10px] text-gray-600 leading-relaxed">
-            © 2026 Peit · ვერსია 1.0
-          </div>
         </div>
       </aside>
 
