@@ -272,7 +272,7 @@ function HowItWorks({ t }: { t: LandingContent }) {
               <div className="how-num mono">0{i + 1}</div>
               <h3 className="how-t">{s.t}</h3>
               <p className="how-d">{s.d}</p>
-              <div className="how-note"><Icon name="check" size={15} sw={2} />{s.note}</div>
+              {s.note && <div className="how-note"><Icon name="check" size={15} sw={2} />{s.note}</div>}
             </div>
           ))}
         </div>
@@ -419,8 +419,8 @@ function FAQ({ t }: { t: LandingContent }) {
 }
 
 /* ---------- nav (text logo, no try-free button) ---------- */
-const LANGS: { code: 'ka' | 'en' | 'ru'; label: string }[] = [
-  { code: 'ka', label: 'ქარ' }, { code: 'en', label: 'EN' }, { code: 'ru', label: 'RU' },
+const LANGS: { code: 'ka' | 'en'; label: string }[] = [
+  { code: 'ka', label: 'ქარ' }, { code: 'en', label: 'EN' },
 ];
 function MarketingNav({ t, theme, toggleTheme }: { t: LandingContent; theme: 'dark' | 'light'; toggleTheme: () => void }) {
   const { lang, setLang } = useLanguage();
@@ -559,7 +559,8 @@ function MarketingFooter({ t }: { t: LandingContent }) {
 export default function MidnightLanding() {
   const { lang } = useLanguage();
   const { isSignedIn } = useAuth();
-  const t: LandingContent = LANDING[lang] ?? LANDING.ka;
+  // Russian was removed — anything other than 'en' (incl. a stale 'ru') uses ka.
+  const t: LandingContent = lang === 'en' ? LANDING.en : LANDING.ka;
   useReveal();
 
   // Light / dark theme — persisted, applied to .ms-root via data-theme.

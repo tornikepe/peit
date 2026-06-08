@@ -21,7 +21,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('peit-lang') as Lang | null;
-      if (saved && (saved === 'ka' || saved === 'en' || saved === 'ru')) {
+      // Russian was removed from the site — only Georgian/English are offered.
+      if (saved && (saved === 'ka' || saved === 'en')) {
         // Hydrating client-only state from localStorage is exactly the
         // case React docs call out as legitimate setState-in-effect:
         // we can't read localStorage during SSR, so this MUST happen post-mount.

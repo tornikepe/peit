@@ -285,7 +285,7 @@ export default function PrivacyDataPage() {
                 </div>
                 <p className="text-gray-500 text-xs mb-3">გადაგზავნილი email-ები ამ ენაზე იქნება.</p>
                 <div className="inline-flex rounded-xl border border-white/[0.08] bg-white/[0.02] p-1">
-                  {(['ka', 'en', 'ru'] as const).map(l => (
+                  {(['ka', 'en'] as const).map(l => (
                     <button
                       key={l}
                       onClick={() => patchPrefs({ locale: l })}
