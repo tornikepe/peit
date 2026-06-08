@@ -718,3 +718,15 @@ h1, h2, h3, h4 {
 .cl-navbarTitle * { color: #ffffff !important; }
 .cl-navbarTitleDescription,
 .cl-headerSubtitle { color: #aeb6c4 !important; }
+
+/* Prevent the layout shift when the Clerk modal opens. Clerk locks body scroll
+   (overflow:hidden) which removes the scrollbar and shifts the fixed nav.
+   Keep a permanent scrollbar gutter and cancel Clerk's padding compensation so
+   nothing moves. */
+html { overflow-y: scroll; }
+body { padding-right: 0 !important; }
+
+/* Modal close (X) — always visible (was near-black, only showed on hover). */
+.cl-modalCloseButton,
+.cl-modalCloseButton svg { color: #cdd4e0 !important; opacity: 1 !important; }
+.cl-modalCloseButton:hover { color: #ffffff !important; background: rgba(255,255,255,0.08) !important; }
