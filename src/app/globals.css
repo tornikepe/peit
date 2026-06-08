@@ -582,19 +582,35 @@ h1, h2, h3, h4 {
    classes (safe: this prefix is Clerk-only). Search: "Clerk dark theme".
    ===================================================================== */
 
-/* Surfaces: popover, cards, modal */
+/* Modal backdrop — centered + blurred (was top-aligned, no blur). */
+.cl-modalBackdrop {
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(9, 11, 22, 0.55) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Surfaces: popover, cards, modal — a lighter slate-blue (not near-black). */
 .cl-userButtonPopoverCard,
 .cl-card,
 .cl-cardBox,
 .cl-modalContent,
 .cl-popoverBox,
 .cl-menuList {
-  background-color: #0c0c16 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: #1b1e2e !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 24px 70px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.06) inset !important;
 }
 
-/* Modal left navigation / sidebar */
-.cl-navbar { background: #0a0a12 !important; border-color: rgba(255,255,255,0.06) !important; }
+/* Modal left navigation / sidebar — a touch darker than the card for depth. */
+.cl-navbar { background: #15172435 !important; background-color: #15182640 !important;
+  border-color: rgba(255,255,255,0.07) !important; }
+
+/* Inputs lighten to sit on the lighter card. */
+.cl-formFieldInput,
+.cl-input,
+.cl-selectButton { background-color: #262a3b !important; }
 
 /* Primary (bright) text */
 .cl-userButtonPopoverActionButton,
@@ -650,8 +666,8 @@ h1, h2, h3, h4 {
 .cl-formFieldInput,
 .cl-input,
 .cl-selectButton {
-  background-color: #13131f !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: #262a3b !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
 }
 
