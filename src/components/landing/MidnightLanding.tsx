@@ -355,7 +355,14 @@ function Pricing({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
               </div>
               {p.trial && <div className="plan-trial mono">{p.trial}</div>}
               <p className="plan-desc">{p.desc}</p>
-              <Link href={ctaHref} className={'btn ' + (p.popular ? 'btn-primary' : 'btn-ghost')} style={{ width: '100%' }}>{p.cta}</Link>
+              {p.enterprise ? (
+                // Enterprise: open an email to the sales inbox instead of routing.
+                <a href="mailto:info@peit.ge?subject=Peit%20Enterprise" className="btn btn-ghost" style={{ width: '100%' }}>{p.cta}</a>
+              ) : (
+                // Signed-in visitors go to billing (manage / upgrade), never the
+                // dashboard home; logged-out visitors start sign-up.
+                <Link href={ctaHref === '/dashboard' ? '/dashboard/billing' : ctaHref} className={'btn ' + (p.popular ? 'btn-primary' : 'btn-ghost')} style={{ width: '100%' }}>{p.cta}</Link>
+              )}
               <div className="rule" style={{ margin: '22px 0 18px' }} />
               <ul className="plan-feats">
                 {p.feats.map((f: string, j: number) => (

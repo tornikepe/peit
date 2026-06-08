@@ -22,11 +22,12 @@ export default function Navbar() {
 
   const activeLang = languages.find(l => l.code === lang) ?? languages[0];
 
+  // Point at the homepage sections (the standalone /pricing, /how-it-works and
+  // /blog routes were removed — linking to them 404'd from the legal pages).
   const navLinks = [
-    { label: t.nav.howItWorks, href: '/how-it-works' },
-    { label: t.nav.pricing,    href: '/pricing' },
+    { label: t.nav.howItWorks, href: '/#how' },
+    { label: t.nav.pricing,    href: '/#pricing' },
     { label: t.nav.industries, href: '/#industries' },
-    { label: t.nav.blog,       href: '/blog' },
   ];
 
   return (

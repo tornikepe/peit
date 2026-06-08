@@ -16,11 +16,12 @@ export default function Footer() {
   const { t } = useLanguage();
   const f = t.footer;
 
+  // /pricing, /how-it-works and /blog were removed — point at homepage sections
+  // so these never 404 from the legal pages.
   const productLinks = [
-    { label: f.features,    href: '/#features'    },
-    { label: f.pricing,     href: '/pricing'       },
-    { label: f.howItWorks,  href: '/how-it-works'  },
-    { label: f.blog,        href: '/blog'          },
+    { label: f.features,    href: '/#features' },
+    { label: f.pricing,     href: '/#pricing'  },
+    { label: f.howItWorks,  href: '/#how'      },
     ...alternativeLinks.map(l => ({ label: l.labelKey, href: l.href })),
   ];
 
