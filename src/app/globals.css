@@ -730,3 +730,38 @@ body { padding-right: 0 !important; }
 .cl-modalCloseButton,
 .cl-modalCloseButton svg { color: #cdd4e0 !important; opacity: 1 !important; }
 .cl-modalCloseButton:hover { color: #ffffff !important; background: rgba(255,255,255,0.08) !important; }
+
+/* ===== Clerk LIGHT theme — applied when the landing is in light mode =====
+   MidnightLanding mirrors its theme onto <html data-theme>, and the Clerk
+   modal renders in a portal at <body> level, so we switch it here. Higher
+   specificity than the dark `.cl-*` rules above, so these win. */
+html[data-theme="light"] .cl-modalBackdrop {
+  background: rgba(228, 232, 240, 0.5) !important;
+}
+html[data-theme="light"] .cl-card,
+html[data-theme="light"] .cl-modalContent,
+html[data-theme="light"] .cl-cardBox {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 24px 70px -20px rgba(0, 0, 0, 0.25) !important;
+}
+html[data-theme="light"] .cl-headerTitle,
+html[data-theme="light"] .cl-formFieldLabel,
+html[data-theme="light"] .cl-socialButtonsBlockButtonText,
+html[data-theme="light"] .cl-dividerText { color: #15171c !important; }
+html[data-theme="light"] .cl-headerSubtitle { color: #5b6470 !important; }
+html[data-theme="light"] .cl-formFieldInput,
+html[data-theme="light"] .cl-input {
+  background-color: #f3f4f6 !important;
+  color: #111111 !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme="light"] .cl-formFieldInput::placeholder,
+html[data-theme="light"] .cl-input::placeholder { color: #8b93a3 !important; }
+html[data-theme="light"] .cl-socialButtonsBlockButton {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.14) !important;
+}
+html[data-theme="light"] .cl-dividerLine { background-color: rgba(0, 0, 0, 0.1) !important; }
+html[data-theme="light"] .cl-modalCloseButton,
+html[data-theme="light"] .cl-modalCloseButton svg { color: #3a3f4a !important; }

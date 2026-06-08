@@ -612,6 +612,13 @@ export default function MidnightLanding() {
     });
   };
 
+  // Mirror the theme onto <html> so the Clerk auth modal (rendered in a portal
+  // outside .ms-root) can switch between light and dark with the landing.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    return () => { delete document.documentElement.dataset.theme; };
+  }, [theme]);
+
   // In-page anchor links scroll smoothly with an offset for the fixed nav,
   // instead of jumping (or opening a route).
   useEffect(() => {
