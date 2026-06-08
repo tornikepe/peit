@@ -281,21 +281,20 @@ function HowItWorks({ t }: { t: LandingContent }) {
   );
 }
 
-function Industries({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
+function Industries({ t }: { t: LandingContent }) {
   return (
     <section className="section" id="industries">
       <div className="wrap">
         <SectionHead kicker={t.industries.kicker} title={t.industries.title} sub={t.industries.sub} />
         <div className="ind-grid" style={{ marginTop: 56 }}>
           {t.industries.items.map((it, i) => (
-            <Link href={ctaHref} className="ind-card card" key={i} data-reveal data-delay={(i % 4) + 1}>
+            <div className="ind-card card" key={i} data-reveal data-delay={(i % 4) + 1}>
               <div className="ind-top">
                 <span className="ind-name">{it.t}</span>
-                <span className="ind-arrow"><Icon name="arrowUpRight" size={16} sw={1.8} /></span>
               </div>
               <p className="ind-d">{it.d}</p>
               <span className="ind-metric mono">{it.m}</span>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
@@ -619,7 +618,7 @@ export default function MidnightLanding() {
         <Hero t={t} ctaHref={ctaHref} />
         <Features t={t} />
         <HowItWorks t={t} />
-        <Industries t={t} ctaHref={ctaHref} />
+        <Industries t={t} />
         <Testimonials t={t} />
         <Pricing t={t} ctaHref={ctaHref} />
         <FinalCTA t={t} ctaHref={ctaHref} />
