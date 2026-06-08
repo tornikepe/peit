@@ -586,9 +586,9 @@ h1, h2, h3, h4 {
 .cl-modalBackdrop {
   align-items: center !important;
   justify-content: center !important;
-  background: rgba(9, 11, 22, 0.55) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
+  background: rgba(9, 11, 22, 0.5) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
 }
 
 /* Surfaces: popover, cards, modal — a lighter slate-blue (not near-black). */
@@ -600,8 +600,29 @@ h1, h2, h3, h4 {
 .cl-menuList {
   background-color: #1b1e2e !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
+  border-radius: 20px !important;
   box-shadow: 0 24px 70px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.06) inset !important;
 }
+
+/* "Continue with Google" + other social buttons — WHITE so the label is
+   clearly readable (was dark text on a dark surface). */
+.cl-socialButtonsBlockButton,
+.cl-socialButtonsIconButton {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border-radius: 12px !important;
+  min-height: 44px !important;
+  font-weight: 600 !important;
+}
+.cl-socialButtonsBlockButton:hover,
+.cl-socialButtonsIconButton:hover { background: #eef1f5 !important; }
+.cl-socialButtonsBlockButton *,
+.cl-socialButtonsBlockButtonText { color: #15171c !important; }
+
+/* Rounder inputs + primary button for a cleaner form. */
+.cl-formFieldInput,
+.cl-input { border-radius: 12px !important; min-height: 44px !important; }
+.cl-formButtonPrimary { border-radius: 12px !important; min-height: 46px !important; }
 
 /* Modal left navigation / sidebar — a touch darker than the card for depth. */
 .cl-navbar { background: #15172435 !important; background-color: #15182640 !important;
