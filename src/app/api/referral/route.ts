@@ -42,7 +42,7 @@ export const GET = withAuth(async ({ user }) => {
 
   return {
     code,
-    link: `${appUrl}/signup?ref=${encodeURIComponent(code)}`,
+    link: `${appUrl}/?ref=${encodeURIComponent(code)}`,
     rewardRules: {
       referredDiscountPercent: REFERRED_DISCOUNT_PERCENT,
       referrerFreeMonths:      REFERRER_FREE_MONTHS,

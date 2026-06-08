@@ -72,7 +72,7 @@ function parseChannel(v: string | undefined): Channel | undefined {
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const { userId } = await auth();
-  if (!userId) redirect('/signin');
+  if (!userId) redirect('/?signin=1');
 
   const params  = await searchParams;
   const preset  = parsePreset(params.range);

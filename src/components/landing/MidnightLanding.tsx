@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { useAuth, UserButton } from '@clerk/nextjs';
+import { useAuth, UserButton, SignInButton, SignUpButton } from '@clerk/nextjs';
 import { useLanguage } from '@/context/LanguageContext';
 import { LANDING } from '@/lib/landing-content';
 import Logo from '@/components/Logo';
@@ -500,8 +500,12 @@ function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'ligh
             </>
           ) : (
             <>
-              <Link href="/signin" className="nav-link nav-signin">{t.nav.signin}</Link>
-              <Link href="/signup" className="nav-signup">{t.nav.signup}</Link>
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                <button type="button" className="nav-link nav-signin">{t.nav.signin}</button>
+              </SignInButton>
+              <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
+                <button type="button" className="nav-signup">{t.nav.signup}</button>
+              </SignUpButton>
             </>
           )}
           <button className="nav-burger" onClick={() => setOpen(o => !o)} aria-label="Menu">
@@ -519,8 +523,12 @@ function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'ligh
           {isSignedIn
             ? <Link href="/dashboard" onClick={() => setOpen(false)}>{t.nav.dashboard}</Link>
             : <>
-                <Link href="/signin" onClick={() => setOpen(false)}>{t.nav.signin}</Link>
-                <Link href="/signup" className="nav-signup" onClick={() => setOpen(false)}>{t.nav.signup}</Link>
+                <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                  <button type="button" onClick={() => setOpen(false)}>{t.nav.signin}</button>
+                </SignInButton>
+                <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
+                  <button type="button" className="nav-signup" onClick={() => setOpen(false)}>{t.nav.signup}</button>
+                </SignUpButton>
               </>}
         </div>
       )}

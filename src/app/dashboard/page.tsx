@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const { userId } = await auth();
-  if (!userId) redirect('/signin');
+  if (!userId) redirect('/?signin=1');
 
   // currentUser() can throw with ClerkAPIResponseError when the JWT is
   // valid for `userId` (auth() above passed) but a downstream call to
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     user = await currentUser();
   } catch (e) {
     console.warn('[dashboard] currentUser() failed, redirecting to /signin:', e instanceof Error ? e.message : e);
-    redirect('/signin');
+    redirect('/?signin=1');
   }
   const firstName = user?.firstName ?? 'მომხმარებელი';
 

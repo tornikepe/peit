@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import MidnightLanding from "@/components/landing/MidnightLanding";
+import AuthModalLauncher from "@/components/auth/AuthModalLauncher";
 import JsonLd, { softwareApplicationSchema, faqPageSchema } from "@/components/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 // Chat widget is heavy + interactive but never visible above the fold,
@@ -38,6 +40,7 @@ export default function Home() {
       <JsonLd data={[softwareApplicationSchema(), faqPageSchema(FAQ_ITEMS)]} />
 
       <MidnightLanding />
+      <Suspense fallback={null}><AuthModalLauncher /></Suspense>
       <LazyChatWidget />
     </>
   );

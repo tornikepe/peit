@@ -10,7 +10,7 @@ import Shell from '@/components/dashboard-shell/Shell';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
-  if (!userId) redirect('/signin');
+  if (!userId) redirect('/?signin=1');
 
   return <Shell>{children}</Shell>;
 }
