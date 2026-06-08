@@ -13,7 +13,6 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Menu, Search, Bell, Plus, Settings, Sun, Moon } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
-import StorageModeBadge from '@/components/dashboard/StorageModeBadge';
 
 interface Props {
   onMenuClick: () => void;
@@ -49,8 +48,6 @@ export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: P
         <div className="flex-1 sm:hidden" />
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <StorageModeBadge />
-
           <Link
             href="/dashboard/bots/new"
             className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-3 py-1.5 rounded-lg whitespace-nowrap"
