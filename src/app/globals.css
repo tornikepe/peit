@@ -684,6 +684,8 @@ h1, h2, h3, h4 {
 .cl-badge { background: rgba(59,130,246,0.15) !important; border-color: rgba(59,130,246,0.25) !important; }
 
 /* Inputs */
+.cl-formFieldInput::placeholder,
+.cl-input::placeholder { color: #9aa3b6 !important; opacity: 1 !important; }
 .cl-formFieldInput,
 .cl-input,
 .cl-selectButton {

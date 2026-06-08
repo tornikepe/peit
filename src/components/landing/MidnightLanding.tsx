@@ -473,7 +473,16 @@ function MarketingNav({ t, theme, toggleTheme }: { t: any; theme: 'dark' | 'ligh
   return (
     <header className={'nav' + (scrolled ? ' scrolled' : '')}>
       <div className="wrap nav-inner">
-        <Logo size="md" />
+        <Logo
+          size="md"
+          onClick={(e) => {
+            // Already on the landing — smooth-scroll to top instead of reloading.
+            if (window.location.pathname === '/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+        />
         <nav className="nav-links">
           {links.map(l => (
             l.href.startsWith('#')

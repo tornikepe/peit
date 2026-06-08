@@ -11,6 +11,8 @@ interface LogoProps {
   /** Wordmark scale. */
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  /** Optional click handler (e.g. smooth-scroll to top when already home). */
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }
 
 const SIZES = {
@@ -19,7 +21,7 @@ const SIZES = {
   lg: 'text-3xl',
 } as const;
 
-export default function Logo({ href = '/', size = 'md', className = '' }: LogoProps) {
+export default function Logo({ href = '/', size = 'md', className = '', onClick }: LogoProps) {
   const text = (
     <span className={`font-extrabold text-white ${SIZES[size]} tracking-[-0.04em] leading-none`}>
       pe<span className="gradient-text">i</span>t
@@ -33,6 +35,7 @@ export default function Logo({ href = '/', size = 'md', className = '' }: LogoPr
     <Link
       href={href}
       aria-label="Peit"
+      onClick={onClick}
       className={`inline-flex items-center cursor-pointer transition-transform hover:-translate-y-px ${className}`}
     >
       {text}
