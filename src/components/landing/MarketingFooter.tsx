@@ -5,7 +5,7 @@
 // from any page); legal links are real pages.
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { LANDING } from '@/lib/landing-content';
 import Logo from '@/components/Logo';
@@ -14,6 +14,7 @@ export default function MarketingFooter() {
   const { lang } = useLanguage();
   const t = lang === 'en' ? LANDING.en : LANDING.ka;
   const pathname = usePathname();
+  const router = useRouter();
 
   const productItems = (t.footer.product as string[]).slice(0, 3); // drop "blog"
   const cols = [
@@ -24,11 +25,17 @@ export default function MarketingFooter() {
   ];
 
   function onAnchor(e: React.MouseEvent, href: string) {
-    if (pathname !== '/' || !href.startsWith('/#')) return;
-    const target = document.getElementById(href.slice(2));
-    if (!target) return;
+    if (!href.startsWith('/#')) return; // legal pages navigate normally
+    const id = href.slice(2);
     e.preventDefault();
-    window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 76, behavior: 'smooth' });
+    if (pathname === '/') {
+      const target = document.getElementById(id);
+      if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 76, behavior: 'smooth' });
+    } else {
+      // From another page: go home cleanly and scroll there (no #hash in URL).
+      try { sessionStorage.setItem('peit-scroll', id); } catch { /* ignore */ }
+      router.push('/');
+    }
   }
 
   return (

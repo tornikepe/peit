@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, UserButton, SignInButton, SignUpButton } from '@clerk/nextjs';
 import { useLanguage } from '@/context/LanguageContext';
 import { LANDING } from '@/lib/landing-content';
@@ -24,11 +24,19 @@ function applyTheme(theme: 'dark' | 'light') {
   document.documentElement.dataset.theme = theme;
 }
 
+/** Smooth-scroll to a homepage section with an offset for the fixed nav. */
+function scrollToSection(id: string) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 76, behavior: 'smooth' });
+}
+
 export default function MarketingNav() {
   const { lang, setLang } = useLanguage();
   const { isSignedIn } = useAuth();
   const t = lang === 'en' ? LANDING.en : LANDING.ka;
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -60,15 +68,26 @@ export default function MarketingNav() {
     { label: t.nav.industries, id: 'industries' },
   ];
 
-  // On the homepage, smooth-scroll to the section; elsewhere let the Link
-  // navigate to "/#id" (Next scrolls to the anchor after landing home).
-  function onAnchor(e: React.MouseEvent, id: string) {
-    setOpen(false);
+  // When we land back on the homepage from another page, scroll to the section
+  // the user asked for — kept in sessionStorage so the URL stays clean ("/"
+  // instead of "/#how").
+  useEffect(() => {
     if (pathname !== '/') return;
-    const target = document.getElementById(id);
-    if (!target) return;
+    let target: string | null = null;
+    try { target = sessionStorage.getItem('peit-scroll'); sessionStorage.removeItem('peit-scroll'); } catch { /* ignore */ }
+    if (target) setTimeout(() => scrollToSection(target!), 60);
+  }, [pathname]);
+
+  function onAnchor(e: React.MouseEvent, id: string) {
     e.preventDefault();
-    window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 76, behavior: 'smooth' });
+    setOpen(false);
+    if (pathname === '/') {
+      scrollToSection(id);
+    } else {
+      // From another page: go home cleanly (no #hash) and scroll after load.
+      try { sessionStorage.setItem('peit-scroll', id); } catch { /* ignore */ }
+      router.push('/');
+    }
   }
 
   return (

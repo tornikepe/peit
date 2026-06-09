@@ -25,6 +25,14 @@ function useReveal() {
     root?.classList.add('reveal-ready');
     const reveal = (el: Element) => {
       el.classList.add('in');
+      // Also pin the revealed state inline. A language toggle re-renders the
+      // whole landing; React then rewrites className from JSX and would wipe
+      // the `.in`/`.rv-done` classes, re-hiding everything so it animates in
+      // again. Inline styles aren't managed by React for these elements, so
+      // they survive the re-render and the layout stays put.
+      const s = (el as HTMLElement).style;
+      s.opacity = '1';
+      s.transform = 'none';
       setTimeout(() => el.classList.add('rv-done'), 820);
     };
     const check = () => {
@@ -170,7 +178,7 @@ function Hero({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
             <span>{t.hero.title1}</span><br />
             <span className="text-grad">{t.hero.title2}</span>
           </h1>
-          <p className="lede" data-reveal data-delay="2" style={{ marginTop: 22 }}>{t.hero.sub}</p>
+          <p className="lede hero-sub" data-reveal data-delay="2">{t.hero.sub}</p>
           <div className="hero-cta" data-reveal data-delay="3">
             <Link href={ctaHref} className="btn btn-primary btn-lg">{t.hero.cta1}<Icon name="arrow" size={18} sw={2} /></Link>
           </div>
