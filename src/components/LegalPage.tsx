@@ -3,8 +3,8 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowUp, ChevronRight } from 'lucide-react';
-import Navbar from './Navbar';
-import Footer from './Footer';
+import MarketingNav from './landing/MarketingNav';
+import MarketingFooter from './landing/MarketingFooter';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   legalDocs, legalLabels, legalUpdatedLabel,
@@ -89,9 +89,10 @@ export default function LegalPage({ slug }: Props) {
     .filter(s => s !== slug);
 
   return (
-    <>
-      <Navbar />
-      <main className="pt-24 pb-16 flex-1">
+    <div className="ms-root">
+      <div className="bg-grid" />
+      <MarketingNav />
+      <main className="legal-body pt-28 pb-16 flex-1">
         <article className="max-w-3xl mx-auto px-4 sm:px-6">
 
           {/* Header */}
@@ -193,7 +194,7 @@ export default function LegalPage({ slug }: Props) {
 
         </article>
       </main>
-      <Footer />
-    </>
+      <MarketingFooter />
+    </div>
   );
 }

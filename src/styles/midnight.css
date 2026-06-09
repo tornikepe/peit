@@ -403,3 +403,15 @@
    it's visible on the light background (the gradient "i" is unaffected). */
 .ms-root[data-theme="light"] a[aria-label="Peit"] > span,
 .ms-root[data-theme="light"] span[aria-label="Peit"] > span { color: var(--text) !important; }
+
+/* Legal pages reuse the marketing nav/footer inside .ms-root. Their content is
+   Tailwind dark-mode classes; in light theme, repaint text/overlays so it stays
+   readable (mirrors the dashboard light-theme approach). */
+.ms-root[data-theme="light"] .legal-body .text-white    { color: #111827 !important; }
+.ms-root[data-theme="light"] .legal-body .text-gray-300 { color: #374151 !important; }
+.ms-root[data-theme="light"] .legal-body .text-gray-400 { color: #4b5563 !important; }
+.ms-root[data-theme="light"] .legal-body .text-gray-500 { color: #6b7280 !important; }
+.ms-root[data-theme="light"] .legal-body .text-gray-600,
+.ms-root[data-theme="light"] .legal-body .text-gray-700 { color: #7b8494 !important; }
+.ms-root[data-theme="light"] .legal-body [class*="bg-white/"]     { background-color: rgba(17,24,39,0.04) !important; }
+.ms-root[data-theme="light"] .legal-body [class*="border-white/"] { border-color: rgba(17,24,39,0.10) !important; }
