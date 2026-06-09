@@ -45,17 +45,17 @@ function renderInline(text: string): React.ReactNode[] {
 function Block({ block }: { block: LegalBlock }) {
   if (block.kind === 'p') {
     return (
-      <p className="text-gray-300 leading-relaxed mb-4 last:mb-0">
+      <p className="text-gray-300 leading-relaxed mb-4 last:mb-0 max-w-2xl mx-auto">
         {renderInline(block.text)}
       </p>
     );
   }
   if (block.kind === 'ul') {
     return (
-      <ul className="mb-4 last:mb-0 flex flex-col gap-2">
+      <ul className="mb-4 last:mb-0 flex flex-col items-center gap-2.5 max-w-2xl mx-auto">
         {block.items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-gray-300 leading-relaxed">
-            <span className="mt-2 w-1 h-1 rounded-full bg-violet-400 shrink-0" />
+          <li key={i} className="flex items-center justify-center gap-2.5 text-gray-300 leading-relaxed">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
             <span>{renderInline(item)}</span>
           </li>
         ))}
@@ -63,9 +63,9 @@ function Block({ block }: { block: LegalBlock }) {
     );
   }
   return (
-    <ol className="mb-4 last:mb-0 flex flex-col gap-2 list-decimal list-inside">
+    <ol className="mb-4 last:mb-0 flex flex-col items-center gap-2 list-decimal list-inside max-w-2xl mx-auto">
       {block.items.map((item, i) => (
-        <li key={i} className="text-gray-300 leading-relaxed pl-1">
+        <li key={i} className="text-gray-300 leading-relaxed">
           {renderInline(item)}
         </li>
       ))}
@@ -93,7 +93,7 @@ export default function LegalPage({ slug }: Props) {
       <div className="bg-grid" />
       <MarketingNav />
       <main className="legal-body pt-28 pb-16 flex-1">
-        <article className="max-w-3xl mx-auto px-4 sm:px-6">
+        <article className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
 
           {/* Header */}
           <header className="mb-12">
@@ -129,7 +129,7 @@ export default function LegalPage({ slug }: Props) {
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
-                    className="group flex items-center gap-2 text-sm text-gray-400 hover:text-violet-300 transition-colors"
+                    className="group inline-flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-violet-300 transition-colors"
                   >
                     <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-violet-400 transition-colors" />
                     <span>{s.title}</span>
@@ -170,7 +170,7 @@ export default function LegalPage({ slug }: Props) {
                 <Link
                   key={s}
                   href={`/${s}`}
-                  className="group flex items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] px-4 py-3 transition-colors"
+                  className="group flex items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] px-4 py-3 transition-colors"
                 >
                   <span className="text-sm text-gray-300 group-hover:text-white">
                     {legalLabels[s][lang]}
