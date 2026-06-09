@@ -93,12 +93,15 @@ export default function LegalPage({ slug }: Props) {
       {/* Nav is fixed; keep it in its own .ms-root so it gets the marketing
           styling. The content lives OUTSIDE .ms-root — that scope has a
           `* { margin:0; padding:0 }` reset that would otherwise wipe every
-          Tailwind spacing utility on the legal copy. */}
-      <div className="ms-root">
+          Tailwind spacing utility on the legal copy.
+          minHeight:0 overrides .ms-root's `min-height:100vh`, which would
+          otherwise make this nav-only wrapper a full screen tall and push the
+          content a whole viewport down (blank page until you scroll). */}
+      <div className="ms-root" style={{ minHeight: 0 }}>
         <div className="bg-grid" />
         <MarketingNav />
       </div>
-      <main className="bg-[#07070f] text-gray-200 pt-28 pb-20 min-h-screen">
+      <main className="bg-[#07070f] text-gray-200 pt-36 pb-20 min-h-screen">
         <article className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
 
           {/* Header */}
@@ -200,7 +203,7 @@ export default function LegalPage({ slug }: Props) {
 
         </article>
       </main>
-      <div className="ms-root">
+      <div className="ms-root" style={{ minHeight: 0 }}>
         <MarketingFooter />
       </div>
     </>
