@@ -38,6 +38,7 @@ function rowToBot(
     languages:    row.languages as BotLang[],
     primaryLang:  row.primaryLang as BotLang,
     tone:         row.tone as BotTone,
+    instructions: row.instructions ?? '',
     greeting:     row.greeting as Partial<Record<BotLang, string>>,
     fallback:     row.fallback as Partial<Record<BotLang, string>>,
     websiteUrl:   row.websiteUrl ?? undefined,
@@ -197,6 +198,7 @@ export interface UpdateBotInput {
   languages?: BotLang[];
   primaryLang?: BotLang;
   tone?: BotTone;
+  instructions?: string;
   greeting?: Partial<Record<BotLang, string>>;
   fallback?: Partial<Record<BotLang, string>>;
   websiteUrl?: string | null;
@@ -237,6 +239,7 @@ export async function updateBotForUser(
     if (patch.languages !== undefined)   update.languages = patch.languages;
     if (patch.primaryLang !== undefined) update.primaryLang = patch.primaryLang;
     if (patch.tone !== undefined)        update.tone = patch.tone;
+    if (patch.instructions !== undefined) update.instructions = patch.instructions;
     if (patch.greeting !== undefined)    update.greeting = patch.greeting;
     if (patch.fallback !== undefined)    update.fallback = patch.fallback;
     if (patch.websiteUrl !== undefined)  update.websiteUrl = patch.websiteUrl;

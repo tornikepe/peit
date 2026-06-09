@@ -38,6 +38,8 @@ export interface Bot {
   languages: BotLang[];
   primaryLang: BotLang;
   tone: BotTone;
+  /** Free-form owner instructions that tailor the bot to their business. */
+  instructions?: string;
   greeting: Partial<Record<BotLang, string>>;
   fallback: Partial<Record<BotLang, string>>;
   faqs: FAQItem[];
@@ -142,6 +144,7 @@ export function makeNewBot(partial: Partial<Bot> = {}): Bot {
     languages: ['ka'],
     primaryLang: 'ka',
     tone: 'friendly',
+    instructions: '',
     greeting: { ka: DEFAULT_GREETINGS.ka },
     fallback: { ka: DEFAULT_FALLBACKS.ka },
     faqs: [],

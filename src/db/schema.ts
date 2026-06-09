@@ -152,6 +152,9 @@ export const bots = pgTable('bots', {
   languages:    jsonb('languages').$type<string[]>().notNull().default(['ka']),
   primaryLang:  varchar('primary_lang', { length: 4 }).notNull().default('ka'),
   tone:         varchar('tone', { length: 20 }).notNull().default('friendly'),
+  /** Free-form instructions the owner writes to tailor the bot to their
+   *  business (highest-priority system-prompt block). */
+  instructions: text('instructions').notNull().default(''),
   greeting:     jsonb('greeting').$type<Record<string, string>>().notNull().default({}),
   fallback:     jsonb('fallback').$type<Record<string, string>>().notNull().default({}),
   websiteUrl:   text('website_url'),

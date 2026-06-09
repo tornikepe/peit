@@ -35,6 +35,8 @@ export interface AnswerInput {
   tone:         BotTone;
   lang:         BotLang;
   websiteUrl?:  string;
+  /** Free-form instructions the business owner wrote for this bot. */
+  instructions?: string;
   history?:     { role: 'user' | 'assistant'; content: string }[];
   /** Visitor-attached images (base64) — only Claude consumes these. */
   images?:      { mediaType: string; data: string }[];

@@ -12,6 +12,7 @@ import {
 import { useBots } from '@/context/BotsContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
 import AllowedOrigins from '@/components/dashboard/AllowedOrigins';
+import BotInstructionsEditor from '@/components/dashboard/BotInstructionsEditor';
 import ChannelsPanel  from '@/components/dashboard/ChannelsPanel';
 import QuickRepliesEditor from '@/components/dashboard/QuickRepliesEditor';
 import CustomCssEditor    from '@/components/dashboard/CustomCssEditor';
@@ -343,6 +344,9 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 </div>
               )}
             </div>
+
+            {/* Owner instructions — tailor the bot to this business */}
+            <BotInstructionsEditor botId={bot.id} initial={bot.instructions ?? ''} />
 
             {/* Settings summary */}
             <div className="glass rounded-2xl p-6">

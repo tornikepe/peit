@@ -61,6 +61,8 @@ interface AnswerInput {
   tone:         BotTone;
   lang:         BotLang;
   websiteUrl?:  string;
+  /** Free-form instructions the business owner wrote for this bot. */
+  instructions?: string;
   /** Past turns for conversational continuity — newest last. */
   history?:     { role: 'user' | 'assistant'; content: string }[];
   /** Images the visitor attached (Feature #3) — base64, for vision. */
@@ -76,11 +78,21 @@ interface AnswerInput {
  * cache breakpoint — it changes per question so it'd never cache anyway.
  */
 function buildSystem(input: AnswerInput): Anthropic.TextBlockParam[] {
+  // The business owner's own instructions take priority — this is how a
+  // customer tailors the bot to their business ("always offer a free trial",
+  // "collect a phone number", "never discuss competitors", etc.).
+  const owner = input.instructions?.trim();
+  const ownerBlock = owner
+    ? `BUSINESS OWNER INSTRUCTIONS (highest priority — always follow these for this business):\n${owner.slice(0, 4000)}\n\n`
+    : '';
+
   const frozen =
     `You are an AI assistant for "${input.botName}"${input.industry ? ` (${input.industry})` : ''}.\n` +
     `Tone: ${TONE_DESC[input.tone]}\n` +
     `Language: reply in ${LANG_DESC[input.lang]}.\n\n` +
+    ownerBlock +
     `INSTRUCTIONS:\n` +
+    `- Follow the BUSINESS OWNER INSTRUCTIONS above whenever they apply.\n` +
     `- Answer ONLY using the CONTEXT below. Do not invent facts.\n` +
     `- If the answer is not in the context, politely say so and suggest contacting the team.\n` +
     `- Keep answers concise: 2–4 sentences unless the user asks for detail.\n` +

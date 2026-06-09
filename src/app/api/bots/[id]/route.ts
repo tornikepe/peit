@@ -33,6 +33,9 @@ export const PATCH = withAuth<{ id: string }>(async ({ user, req, params }) => {
   if (patch.customCss !== undefined) {
     patch.customCss = sanitizeCustomCss(patch.customCss);
   }
+  if (patch.instructions !== undefined) {
+    patch.instructions = typeof patch.instructions === 'string' ? patch.instructions.slice(0, 4000) : '';
+  }
 
   const bot = await updateBotForUser(user.id, params.id, patch);
   if (!bot) return jsonError(404, 'NOT_FOUND');

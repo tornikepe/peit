@@ -46,16 +46,25 @@ interface AnswerInput {
   tone:         BotTone;
   lang:         BotLang;
   websiteUrl?:  string;
+  /** Free-form instructions the business owner wrote for this bot. */
+  instructions?: string;
   history?:     { role: 'user' | 'assistant'; content: string }[];
 }
 
 /** Build the system instruction + context block as one big string. */
 function buildSystemText(input: AnswerInput): string {
+  const owner = input.instructions?.trim();
+  const ownerBlock = owner
+    ? `BUSINESS OWNER INSTRUCTIONS (highest priority — always follow these for this business):\n${owner.slice(0, 4000)}\n\n`
+    : '';
+
   const frozen =
     `You are an AI assistant for "${input.botName}"${input.industry ? ` (${input.industry})` : ''}.\n` +
     `Tone: ${TONE_DESC[input.tone]}\n` +
     `Language: reply in ${LANG_DESC[input.lang]}.\n\n` +
+    ownerBlock +
     `INSTRUCTIONS:\n` +
+    `- Follow the BUSINESS OWNER INSTRUCTIONS above whenever they apply.\n` +
     `- Answer ONLY using the CONTEXT below. Do not invent facts.\n` +
     `- If the answer is not in the context, politely say so and suggest contacting the team.\n` +
     `- Keep answers concise: 2–4 sentences unless the user asks for detail.\n` +
