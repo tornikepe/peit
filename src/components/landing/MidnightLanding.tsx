@@ -14,45 +14,15 @@ import { Icon } from './Icon';
 import MarketingNav from './MarketingNav';
 import MarketingFooter from './MarketingFooter';
 
-/* ---------- scroll reveal ---------- */
+/* ---------- scroll reveal ----------
+   Intentionally a NO-OP. The reveal animation (hide → slide-up on scroll) was
+   re-triggering on every language toggle (the toggle re-renders the landing,
+   which disturbs the JS-applied reveal state) — making the whole page appear
+   to "grow"/shift when switching ka↔en. Keeping all [data-reveal] content
+   statically visible (we never add `.reveal-ready`) makes the layout stable:
+   switching language now only reflows text, with no animation. */
 function useReveal() {
-  useEffect(() => {
-    let raf = 0;
-    // Opt into the hidden-then-animate behaviour only now that JS runs.
-    // Until .reveal-ready is present, all [data-reveal] content stays visible,
-    // so a JS/hydration failure can never blank out or freeze the page.
-    const root = document.querySelector('.ms-root');
-    root?.classList.add('reveal-ready');
-    const reveal = (el: Element) => {
-      el.classList.add('in');
-      // Also pin the revealed state inline. A language toggle re-renders the
-      // whole landing; React then rewrites className from JSX and would wipe
-      // the `.in`/`.rv-done` classes, re-hiding everything so it animates in
-      // again. Inline styles aren't managed by React for these elements, so
-      // they survive the re-render and the layout stays put.
-      const s = (el as HTMLElement).style;
-      s.opacity = '1';
-      s.transform = 'none';
-      setTimeout(() => el.classList.add('rv-done'), 820);
-    };
-    const check = () => {
-      raf = 0;
-      const vh = window.innerHeight || document.documentElement.clientHeight;
-      document.querySelectorAll('.ms-root [data-reveal]:not(.in)').forEach(el => {
-        const r = el.getBoundingClientRect();
-        if (r.top < vh * 0.94 && r.bottom > -40) reveal(el);
-      });
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
-    const timers = [0, 80, 200, 400, 700, 1100, 1600].map(d => window.setTimeout(check, d));
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      timers.forEach(clearTimeout); if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
+  // no-op — content stays visible; see comment above.
 }
 
 function CountUp({ value, className }: { value: string; className?: string }) {

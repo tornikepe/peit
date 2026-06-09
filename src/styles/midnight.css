@@ -98,7 +98,9 @@
   border: 1px solid var(--line-strong); }
 .ms-root .btn-ghost:hover { background: var(--panel-2); border-color: var(--accent-line); transform: translateY(-2px); }
 .ms-root .btn-sm { padding: 9px 15px; font-size: 13.5px; border-radius: 10px; }
-.ms-root .btn-lg { padding: 16px 28px; font-size: 16px; border-radius: 14px; }
+/* min-width so the big CTAs render at the same width in ka and en (the text
+   length differs between languages) — no width jump on language toggle. */
+.ms-root .btn-lg { padding: 16px 28px; font-size: 16px; border-radius: 14px; min-width: 16rem; }
 .ms-root .card { background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
