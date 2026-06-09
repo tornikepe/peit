@@ -39,8 +39,12 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
   // Initialize lang to bot's primary, and seed greeting
   useEffect(() => {
     if (bot) {
-      setActiveLang(bot.primaryLang);
-      const greet = bot.greeting[bot.primaryLang] ?? DEFAULT_GREETINGS[bot.primaryLang];
+      // Russian was removed product-wide; fall back if an old bot's primary was 'ru'.
+      const primary: BotLang = bot.primaryLang === 'ru'
+        ? (bot.languages.find(l => l !== 'ru') ?? 'ka')
+        : bot.primaryLang;
+      setActiveLang(primary);
+      const greet = bot.greeting[primary] ?? DEFAULT_GREETINGS[primary];
       setMsgs([{ id: 0, from: 'bot', text: greet }]);
     }
   }, [bot?.id]);
@@ -165,9 +169,9 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
 
           <div className="flex items-center gap-2">
             {/* Language switcher (only if multi-lang) */}
-            {bot.languages.length > 1 && (
+            {bot.languages.filter(l => l !== 'ru').length > 1 && (
               <div className="flex items-center gap-1 bg-white/[0.04] border border-white/[0.08] rounded-xl p-1">
-                {bot.languages.map(l => (
+                {bot.languages.filter(l => l !== 'ru').map(l => (
                   <button
                     key={l}
                     onClick={() => setActiveLang(l)}

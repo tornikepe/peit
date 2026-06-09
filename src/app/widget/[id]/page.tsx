@@ -324,6 +324,14 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
         if (typeof b.customCss !== 'string')  b.customCss = '';
         if (b.abGreeting === undefined)       b.abGreeting = null;
         if (b.activeFlow === undefined)       b.activeFlow = null;
+        // Russian was removed product-wide. Older bots may still have 'ru' in
+        // their stored config — drop it so the widget never offers a Russian
+        // flag, and fall the primary language back to a supported one.
+        if (Array.isArray(b.languages)) {
+          b.languages = b.languages.filter(l => l !== 'ru');
+          if (b.languages.length === 0) b.languages = ['ka'];
+        }
+        if (b.primaryLang === 'ru') b.primaryLang = b.languages[0] ?? 'ka';
         setBot(b);
         if (b.abGreeting) setAbVariantId(b.abGreeting.id);
         // Start the flow on first load — only when there's no restored

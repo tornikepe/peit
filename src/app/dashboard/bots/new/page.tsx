@@ -16,10 +16,10 @@ import {
   type Bot, type BotLang, type BotTone, type FAQItem, type KnowledgeChunk,
 } from '@/lib/bots';
 
+// Russian was removed product-wide — new bots offer Georgian + English only.
 const LANG_OPTIONS: { value: BotLang; label: string; flag: string }[] = [
   { value: 'ka', label: 'ქართული',  flag: '🇬🇪' },
   { value: 'en', label: 'English',  flag: '🇬🇧' },
-  { value: 'ru', label: 'Русский', flag: '🇷🇺' },
 ];
 
 const STEPS = [

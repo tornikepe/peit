@@ -6,6 +6,7 @@
 // route changes don't spam the endpoint.
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const CACHE_KEY = 'peit_health';
 const CACHE_MS  = 60_000;
@@ -25,8 +26,13 @@ function pickLang(): Lang {
 
 export default function StatusBanner() {
   const [degraded, setDegraded] = useState(false);
+  const pathname = usePathname();
+  // The embeddable widget runs inside customers' sites — never probe health or
+  // show our status banner there.
+  const onWidget = pathname?.startsWith('/widget');
 
   useEffect(() => {
+    if (onWidget) return;
     let cancelled = false;
 
     // Honor a fresh cached verdict to avoid re-probing on every navigation.
@@ -56,9 +62,9 @@ export default function StatusBanner() {
       .catch(() => { /* network error from the client side — don't assume the service is down */ });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [onWidget]);
 
-  if (!degraded) return null;
+  if (onWidget || !degraded) return null;
 
   return (
     <div
