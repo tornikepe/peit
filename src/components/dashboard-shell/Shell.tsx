@@ -33,8 +33,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="dash-root min-h-screen bg-[#07070f] flex" data-theme={theme}>
+      {/* Ambient background — two soft radial glows + a faint dot grid so the
+          canvas isn't flat black. Fixed and pointer-transparent; the sidebar
+          and content column are `relative` so they paint above it. Light
+          theme swaps the colors via globals.css (.dash-ambient override). */}
+      <div className="dash-ambient" aria-hidden />
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="relative flex-1 min-w-0 flex flex-col">
         <Topbar onMenuClick={() => setMobileOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="max-w-7xl mx-auto w-full">

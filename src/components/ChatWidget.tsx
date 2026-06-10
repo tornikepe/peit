@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Zap, Send, MessageSquare } from 'lucide-react';
+import { X, Send, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
+import Logo from '@/components/Logo';
 
-type Lang = 'ka' | 'en' | 'ru';
+// Russian was removed product-wide — the assistant speaks ka/en only.
+type Lang = 'ka' | 'en';
 
 interface Message {
   id: number;
@@ -17,32 +19,26 @@ const responses: Record<string, Record<Lang, string>> = {
   pricing: {
     ka: 'ჩვენ გვაქვს 4 პლანი: Basic (₾45/თვე), Pro (₾65/თვე), Ultimate (₾155/თვე) და Enterprise. ყველა იწყება 7-დღიანი უფასო ტრიალით! 💜',
     en: 'We have 4 plans: Basic (₾45/mo), Pro (₾65/mo), Ultimate (₾155/mo) and Enterprise. All start with a 7-day free trial! 💜',
-    ru: 'У нас 4 плана: Basic (₾45/мес), Pro (₾65/мес), Ultimate (₾155/мес) и Enterprise. Все начинаются с 7-дневного бесплатного триала! 💜',
   },
   setup: {
     ka: 'Setup ძალიან მარტივია! ატვირთე FAQ ფაილი ან შეიყვანე ვებსაიტის URL — ბოტი 10 წუთში მზადაა. კოდის ცოდნა საჭირო არ არის. 🚀',
     en: 'Setup is super easy! Upload a FAQ file or enter your website URL — bot is ready in 10 minutes. No coding required. 🚀',
-    ru: 'Настройка очень простая! Загрузите FAQ-файл или введите URL сайта — бот готов за 10 минут. Знание кода не нужно. 🚀',
   },
   channels: {
     ka: 'Peit მუშაობს ყველა არხზე: ვებსაიტი, Telegram, Instagram, Facebook Messenger. ყველა საუბარი ერთ dashboard-ში! 📱',
     en: 'Peit works on all channels: website, Telegram, Instagram, Facebook Messenger. All conversations in one dashboard! 📱',
-    ru: 'Peit работает на всех каналах: сайт, Telegram, Instagram, Facebook Messenger. Все разговоры в одном dashboard! 📱',
   },
   trial: {
     ka: 'დიახ! 7 დღე სრულიად უფასოდ — საკრედიტო ბარათი საჭირო არ არის. ტრიალის შემდეგ გადახვალ შენთვის სასურველ პლანზე. ✨',
     en: 'Yes! 7 days completely free — no credit card required. After the trial you choose the plan that suits you. ✨',
-    ru: 'Да! 7 дней полностью бесплатно — кредитная карта не нужна. После триала выбираете подходящий план. ✨',
   },
   languages: {
-    ka: 'ბოტი ბუნებრივ ქართულად, ინგლისურად და რუსულად საუბრობს. ყოველი კლიენტი საკუთარ ენაზე ემსახურება! 🇬🇪',
-    en: 'The bot speaks natural Georgian, English, and Russian. Every customer is served in their own language! 🇬🇪',
-    ru: 'Бот говорит на естественном грузинском, английском и русском языках. Каждый клиент обслуживается на своём языке! 🇬🇪',
+    ka: 'ბოტი ბუნებრივ ქართულად და ინგლისურად საუბრობს. ყოველი კლიენტი საკუთარ ენაზე ემსახურება! 🇬🇪',
+    en: 'The bot speaks natural Georgian and English. Every customer is served in their own language! 🇬🇪',
   },
   default: {
     ka: 'გამარჯობა! 👋 მე ვარ Peit AI. შემიძლია გიპასუხო ფასების, setup-ის, ფუნქციების ან ტრიალის შესახებ. რა გაინტერესებს?',
     en: 'Hello! 👋 I\'m Peit AI. I can answer questions about pricing, setup, features or trial. What would you like to know?',
-    ru: 'Привет! 👋 Я Peit AI. Могу ответить на вопросы о ценах, настройке, функциях или триале. Что вас интересует?',
   },
 };
 
@@ -65,56 +61,55 @@ const quickReplies: Record<Lang, QuickReply[]> = {
     { label: '📱 Channels', intent: 'channels' },
     { label: '🎁 Trial',    intent: 'trial'    },
   ],
-  ru: [
-    { label: '💰 Цены',      intent: 'цены'      },
-    { label: '⚙️ Настройка', intent: 'настройка' },
-    { label: '📱 Каналы',    intent: 'каналы'    },
-    { label: '🎁 Триал',     intent: 'триал'     },
-  ],
 };
 
 const uiText: Record<Lang, {
-  name: string; online: string; placeholder: string;
+  subtitle: string; online: string; placeholder: string;
   ctaBtn: string; ctaNote: string; greeting: string;
 }> = {
   ka: {
-    name: 'Peit AI',
+    subtitle: 'AI ასისტენტი',
     online: 'ახლა ონლაინ',
     placeholder: 'შეტყობინება...',
     ctaBtn: 'უფასოდ სცადე →',
     ctaNote: 'საკრედიტო ბარათი არ სჭირდება',
-    greeting: 'გამარჯობა! 👋 მე ვარ Peit AI. როგორ შეგიძლია დაგეხმარო?',
+    greeting: 'გამარჯობა! 👋 მე ვარ Peit AI. როგორ შემიძლია დაგეხმარო?',
   },
   en: {
-    name: 'Peit AI',
+    subtitle: 'AI assistant',
     online: 'Online now',
     placeholder: 'Type a message...',
     ctaBtn: 'Try Free →',
     ctaNote: 'No credit card required',
     greeting: 'Hello! 👋 I\'m Peit AI. How can I help you?',
   },
-  ru: {
-    name: 'Peit AI',
-    online: 'Онлайн',
-    placeholder: 'Написать сообщение...',
-    ctaBtn: 'Попробовать →',
-    ctaNote: 'Карта не нужна',
-    greeting: 'Привет! 👋 Я Peit AI. Как могу помочь?',
-  },
 };
 
 function getBotResponse(input: string, lang: Lang): string {
   const lower = input.toLowerCase();
-  if (/ფა[სზ]|price|pricing|plan|пла[нь]|цен/i.test(lower)) return responses.pricing[lang];
-  if (/setup|კონფი|настр|install|დაყ|ინს/i.test(lower)) return responses.setup[lang];
-  if (/არხ|channel|канал|мессендж|telegram|instagram|messenger|facebook/i.test(lower)) return responses.channels[lang];
-  if (/trial|ტრი|триал|უფასო|free|бесплат/i.test(lower)) return responses.trial[lang];
-  if (/ენ[აა]|language|язык|georgian|ქართ|рус|english/i.test(lower)) return responses.languages[lang];
+  if (/ფა[სზ]|price|pricing|plan/i.test(lower)) return responses.pricing[lang];
+  if (/setup|კონფი|install|დაყ|ინს/i.test(lower)) return responses.setup[lang];
+  if (/არხ|channel|telegram|instagram|messenger|facebook/i.test(lower)) return responses.channels[lang];
+  if (/trial|ტრი|უფასო|free/i.test(lower)) return responses.trial[lang];
+  if (/ენ[აა]|language|georgian|ქართ|english/i.test(lower)) return responses.languages[lang];
   return responses.default[lang];
 }
 
+/** Brand monogram avatar — the gradient "p" from the peit wordmark, so the
+ *  assistant carries the same logo as the rest of the site. */
+function BotAvatar({ size = 'md' }: { size?: 'sm' | 'md' }) {
+  const cls = size === 'md' ? 'w-9 h-9 text-[17px]' : 'w-6 h-6 text-[11px]';
+  return (
+    <div className={`${cls} rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shrink-0 select-none ring-1 ring-white/15`}>
+      <span className="font-extrabold text-white leading-none tracking-[-0.04em] -translate-y-px">p</span>
+    </div>
+  );
+}
+
 export default function ChatWidget() {
-  const { lang } = useLanguage();
+  const { lang: ctxLang } = useLanguage();
+  // Context may carry legacy values; the assistant only speaks ka/en.
+  const lang: Lang = ctxLang === 'en' ? 'en' : 'ka';
   const ui = uiText[lang];
 
   const [open, setOpen] = useState(false);
@@ -189,21 +184,23 @@ export default function ChatWidget() {
           }}
         >
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-violet-600/20 border-b border-white/[0.06] shrink-0">
+          {/* Header — brand wordmark + monogram avatar so the assistant
+              visually belongs to the site. */}
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600/25 via-violet-600/10 to-transparent border-b border-white/[0.06] shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shrink-0">
-                <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
-              </div>
+              <BotAvatar />
               <div>
-                <p className="text-sm font-semibold text-white">{ui.name}</p>
-                <div className="flex items-center gap-1">
+                <div className="flex items-baseline gap-1.5">
+                  <Logo href={null} size="sm" />
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-violet-300/80">{ui.subtitle}</span>
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
                   <p className="text-xs text-gray-400">{ui.online}</p>
                 </div>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors p-1">
+            <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors p-1" aria-label="close chat">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -213,8 +210,8 @@ export default function ChatWidget() {
             {msgs.map(m => (
               <div key={m.id} className={`flex gap-2 ${m.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {m.from === 'bot' && (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <Zap className="w-3 h-3 text-white" strokeWidth={2.5} />
+                  <div className="mt-0.5">
+                    <BotAvatar size="sm" />
                   </div>
                 )}
                 <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
@@ -230,8 +227,8 @@ export default function ChatWidget() {
             {/* Typing indicator */}
             {typing && (
               <div className="flex gap-2 justify-start">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shrink-0 mt-0.5">
-                  <Zap className="w-3 h-3 text-white" strokeWidth={2.5} />
+                <div className="mt-0.5">
+                  <BotAvatar size="sm" />
                 </div>
                 <div className="bg-white/[0.07] px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -250,7 +247,7 @@ export default function ChatWidget() {
                 <button
                   key={qr.intent}
                   onClick={() => send(qr.intent)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-violet-500/30 text-violet-300 hover:bg-violet-500/10 transition-colors"
+                  className="text-xs px-3 py-1.5 rounded-full border border-violet-500/30 text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/50 transition-colors"
                 >
                   {qr.label}
                 </button>
@@ -275,7 +272,7 @@ export default function ChatWidget() {
             <button
               onClick={() => send()}
               disabled={!input.trim() || typing}
-              className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 flex items-center justify-center transition-colors shrink-0"
+              className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 flex items-center justify-center transition-colors shrink-0"
               aria-label="გაგზავნა"
             >
               <Send className="w-3.5 h-3.5 text-white" />
@@ -296,7 +293,7 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/40 hover:shadow-violet-500/60 hover:scale-105 transition-all"
+        className="relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center ring-1 ring-white/20 shadow-lg shadow-violet-500/40 hover:shadow-violet-500/60 hover:scale-105 active:scale-95 transition-all"
         aria-label="გახსენი ჩატი"
       >
         {open

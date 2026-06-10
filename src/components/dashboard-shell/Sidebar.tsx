@@ -13,17 +13,18 @@ import {
   Settings, ShieldCheck, ChevronRight, X, ThumbsDown, Gift,
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { useLanguage } from '@/context/LanguageContext';
 
-const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { href: '/dashboard',               label: 'მთავარი',     icon: LayoutDashboard },
-  { href: '/dashboard/conversations', label: 'საუბრები',    icon: MessageSquare   },
-  { href: '/dashboard/feedback',      label: 'გამოხმაურება', icon: ThumbsDown      },
-  { href: '/dashboard/leads',         label: 'ლიდები',      icon: Users           },
-  { href: '/dashboard/analytics',     label: 'ანალიტიკა',   icon: BarChart3       },
-  { href: '/dashboard/billing',       label: 'გადახდები',   icon: CreditCard      },
-  { href: '/dashboard/referral',      label: 'მოწვევა',     icon: Gift            },
-  { href: '/dashboard/settings/profile', label: 'პარამეტრები', icon: Settings     },
-  { href: '/dashboard/privacy',       label: 'GDPR',         icon: ShieldCheck    },
+const NAV: Array<{ href: string; ka: string; en: string; icon: React.ComponentType<{ className?: string }> }> = [
+  { href: '/dashboard',               ka: 'მთავარი',      en: 'Overview',      icon: LayoutDashboard },
+  { href: '/dashboard/conversations', ka: 'საუბრები',     en: 'Conversations', icon: MessageSquare   },
+  { href: '/dashboard/feedback',      ka: 'გამოხმაურება',  en: 'Feedback',      icon: ThumbsDown      },
+  { href: '/dashboard/leads',         ka: 'ლიდები',       en: 'Leads',         icon: Users           },
+  { href: '/dashboard/analytics',     ka: 'ანალიტიკა',    en: 'Analytics',     icon: BarChart3       },
+  { href: '/dashboard/billing',       ka: 'გადახდები',    en: 'Billing',       icon: CreditCard      },
+  { href: '/dashboard/referral',      ka: 'მოწვევა',      en: 'Referrals',     icon: Gift            },
+  { href: '/dashboard/settings/profile', ka: 'პარამეტრები', en: 'Settings',    icon: Settings        },
+  { href: '/dashboard/privacy',       ka: 'GDPR',          en: 'GDPR',          icon: ShieldCheck     },
 ];
 
 /** Match either an exact href OR a route nested under it. */
@@ -43,6 +44,7 @@ interface Props {
 
 export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   const path = usePathname();
+  const { lang } = useLanguage();
 
   // Close the drawer whenever the route changes — otherwise tapping a
   // sidebar link on mobile leaves the drawer open over the new page.
@@ -54,7 +56,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
 
   const items = (
     <ul className="flex flex-col gap-0.5">
-      {NAV.map(({ href, label, icon: Icon }) => {
+      {NAV.map(({ href, ka, en, icon: Icon }) => {
+        const label = lang === 'en' ? en : ka;
         const active = isActive(path, href);
         return (
           <li key={href}>
@@ -86,7 +89,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           The <aside> stretches to the full flex-container height (so its
           background always reaches the page bottom — no mid-page seam), while
           the inner column is sticky h-screen so the nav stays in view. */}
-      <aside className="hidden md:block w-[240px] shrink-0 border-r border-white/[0.06] bg-[#0a0a14]">
+      <aside className="relative hidden md:block w-[240px] shrink-0 border-r border-white/[0.06] bg-[#0a0a14]">
         <div className="sticky top-0 h-screen flex flex-col">
           <div className="px-5 py-5 border-b border-white/[0.04]">
             <Logo size="md" />

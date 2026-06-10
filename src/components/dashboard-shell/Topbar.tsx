@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Menu, Search, Bell, Plus, Settings, Sun, Moon } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   onMenuClick: () => void;
@@ -20,7 +21,32 @@ interface Props {
   onToggleTheme?: () => void;
 }
 
+// Dashboard chrome copy — the shell is bilingual (ka default / en), driven by
+// the same LanguageContext the marketing site uses, so the choice persists.
+const COPY = {
+  ka: {
+    search: 'ბოტი, საუბარი, ლიდი...',
+    newBot: 'ახალი ბოტი',
+    theme: 'თემა',
+    themeAria: { dark: 'ნათელ თემაზე გადართვა', light: 'მუქ თემაზე გადართვა' },
+    notifTitle: 'შეტყობინებები',
+    notifEmpty: 'ახალი შეტყობინება არ არის',
+    notifSettings: 'შეტყობინებების პარამეტრები',
+  },
+  en: {
+    search: 'Bots, conversations, leads...',
+    newBot: 'New bot',
+    theme: 'Theme',
+    themeAria: { dark: 'Switch to light theme', light: 'Switch to dark theme' },
+    notifTitle: 'Notifications',
+    notifEmpty: 'No new notifications',
+    notifSettings: 'Notification settings',
+  },
+} as const;
+
 export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: Props) {
+  const { lang, setLang } = useLanguage();
+  const c = lang === 'en' ? COPY.en : COPY.ka;
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#07070f]/85 backdrop-blur-xl">
       <div className="h-14 px-4 sm:px-6 flex items-center gap-3">
@@ -40,7 +66,7 @@ export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: P
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
           <input
             type="search"
-            placeholder="ბოტი, საუბარი, ლიდი..."
+            placeholder={c.search}
             className="w-full bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.10] focus:border-violet-500/40 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-gray-600 outline-none transition-colors"
           />
         </div>
@@ -52,22 +78,44 @@ export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: P
             href="/dashboard/bots/new"
             className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-3 py-1.5 rounded-lg whitespace-nowrap"
           >
-            <Plus className="w-3 h-3" /> ახალი ბოტი
+            <Plus className="w-3 h-3" /> {c.newBot}
           </Link>
+
+          {/* Language toggle — same ka/en pair as the marketing nav. */}
+          <div
+            className="flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5"
+            role="group"
+            aria-label="Language"
+          >
+            {([['ka', 'ქარ'], ['en', 'EN']] as const).map(([code, label]) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => setLang(code)}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold leading-none transition-colors ${
+                  lang === code
+                    ? 'bg-violet-500/20 text-white'
+                    : 'text-gray-500 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
           {onToggleTheme && (
             <button
               type="button"
               onClick={onToggleTheme}
               className="p-2 rounded-lg text-gray-400 transition-colors hover:bg-white/[0.1] hover:text-white"
-              aria-label={theme === 'dark' ? 'ნათელ თემაზე გადართვა' : 'მუქ თემაზე გადართვა'}
-              title="თემა"
+              aria-label={theme === 'dark' ? c.themeAria.dark : c.themeAria.light}
+              title={c.theme}
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           )}
 
-          <NotificationsBell />
+          <NotificationsBell copy={c} />
 
           <UserButton />
         </div>
@@ -80,7 +128,7 @@ export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: P
 // backend yet, so it shows an honest empty state plus a shortcut to the
 // notification settings (where email prefs live). The previous version was
 // a dead button with a hardcoded "unread" dot that never did anything.
-function NotificationsBell() {
+function NotificationsBell({ copy }: { copy: typeof COPY.ka | typeof COPY.en }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -113,11 +161,11 @@ function NotificationsBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-72 rounded-xl border border-white/[0.08] bg-[#0d0d1a] shadow-2xl shadow-black/50 overflow-hidden z-50">
           <div className="px-4 py-3 border-b border-white/[0.06]">
-            <p className="text-sm font-semibold text-white">შეტყობინებები</p>
+            <p className="text-sm font-semibold text-white">{copy.notifTitle}</p>
           </div>
           <div className="px-4 py-8 flex flex-col items-center text-center">
             <Bell className="w-6 h-6 text-gray-600 mb-2" />
-            <p className="text-xs text-gray-500">ახალი შეტყობინება არ არის</p>
+            <p className="text-xs text-gray-500">{copy.notifEmpty}</p>
           </div>
           <Link
             href="/dashboard/settings/notifications"
@@ -125,7 +173,7 @@ function NotificationsBell() {
             className="flex items-center gap-2 px-4 py-3 border-t border-white/[0.06] text-xs text-gray-400 hover:text-white hover:bg-white/[0.03] transition-colors"
           >
             <Settings className="w-3.5 h-3.5" />
-            შეტყობინებების პარამეტრები
+            {copy.notifSettings}
           </Link>
         </div>
       )}
