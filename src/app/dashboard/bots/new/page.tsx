@@ -277,7 +277,7 @@ export default function NewBotPage() {
                           : 'bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:text-white hover:border-white/20'
                       }`}
                     >
-                      {ind.label}
+                      {en ? ind.labelEn : ind.label}
                     </button>
                   ))}
                 </div>
@@ -430,7 +430,7 @@ export default function NewBotPage() {
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {analysisResult.detectedIndustry && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300">
-                          📌 {INDUSTRIES.find(i => i.slug === analysisResult.detectedIndustry)?.label ?? analysisResult.detectedIndustry}
+                          📌 {(en ? INDUSTRIES.find(i => i.slug === analysisResult.detectedIndustry)?.labelEn : INDUSTRIES.find(i => i.slug === analysisResult.detectedIndustry)?.label) ?? analysisResult.detectedIndustry}
                         </span>
                       )}
                       {analysisResult.signals.hasPricing && (
@@ -539,8 +539,8 @@ export default function NewBotPage() {
                       }`}
                     >
                       <div className="text-2xl mb-2">{t.emoji}</div>
-                      <p className="text-white font-semibold text-sm mb-1">{t.label}</p>
-                      <p className="text-gray-500 text-xs leading-relaxed">{t.desc}</p>
+                      <p className="text-white font-semibold text-sm mb-1">{en ? t.labelEn : t.label}</p>
+                      <p className="text-gray-500 text-xs leading-relaxed">{en ? t.descEn : t.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -611,7 +611,7 @@ export default function NewBotPage() {
                   <div>
                     <p className="text-white font-bold text-lg">{name || '—'}</p>
                     <p className="text-gray-500 text-sm">
-                      {INDUSTRIES.find(i => i.slug === industry)?.label}
+                      {en ? INDUSTRIES.find(i => i.slug === industry)?.labelEn : INDUSTRIES.find(i => i.slug === industry)?.label}
                     </p>
                   </div>
                 </div>
@@ -626,7 +626,7 @@ export default function NewBotPage() {
                   <div>
                     <p className="text-xs text-gray-500 mb-1">{en ? 'Tone' : 'ტონი'}</p>
                     <p className="text-white text-sm">
-                      {TONES.find(t => t.value === tone)?.emoji} {TONES.find(t => t.value === tone)?.label}
+                      {TONES.find(t => t.value === tone)?.emoji} {en ? TONES.find(t => t.value === tone)?.labelEn : TONES.find(t => t.value === tone)?.label}
                     </p>
                   </div>
                   <div>

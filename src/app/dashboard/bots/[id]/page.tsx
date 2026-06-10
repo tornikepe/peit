@@ -205,7 +205,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             <div>
               <h1 className="text-2xl font-bold text-white">{bot.name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-gray-500 text-sm">{industry?.label}</span>
+                <span className="text-gray-500 text-sm">{en ? industry?.labelEn : industry?.label}</span>
                 <span className="text-gray-700">·</span>
                 {bot.status === 'active' ? (
                   <span className="inline-flex items-center gap-1 text-emerald-400 text-xs font-medium">
@@ -359,7 +359,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               <dl className="grid grid-cols-2 gap-y-4 gap-x-6">
                 <div>
                   <dt className="text-xs text-gray-500 mb-1">{en ? 'Tone' : 'ტონი'}</dt>
-                  <dd className="text-white text-sm">{toneInfo?.emoji} {toneInfo?.label}</dd>
+                  <dd className="text-white text-sm">{toneInfo?.emoji} {en ? toneInfo?.labelEn : toneInfo?.label}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-gray-500 mb-1">{en ? 'Languages' : 'ენები'}</dt>

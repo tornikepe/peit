@@ -74,21 +74,21 @@ export interface Bot {
 }
 
 export const INDUSTRIES = [
-  { slug: 'restaurants',  label: 'რესტორნები / კაფე' },
-  { slug: 'ecommerce',    label: 'ონლაინ მაღაზია' },
-  { slug: 'hotels',       label: 'სასტუმროები' },
-  { slug: 'beauty',       label: 'სალონი / ესთეტიკა' },
-  { slug: 'medical',      label: 'კლინიკა / სამედიცინო' },
-  { slug: 'realestate',   label: 'უძრავი ქონება' },
-  { slug: 'education',    label: 'განათლება / კურსები' },
-  { slug: 'fitness',      label: 'სპორტი / ფიტნესი' },
-  { slug: 'services',     label: 'სხვა სერვისი' },
+  { slug: 'restaurants',  label: 'რესტორნები / კაფე',    labelEn: 'Restaurants / cafés' },
+  { slug: 'ecommerce',    label: 'ონლაინ მაღაზია',       labelEn: 'Online store' },
+  { slug: 'hotels',       label: 'სასტუმროები',          labelEn: 'Hotels' },
+  { slug: 'beauty',       label: 'სალონი / ესთეტიკა',    labelEn: 'Salon / aesthetics' },
+  { slug: 'medical',      label: 'კლინიკა / სამედიცინო', labelEn: 'Clinic / medical' },
+  { slug: 'realestate',   label: 'უძრავი ქონება',        labelEn: 'Real estate' },
+  { slug: 'education',    label: 'განათლება / კურსები',  labelEn: 'Education / courses' },
+  { slug: 'fitness',      label: 'სპორტი / ფიტნესი',     labelEn: 'Sports / fitness' },
+  { slug: 'services',     label: 'სხვა სერვისი',         labelEn: 'Other services' },
 ] as const;
 
-export const TONES: { value: BotTone; label: string; emoji: string; desc: string }[] = [
-  { value: 'professional', emoji: '🎩', label: 'პროფესიონალური', desc: 'ფორმალური, ნდობის მქონე ტონი' },
-  { value: 'friendly',     emoji: '😊', label: 'მეგობრული',      desc: 'თბილი და მისასალმებელი' },
-  { value: 'casual',       emoji: '🤙', label: 'არაფორმალური',   desc: 'მსუბუქი და გაცოცხლებული' },
+export const TONES: { value: BotTone; label: string; labelEn: string; emoji: string; desc: string; descEn: string }[] = [
+  { value: 'professional', emoji: '🎩', label: 'პროფესიონალური', labelEn: 'Professional', desc: 'ფორმალური, ნდობის მქონე ტონი', descEn: 'Formal, trustworthy tone' },
+  { value: 'friendly',     emoji: '😊', label: 'მეგობრული',      labelEn: 'Friendly',     desc: 'თბილი და მისასალმებელი',      descEn: 'Warm and welcoming' },
+  { value: 'casual',       emoji: '🤙', label: 'არაფორმალური',   labelEn: 'Casual',       desc: 'მსუბუქი და გაცოცხლებული',     descEn: 'Light and lively' },
 ];
 
 export const DEFAULT_GREETINGS: Record<BotLang, string> = {

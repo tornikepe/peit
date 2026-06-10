@@ -39,9 +39,10 @@ export default function UnansweredList({ items }: Props) {
                 <T ka="ბოტი" en="Bot" />: {it.botReply}
               </div>
               <div className="text-[10px] text-gray-600 mt-1.5">
-                {new Date(it.createdAt).toLocaleString('ka-GE', {
-                  day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                })}
+                <T
+                  ka={new Date(it.createdAt).toLocaleString('ka-GE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  en={new Date(it.createdAt).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                />
               </div>
             </li>
           ))}

@@ -85,7 +85,7 @@ export default function BotsList() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-white font-semibold truncate">{bot.name}</p>
-                    <p className="text-gray-500 text-xs truncate">{industry?.label}</p>
+                    <p className="text-gray-500 text-xs truncate">{en ? industry?.labelEn : industry?.label}</p>
                   </div>
                 </div>
                 <button
