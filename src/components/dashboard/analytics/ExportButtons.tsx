@@ -7,8 +7,10 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Download, Printer } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ExportButtons() {
+  const en = useLanguage().lang === 'en';
   const params = useSearchParams();
 
   function exportUrl(type: 'conversations' | 'leads'): string {
@@ -31,20 +33,20 @@ export default function ExportButtons() {
         href={exportUrl('conversations')}
         className="text-xs font-medium text-gray-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.06] px-3 py-1.5 rounded-lg flex items-center gap-1.5"
       >
-        <Download className="w-3 h-3" /> საუბრები CSV
+        <Download className="w-3 h-3" /> {en ? 'Conversations CSV' : 'საუბრები CSV'}
       </a>
       <a
         href={exportUrl('leads')}
         className="text-xs font-medium text-gray-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.06] px-3 py-1.5 rounded-lg flex items-center gap-1.5"
       >
-        <Download className="w-3 h-3" /> ლიდები CSV
+        <Download className="w-3 h-3" /> {en ? 'Leads CSV' : 'ლიდები CSV'}
       </a>
       <button
         type="button"
         onClick={() => window.print()}
         className="text-xs font-medium text-gray-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.06] px-3 py-1.5 rounded-lg flex items-center gap-1.5"
       >
-        <Printer className="w-3 h-3" /> PDF / ბეჭდვა
+        <Printer className="w-3 h-3" /> {en ? 'PDF / Print' : 'PDF / ბეჭდვა'}
       </button>
     </div>
   );

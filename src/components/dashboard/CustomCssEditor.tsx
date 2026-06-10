@@ -5,6 +5,7 @@
 // don't flood it with re-injections per keystroke.
 
 import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Code2, Loader2, Check, Eye } from 'lucide-react';
 
 interface Props {
@@ -24,6 +25,7 @@ const SCAFFOLD = `/* Available scope classes — target these to skin the widget
 const MAX = 8192;
 
 export default function CustomCssEditor({ botId, value, onSave }: Props) {
+  const en = useLanguage().lang === 'en';
   const [draft, setDraft]   = useState(value);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -63,10 +65,10 @@ export default function CustomCssEditor({ botId, value, onSave }: Props) {
     <div className="glass rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-2">
         <Code2 className="w-4 h-4 text-violet-400" />
-        <h2 className="text-white font-semibold">სტილი (Custom CSS)</h2>
+        <h2 className="text-white font-semibold">{en ? 'Style (Custom CSS)' : 'სტილი (Custom CSS)'}</h2>
       </div>
       <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-        ჩაიწერება ვიჯეტში. <code className="text-gray-400">@import</code>, <code className="text-gray-400">url()</code> და <code className="text-gray-400">expression()</code> სერვერზე ფილტრდება.
+        {en ? 'Injected into the widget.' : 'ჩაიწერება ვიჯეტში.'} <code className="text-gray-400">@import</code>, <code className="text-gray-400">url()</code> და <code className="text-gray-400">expression()</code> სერვერზე ფილტრდება.
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -90,7 +92,7 @@ export default function CustomCssEditor({ botId, value, onSave }: Props) {
                 disabled={saving}
                 className="text-xs text-gray-400 hover:text-white px-2 py-1"
               >
-                გაუქმება
+                {en ? 'Cancel' : 'გაუქმება'}
               </button>
             )}
             <button
@@ -100,10 +102,10 @@ export default function CustomCssEditor({ botId, value, onSave }: Props) {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving
-                ? <><Loader2 className="w-3 h-3 animate-spin" /> შენახვა...</>
+                ? <><Loader2 className="w-3 h-3 animate-spin" /> {en ? 'Saving...' : 'შენახვა...'}</>
                 : savedAt
-                  ? <><Check className="w-3 h-3" /> შენახულია</>
-                  : 'შენახვა'}
+                  ? <><Check className="w-3 h-3" /> {en ? 'Saved' : 'შენახულია'}</>
+                  : (en ? 'Save' : 'შენახვა')}
             </button>
           </div>
         </div>
@@ -111,7 +113,7 @@ export default function CustomCssEditor({ botId, value, onSave }: Props) {
         {/* Live preview */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <Eye className="w-3 h-3" /> ცოცხალი წინასწარი ხედი
+            <Eye className="w-3 h-3" /> {en ? 'Live preview' : 'ცოცხალი წინასწარი ხედი'}
           </div>
           <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-black h-80">
             <iframe

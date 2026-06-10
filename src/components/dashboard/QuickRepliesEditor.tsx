@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { Plus, Trash2, ArrowUp, ArrowDown, MessageSquare, Link as LinkIcon, GitBranch, Loader2, Check } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 import type { QuickReply, QuickReplyAction } from '@/lib/bots';
 
 interface Props {
@@ -20,6 +21,7 @@ function emptyReply(): QuickReply {
 }
 
 export default function QuickRepliesEditor({ value, onSave }: Props) {
+  const en = useLanguage().lang === 'en';
   const [draft, setDraft] = useState<QuickReply[]>(value);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -75,15 +77,15 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
     <div className="glass rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-2">
         <MessageSquare className="w-4 h-4 text-violet-400" />
-        <h2 className="text-white font-semibold">სწრაფი ღილაკები</h2>
+        <h2 className="text-white font-semibold">{en ? 'Quick replies' : 'სწრაფი ღილაკები'}</h2>
       </div>
       <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-        ეს ღილაკები გამოჩნდება ჩატის ველის ზემოთ. ვიზიტორი დააჭერს — სისტემა გაუგზავნის ბოტს ტექსტს, ან გახსნის ლინკს.
+        {en ? 'These buttons appear above the chat input. When a visitor taps one, the system sends the bot a message or opens a link.' : 'ეს ღილაკები გამოჩნდება ჩატის ველის ზემოთ. ვიზიტორი დააჭერს — სისტემა გაუგზავნის ბოტს ტექსტს, ან გახსნის ლინკს.'}
       </p>
 
       <div className="flex flex-col gap-2">
         {draft.length === 0 && (
-          <p className="text-xs text-gray-600 italic">ჯერ ღილაკები არ გაქვს. დაამატე პირველი ↓</p>
+          <p className="text-xs text-gray-600 italic">{en ? 'No buttons yet. Add your first ↓' : 'ჯერ ღილაკები არ გაქვს. დაამატე პირველი ↓'}</p>
         )}
         {draft.map((qr, i) => (
           <div key={i} className="flex flex-col gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
@@ -93,7 +95,7 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
                 value={qr.label}
                 maxLength={40}
                 onChange={e => patch(i, { label: e.target.value })}
-                placeholder="ღილაკის ტექსტი (მაგ: ფასები)"
+                placeholder={en ? 'Button text (e.g. Pricing)' : 'ღილაკის ტექსტი (მაგ: ფასები)'}
                 className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/40"
               />
               <button
@@ -101,7 +103,7 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
                 onClick={() => move(i, -1)}
                 disabled={i === 0}
                 className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="ზევით"
+                aria-label={en ? 'up' : 'ზევით'}
               >
                 <ArrowUp className="w-3.5 h-3.5" />
               </button>
@@ -110,7 +112,7 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
                 onClick={() => move(i, 1)}
                 disabled={i === draft.length - 1}
                 className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="ქვევით"
+                aria-label={en ? 'down' : 'ქვევით'}
               >
                 <ArrowDown className="w-3.5 h-3.5" />
               </button>
@@ -118,7 +120,7 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
                 type="button"
                 onClick={() => remove(i)}
                 className="p-1.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                aria-label="წაშლა"
+                aria-label={en ? 'delete' : 'წაშლა'}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -130,9 +132,9 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
                 onChange={e => patch(i, { action: e.target.value as QuickReplyAction, value: '' })}
                 className="bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500/40"
               >
-                <option value="message">📨 გაგზავნე შეტყობინება</option>
-                <option value="url">🔗 გახსენი ბმული</option>
-                <option value="flow">🌊 დაიწყე flow</option>
+                <option value="message">{en ? '📨 Send a message' : '📨 გაგზავნე შეტყობინება'}</option>
+                <option value="url">{en ? '🔗 Open a link' : '🔗 გახსენი ბმული'}</option>
+                <option value="flow">{en ? '🌊 Start a flow' : '🌊 დაიწყე flow'}</option>
               </select>
 
               <div className="flex-1 relative">
@@ -145,7 +147,7 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
                   maxLength={500}
                   onChange={e => patch(i, { value: e.target.value })}
                   placeholder={
-                    qr.action === 'message' ? 'ტექსტი ბოტისთვის'
+                    qr.action === 'message' ? (en ? 'Text for the bot' : 'ტექსტი ბოტისთვის')
                     : qr.action === 'url'   ? 'https://example.com'
                     : 'flow_id'
                   }
@@ -163,7 +165,7 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
             disabled={draft.length >= MAX}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-violet-300 border border-violet-500/30 hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Plus className="w-3 h-3" /> ღილაკის დამატება
+            <Plus className="w-3 h-3" /> {en ? 'Add button' : 'ღილაკის დამატება'}
           </button>
           <span className="text-xs text-gray-600">{draft.length} / {MAX}</span>
 
@@ -176,7 +178,7 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
               disabled={saving}
               className="text-xs text-gray-400 hover:text-white px-2 py-1"
             >
-              გაუქმება
+              {en ? 'Cancel' : 'გაუქმება'}
             </button>
           )}
           <button
@@ -186,10 +188,10 @@ export default function QuickRepliesEditor({ value, onSave }: Props) {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {saving
-              ? <><Loader2 className="w-3 h-3 animate-spin" /> შენახვა...</>
+              ? <><Loader2 className="w-3 h-3 animate-spin" /> {en ? 'Saving...' : 'შენახვა...'}</>
               : savedAt
-                ? <><Check className="w-3 h-3" /> შენახულია</>
-                : 'შენახვა'}
+                ? <><Check className="w-3 h-3" /> {en ? 'Saved' : 'შენახულია'}</>
+                : (en ? 'Save' : 'შენახვა')}
           </button>
         </div>
       </div>

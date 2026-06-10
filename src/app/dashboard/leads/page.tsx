@@ -7,6 +7,7 @@ import {
   Mail, Phone, MessageSquare, CheckCircle2, ChevronDown, Inbox, Flame,
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard-shell/PageHeader';
+import { useLanguage } from '@/context/LanguageContext';
 
 type LeadStatus = 'new' | 'contacted' | 'qualified' | 'won' | 'lost';
 type LeadScore  = 'cold' | 'warm' | 'hot';
@@ -32,20 +33,20 @@ interface ListResponse {
   scoreCounts: Record<LeadScore, number>;
 }
 
-const STATUS_META: Record<LeadStatus, { label: string; color: string; ring: string }> = {
-  new:       { label: 'ახალი',         color: 'text-violet-300 bg-violet-500/15', ring: 'ring-violet-500/30' },
-  contacted: { label: 'დაკავშირებული',  color: 'text-blue-300 bg-blue-500/15',     ring: 'ring-blue-500/30' },
-  qualified: { label: 'კვალიფიცირებული', color: 'text-amber-300 bg-amber-500/15',   ring: 'ring-amber-500/30' },
-  won:       { label: 'მოგებული',       color: 'text-emerald-300 bg-emerald-500/15', ring: 'ring-emerald-500/30' },
-  lost:      { label: 'დაკარგული',       color: 'text-gray-400 bg-white/[0.04]',    ring: 'ring-white/[0.08]' },
+const STATUS_META: Record<LeadStatus, { label: { ka: string; en: string }; color: string; ring: string }> = {
+  new:       { label: { ka: 'ახალი', en: 'New' },                     color: 'text-violet-300 bg-violet-500/15', ring: 'ring-violet-500/30' },
+  contacted: { label: { ka: 'დაკავშირებული', en: 'Contacted' },        color: 'text-blue-300 bg-blue-500/15',     ring: 'ring-blue-500/30' },
+  qualified: { label: { ka: 'კვალიფიცირებული', en: 'Qualified' },      color: 'text-amber-300 bg-amber-500/15',   ring: 'ring-amber-500/30' },
+  won:       { label: { ka: 'მოგებული', en: 'Won' },                   color: 'text-emerald-300 bg-emerald-500/15', ring: 'ring-emerald-500/30' },
+  lost:      { label: { ka: 'დაკარგული', en: 'Lost' },                 color: 'text-gray-400 bg-white/[0.04]',    ring: 'ring-white/[0.08]' },
 };
 
 const STATUS_ORDER: LeadStatus[] = ['new', 'contacted', 'qualified', 'won', 'lost'];
 
-const SCORE_META: Record<LeadScore, { label: string; color: string; ring: string; emoji: string }> = {
-  hot:  { label: 'ცხელი', color: 'text-red-300 bg-red-500/15',     ring: 'ring-red-500/30',     emoji: '🔥' },
-  warm: { label: 'თბილი', color: 'text-amber-300 bg-amber-500/15', ring: 'ring-amber-500/30', emoji: '🌤️' },
-  cold: { label: 'ცივი',  color: 'text-gray-400 bg-white/[0.04]',  ring: 'ring-white/[0.08]',  emoji: '❄️' },
+const SCORE_META: Record<LeadScore, { label: { ka: string; en: string }; color: string; ring: string; emoji: string }> = {
+  hot:  { label: { ka: 'ცხელი', en: 'Hot' },  color: 'text-red-300 bg-red-500/15',     ring: 'ring-red-500/30',     emoji: '🔥' },
+  warm: { label: { ka: 'თბილი', en: 'Warm' }, color: 'text-amber-300 bg-amber-500/15', ring: 'ring-amber-500/30', emoji: '🌤️' },
+  cold: { label: { ka: 'ცივი', en: 'Cold' },  color: 'text-gray-400 bg-white/[0.04]',  ring: 'ring-white/[0.08]',  emoji: '❄️' },
 };
 const SCORE_ORDER: LeadScore[] = ['hot', 'warm', 'cold'];
 
@@ -62,6 +63,8 @@ export default function LeadsPage() {
 }
 
 function LeadsInner() {
+  const en = useLanguage().lang === 'en';
+  const L = en ? 'en' as const : 'ka' as const;
   const [data, setData]       = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -94,12 +97,12 @@ function LeadsInner() {
       const res = await fetch(`/api/leads?${queryString}`);
       const json = await res.json();
       if (!res.ok || !json.ok) {
-        setError(json.error ?? 'ვერ ჩაიტვირთა');
+        setError(json.error ?? (en ? 'Failed to load' : 'ვერ ჩაიტვირთა'));
         return;
       }
       setData(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+      setError(e instanceof Error ? e.message : (en ? 'Unknown error' : 'უცნობი შეცდომა'));
     } finally {
       setLoading(false);
     }
@@ -150,15 +153,15 @@ function LeadsInner() {
         eyebrow="Leads"
         title={
           <span className="flex items-baseline gap-2">
-            ლიდები
+            {en ? 'Leads' : 'ლიდები'}
             {data && (
               <span className="ml-3 text-base font-medium text-gray-500">
-                · {data.total} {statusFilter === 'all' ? 'სულ' : 'ფილტრის შესაბამისად'}
+                · {data.total} {statusFilter === 'all' ? (en ? 'total' : 'სულ') : (en ? 'matching filter' : 'ფილტრის შესაბამისად')}
               </span>
             )}
           </span>
         }
-        subtitle="ყველა ლიდი ბოტებიდან · ფილტრე, შეცვალე სტატუსი ან გადმოწერე CSV."
+        subtitle={en ? 'All leads from your bots · filter, change status or export CSV.' : 'ყველა ლიდი ბოტებიდან · ფილტრე, შეცვალე სტატუსი ან გადმოწერე CSV.'}
         action={
           <button
             onClick={exportCsv}
@@ -166,7 +169,7 @@ function LeadsInner() {
             className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] text-white text-xs font-medium px-3 py-2 hover:bg-white/[0.08] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-3.5 h-3.5" />
-            CSV გადმოწერა
+            {en ? 'Export CSV' : 'CSV გადმოწერა'}
           </button>
         }
       />
@@ -178,7 +181,7 @@ function LeadsInner() {
             <div className="flex items-center gap-2 flex-wrap flex-1">
               <Filter className="w-4 h-4 text-gray-500 shrink-0" />
               <FilterPill
-                label="ყველა"
+                label={en ? 'All' : 'ყველა'}
                 count={data?.counts.total ?? 0}
                 active={statusFilter === 'all'}
                 onClick={() => setStatusFilter('all')}
@@ -187,7 +190,7 @@ function LeadsInner() {
               {STATUS_ORDER.map(s => (
                 <FilterPill
                   key={s}
-                  label={STATUS_META[s].label}
+                  label={STATUS_META[s].label[L]}
                   count={data?.counts[s] ?? 0}
                   active={statusFilter === s}
                   onClick={() => setStatusFilter(s)}
@@ -199,7 +202,7 @@ function LeadsInner() {
               <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="სახელი, email, ნომერი..."
+                placeholder={en ? 'Name, email, phone...' : 'სახელი, email, ნომერი...'}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-violet-500/40 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none transition-colors"
@@ -218,7 +221,7 @@ function LeadsInner() {
                   : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
-              ყველა ხარისხი
+              {en ? 'All scores' : 'ყველა ხარისხი'}
             </button>
             {SCORE_ORDER.map(s => (
               <button
@@ -231,7 +234,7 @@ function LeadsInner() {
                 }`}
               >
                 <span>{SCORE_META[s].emoji}</span>
-                {SCORE_META[s].label}
+                {SCORE_META[s].label[L]}
                 <span className="text-[10px] font-mono opacity-70">
                   {data?.scoreCounts[s] ?? 0}
                 </span>
@@ -251,7 +254,7 @@ function LeadsInner() {
           <div className="rounded-2xl border border-red-500/25 bg-red-500/[0.06] p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-red-300 font-semibold text-sm">ვერ ჩაიტვირთა</p>
+              <p className="text-red-300 font-semibold text-sm">{en ? 'Failed to load' : 'ვერ ჩაიტვირთა'}</p>
               <p className="text-gray-400 text-xs mt-0.5">{error}</p>
             </div>
           </div>
@@ -262,11 +265,11 @@ function LeadsInner() {
             <div className="w-14 h-14 rounded-2xl bg-violet-500/10 ring-1 ring-violet-500/20 flex items-center justify-center mb-4">
               <Inbox className="w-6 h-6 text-violet-400" />
             </div>
-            <h3 className="text-white font-semibold mb-1.5">ჯერ არცერთი ლიდი</h3>
+            <h3 className="text-white font-semibold mb-1.5">{en ? 'No leads yet' : 'ჯერ არცერთი ლიდი'}</h3>
             <p className="text-gray-500 text-sm max-w-sm leading-relaxed">
               {statusFilter !== 'all' || debouncedSearch
-                ? 'ფილტრის შესაბამისი ლიდი ვერ მოიძებნა.'
-                : 'როცა ვიზიტორი დატოვებს კონტაქტს — სახელს, email-ს ან ნომერს — გამოჩნდება აქ. ბოტი widget-ში ავტომატურად აგროვებს.'}
+                ? (en ? 'No leads match this filter.' : 'ფილტრის შესაბამისი ლიდი ვერ მოიძებნა.')
+                : (en ? 'When a visitor leaves contact details — a name, email or phone — they show up here. The bot collects them automatically in the widget.' : 'როცა ვიზიტორი დატოვებს კონტაქტს — სახელს, email-ს ან ნომერს — გამოჩნდება აქ. ბოტი widget-ში ავტომატურად აგროვებს.')}
             </p>
           </div>
         )}
@@ -278,12 +281,12 @@ function LeadsInner() {
               <table className="w-full text-sm">
                 <thead className="bg-white/[0.02] border-b border-white/[0.06]">
                   <tr className="text-left text-gray-500 text-xs uppercase tracking-wider">
-                    <th className="px-5 py-3 font-medium">თარიღი</th>
-                    <th className="px-5 py-3 font-medium">ხარისხი</th>
-                    <th className="px-5 py-3 font-medium">კონტაქტი</th>
-                    <th className="px-5 py-3 font-medium">ბოტი</th>
-                    <th className="px-5 py-3 font-medium">შეტყობინება</th>
-                    <th className="px-5 py-3 font-medium">სტატუსი</th>
+                    <th className="px-5 py-3 font-medium">{en ? 'Date' : 'თარიღი'}</th>
+                    <th className="px-5 py-3 font-medium">{en ? 'Score' : 'ხარისხი'}</th>
+                    <th className="px-5 py-3 font-medium">{en ? 'Contact' : 'კონტაქტი'}</th>
+                    <th className="px-5 py-3 font-medium">{en ? 'Bot' : 'ბოტი'}</th>
+                    <th className="px-5 py-3 font-medium">{en ? 'Message' : 'შეტყობინება'}</th>
+                    <th className="px-5 py-3 font-medium">{en ? 'Status' : 'სტატუსი'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -344,6 +347,7 @@ function StatusSelect({
   value, busy, onChange,
 }: { value: LeadStatus; busy: boolean; onChange: (s: LeadStatus) => void }) {
   const [open, setOpen] = useState(false);
+  const L = useLanguage().lang === 'en' ? 'en' as const : 'ka' as const;
   const meta = STATUS_META[value];
   return (
     <div className="relative inline-block">
@@ -353,7 +357,7 @@ function StatusSelect({
         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${meta.color} ${meta.ring} cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50`}
       >
         {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-        {meta.label}
+        {meta.label[L]}
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
@@ -371,7 +375,7 @@ function StatusSelect({
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${m.color.split(' ')[1]}`} />
-                  {m.label}
+                  {m.label[L]}
                 </button>
               );
             })}
@@ -385,19 +389,21 @@ function StatusSelect({
 function LeadRow({
   lead, busy, onStatus,
 }: { lead: Lead; busy: boolean; onStatus: (s: LeadStatus) => void }) {
+  const enL = useLanguage().lang === 'en';
+  const L = enL ? 'en' as const : 'ka' as const;
   const s = SCORE_META[lead.score];
   return (
     <tr className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
       <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
-        {formatDate(lead.createdAt)}
+        {formatDate(lead.createdAt, enL)}
       </td>
       <td className="px-5 py-4">
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${s.color} ${s.ring}`}
-          title={`Lead score: ${s.label}`}
+          title={`Lead score: ${s.label[L]}`}
         >
           <span>{s.emoji}</span>
-          {s.label}
+          {s.label[L]}
         </span>
       </td>
       <td className="px-5 py-4">
@@ -439,6 +445,8 @@ function LeadRow({
 function LeadCardMobile({
   lead, busy, onStatus,
 }: { lead: Lead; busy: boolean; onStatus: (s: LeadStatus) => void }) {
+  const enL = useLanguage().lang === 'en';
+  const L = enL ? 'en' as const : 'ka' as const;
   const s = SCORE_META[lead.score];
   return (
     <div className="p-4 flex flex-col gap-3">
@@ -449,10 +457,10 @@ function LeadCardMobile({
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${s.color} ${s.ring} shrink-0`}
             >
-              {s.emoji} {s.label}
+              {s.emoji} {s.label[L]}
             </span>
           </div>
-          <p className="text-gray-500 text-[11px]">{formatDate(lead.createdAt)} · {lead.botName}</p>
+          <p className="text-gray-500 text-[11px]">{formatDate(lead.createdAt, enL)} · {lead.botName}</p>
         </div>
         <StatusSelect value={lead.status} busy={busy} onChange={onStatus} />
       </div>
@@ -478,7 +486,7 @@ function LeadCardMobile({
   );
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, en: boolean): string {
   const d = new Date(iso);
   const today = new Date();
   const isToday =
@@ -486,8 +494,9 @@ function formatDate(iso: string): string {
     d.getMonth()    === today.getMonth() &&
     d.getDate()     === today.getDate();
 
+  const locale = en ? 'en-US' : 'ka-GE';
   if (isToday) {
-    return `დღეს ${d.toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' })}`;
+    return `${en ? 'Today' : 'დღეს'} ${d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
   }
-  return d.toLocaleDateString('ka-GE', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }

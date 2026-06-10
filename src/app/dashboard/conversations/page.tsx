@@ -5,6 +5,7 @@
 import type { Metadata } from 'next';
 import PageHeader from '@/components/dashboard-shell/PageHeader';
 import ConversationList from '@/components/conversations/ConversationList';
+import T from '@/components/T';
 
 export const metadata: Metadata = {
   title: 'საუბრების ისტორია — Peit',
@@ -17,8 +18,8 @@ export default function ConversationsPage() {
     <>
       <PageHeader
         eyebrow="Conversations"
-        title="საუბრების ისტორია"
-        subtitle="customer-დან მიღებული ყველა საუბარი — ვებსაიტი, Telegram, Instagram, Messenger."
+        title={<T ka="საუბრების ისტორია" en="Conversation history" />}
+        subtitle={<T ka="customer-დან მიღებული ყველა საუბარი — ვებსაიტი, Telegram, Instagram, Messenger." en="Every customer conversation — website, Telegram, Instagram, Messenger." />}
       />
       <ConversationList />
     </>

@@ -6,6 +6,7 @@
 // option list (button steps).
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   Plus, Trash2, ArrowUp, ArrowDown, GitBranch, Loader2, Play, Pause,
   MessageSquare, Send, Check,
@@ -32,6 +33,7 @@ interface Flow {
 const newId = () => 'step_' + Math.random().toString(36).slice(2, 9);
 
 export default function FlowsEditor({ botId }: { botId: string }) {
+  const en = useLanguage().lang === 'en';
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function FlowsEditor({ botId }: { botId: string }) {
     const res = await fetch(`/api/bots/${botId}/flows`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'ახალი flow' }),
+      body: JSON.stringify({ name: en ? 'New flow' : 'ახალი flow' }),
     });
     const data = await res.json();
     if (res.ok && data.ok) {
@@ -97,16 +99,16 @@ export default function FlowsEditor({ botId }: { botId: string }) {
     <div className="glass rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-2">
         <GitBranch className="w-4 h-4 text-violet-400" />
-        <h2 className="text-white font-semibold">საუბრის სცენარები</h2>
+        <h2 className="text-white font-semibold">{en ? 'Conversation flows' : 'საუბრის სცენარები'}</h2>
       </div>
       <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-        Multi-step flow — მაგ. „კითხე სახელი → კითხე ტელეფონი → დაადასტურე → შენახე ლიდი“. აქტიური flow იწყება ვიჯეტის გახსნისთანავე AI-ის ნაცვლად.
+        {en ? 'Multi-step flow — e.g. \u201cask name → ask phone → confirm → save lead\u201d. The active flow starts when the widget opens, instead of the AI.' : 'Multi-step flow — მაგ. „კითხე სახელი → კითხე ტელეფონი → დაადასტურე → შენახე ლიდი“. აქტიური flow იწყება ვიჯეტის გახსნისთანავე AI-ის ნაცვლად.'}
       </p>
 
       {loading
         ? <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
         : flows.length === 0
-          ? <p className="text-xs text-gray-600 italic mb-3">ჯერ Flow არ გაქვს. ↓</p>
+          ? <p className="text-xs text-gray-600 italic mb-3">{en ? 'No flows yet. ↓' : 'ჯერ Flow არ გაქვს. ↓'}</p>
           : (
             <div className="flex flex-col gap-2 mb-3">
               {flows.map(f => (
@@ -115,7 +117,7 @@ export default function FlowsEditor({ botId }: { botId: string }) {
                     type="button"
                     onClick={() => setActive(f.id, !f.isActive)}
                     className={`p-1.5 rounded-md ${f.isActive ? 'text-emerald-400 bg-emerald-500/10' : 'text-gray-500 bg-white/5'}`}
-                    title={f.isActive ? 'აქტიური' : 'პაუზაზე'}
+                    title={f.isActive ? (en ? 'Active' : 'აქტიური') : (en ? 'Paused' : 'პაუზაზე')}
                   >
                     {f.isActive ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
                   </button>
@@ -124,7 +126,7 @@ export default function FlowsEditor({ botId }: { botId: string }) {
                     onClick={() => openEditor(f)}
                     className="flex-1 text-left text-sm text-gray-200 hover:text-white"
                   >
-                    {f.name} <span className="text-xs text-gray-500">({f.steps.length} ნაბიჯი)</span>
+                    {f.name} <span className="text-xs text-gray-500">({f.steps.length} {en ? 'steps' : 'ნაბიჯი'})</span>
                   </button>
                   <button
                     type="button"
@@ -143,7 +145,7 @@ export default function FlowsEditor({ botId }: { botId: string }) {
         onClick={createFlow}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-violet-300 border border-violet-500/30 hover:bg-violet-500/10"
       >
-        <Plus className="w-3 h-3" /> ახალი flow
+        <Plus className="w-3 h-3" /> {en ? 'New flow' : 'ახალი flow'}
       </button>
 
       {editing && draft && (
@@ -168,6 +170,7 @@ function StepListEditor({
   onCancel: () => void;
   onSave: () => void;
 }) {
+  const en = useLanguage().lang === 'en';
   const updateStep = (idx: number, patch: Partial<Step>) =>
     setDraft({ ...draft, steps: draft.steps.map((s, i) => i === idx ? { ...s, ...patch } : s) });
   const move = (idx: number, delta: -1 | 1) => {
@@ -180,7 +183,7 @@ function StepListEditor({
   };
   const addStep = (type: StepType) => {
     const newStep: Step = { id: newId(), type, text: '' };
-    if (type === 'button') newStep.options = [{ label: 'დიახ', value: 'yes' }];
+    if (type === 'button') newStep.options = [{ label: en ? 'Yes' : 'დიახ', value: 'yes' }];
     if (type === 'input')  newStep.variable = 'response';
     setDraft({ ...draft, steps: [...draft.steps, newStep] });
   };
@@ -203,9 +206,9 @@ function StepListEditor({
               onChange={e => updateStep(i, { type: e.target.value as StepType })}
               className="bg-black/40 border border-white/[0.08] rounded-md px-2 py-1 text-xs text-gray-100"
             >
-              <option value="message">💬 შეტყობინება</option>
-              <option value="input">⌨️ კითხე ტექსტი</option>
-              <option value="button">🔘 ღილაკები</option>
+              <option value="message">{en ? '💬 Message' : '💬 შეტყობინება'}</option>
+              <option value="input">{en ? '⌨️ Ask for text' : '⌨️ კითხე ტექსტი'}</option>
+              <option value="button">{en ? '🔘 Buttons' : '🔘 ღილაკები'}</option>
             </select>
             <span className="text-[10px] text-gray-600 font-mono flex-1">{s.id}</span>
             <button type="button" onClick={() => move(i, -1)} disabled={i === 0}
@@ -229,7 +232,7 @@ function StepListEditor({
             rows={2}
             maxLength={1000}
             onChange={e => updateStep(i, { text: e.target.value })}
-            placeholder="ბოტის ტექსტი"
+            placeholder={en ? 'Bot text' : 'ბოტის ტექსტი'}
             className="w-full bg-black/30 border border-white/[0.08] rounded-md px-2.5 py-1.5 text-xs text-gray-100 outline-none focus:border-violet-500/40 resize-y"
           />
 
@@ -239,7 +242,7 @@ function StepListEditor({
               value={s.variable ?? ''}
               maxLength={32}
               onChange={e => updateStep(i, { variable: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
-              placeholder="ცვლადის სახელი (name / email / phone)"
+              placeholder={en ? 'Variable name (name / email / phone)' : 'ცვლადის სახელი (name / email / phone)'}
               className="bg-black/30 border border-white/[0.08] rounded-md px-2.5 py-1.5 text-xs text-gray-100 outline-none focus:border-violet-500/40"
             />
           )}
@@ -253,7 +256,7 @@ function StepListEditor({
                     onChange={e => updateStep(i, {
                       options: (s.options ?? []).map((x, j) => j === k ? { ...x, label: e.target.value } : x),
                     })}
-                    placeholder="ლეიბლი"
+                    placeholder={en ? 'Label' : 'ლეიბლი'}
                     className="flex-1 bg-black/30 border border-white/[0.08] rounded-md px-2 py-1 text-xs text-gray-100"
                   />
                   <select
@@ -263,7 +266,7 @@ function StepListEditor({
                     })}
                     className="bg-black/30 border border-white/[0.08] rounded-md px-1.5 py-1 text-xs text-gray-100"
                   >
-                    <option value="">→ შემდეგი</option>
+                    <option value="">{en ? '→ Next' : '→ შემდეგი'}</option>
                     {draft.steps.filter((_, j) => j !== i).map(other => (
                       <option key={other.id} value={other.id}>→ {other.text.slice(0, 20) || other.id}</option>
                     ))}
@@ -282,7 +285,7 @@ function StepListEditor({
                 })}
                 className="text-xs text-violet-300 hover:text-violet-200"
               >
-                + ღილაკი
+                {en ? '+ Button' : '+ ღილაკი'}
               </button>
             </div>
           )}
@@ -305,11 +308,11 @@ function StepListEditor({
         <div className="flex-1" />
         <button type="button" onClick={onCancel}
           className="text-xs text-gray-400 hover:text-white px-2 py-1">
-          გაუქმება
+          {en ? 'Cancel' : 'გაუქმება'}
         </button>
         <button type="button" onClick={onSave}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white">
-          <Check className="w-3 h-3" /> შენახვა
+          <Check className="w-3 h-3" /> {en ? 'Save' : 'შენახვა'}
         </button>
       </div>
     </div>

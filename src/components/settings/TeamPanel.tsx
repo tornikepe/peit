@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Loader2, Plus, Trash2, X, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Role   = 'owner' | 'admin' | 'member';
 type Status = 'pending' | 'active' | 'revoked';
@@ -32,6 +33,7 @@ interface MemberRow {
 interface TeamView { owner: OwnerRow; members: MemberRow[] }
 
 export default function TeamPanel() {
+  const en = useLanguage().lang === 'en';
   const [data,    setData]    = useState<TeamView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -63,9 +65,9 @@ export default function TeamPanel() {
       <div className="glass rounded-2xl p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 className="text-white font-semibold text-lg">გუნდი</h2>
+            <h2 className="text-white font-semibold text-lg">{en ? 'Team' : 'გუნდი'}</h2>
             <p className="text-xs text-gray-500 mt-1">
-              მოიწვიე თანამშრომელი — ცარიელი role-ბი ჯერ წყობილია (cross-tenant access მოვა მოგვიანებით)
+              {en ? 'Invite a teammate — roles are stored now, cross-tenant access ships later' : 'მოიწვიე თანამშრომელი — role-ები ინახება, cross-tenant წვდომა მოვა მოგვიანებით'}
             </p>
           </div>
           <button
@@ -73,7 +75,7 @@ export default function TeamPanel() {
             onClick={() => setShowInvite(true)}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-2 rounded-lg"
           >
-            <Plus className="w-3.5 h-3.5" /> წევრის მოწვევა
+            <Plus className="w-3.5 h-3.5" /> {en ? 'Invite member' : 'წევრის მოწვევა'}
           </button>
         </div>
 
@@ -86,9 +88,9 @@ export default function TeamPanel() {
             <table className="w-full text-sm">
               <thead className="text-[10px] uppercase tracking-wider text-gray-600">
                 <tr>
-                  <th className="text-left font-medium pb-2">წევრი</th>
-                  <th className="text-left font-medium pb-2">როლი</th>
-                  <th className="text-left font-medium pb-2">სტატუსი</th>
+                  <th className="text-left font-medium pb-2">{en ? 'Member' : 'წევრი'}</th>
+                  <th className="text-left font-medium pb-2">{en ? 'Role' : 'როლი'}</th>
+                  <th className="text-left font-medium pb-2">{en ? 'Status' : 'სტატუსი'}</th>
                   <th className="text-right font-medium pb-2"></th>
                 </tr>
               </thead>
@@ -100,7 +102,7 @@ export default function TeamPanel() {
                 {data.members.length === 0 && (
                   <tr>
                     <td colSpan={4} className="text-center text-xs text-gray-500 py-6">
-                      ჯერ წევრები არ მოგიწვევია
+                      {en ? 'No members invited yet' : 'ჯერ წევრები არ მოგიწვევია'}
                     </td>
                   </tr>
                 )}
@@ -121,6 +123,7 @@ export default function TeamPanel() {
 }
 
 function OwnerTr({ owner }: { owner: OwnerRow }) {
+  const en = useLanguage().lang === 'en';
   return (
     <tr className="border-t border-white/[0.04]">
       <td className="py-3">
@@ -148,13 +151,14 @@ function OwnerTr({ owner }: { owner: OwnerRow }) {
         </div>
       </td>
       <td className="py-3"><Pill kind="owner">Owner</Pill></td>
-      <td className="py-3"><Pill kind="active">აქტიური</Pill></td>
-      <td className="py-3 text-right text-[10px] text-gray-600">თქვენ</td>
+      <td className="py-3"><Pill kind="active">{en ? 'Active' : 'აქტიური'}</Pill></td>
+      <td className="py-3 text-right text-[10px] text-gray-600">{en ? 'You' : 'თქვენ'}</td>
     </tr>
   );
 }
 
 function MemberTr({ member, onChange }: { member: MemberRow; onChange: () => void }) {
+  const en = useLanguage().lang === 'en';
   const [busy, setBusy] = useState(false);
 
   async function changeRole(role: 'admin' | 'member') {
@@ -170,7 +174,7 @@ function MemberTr({ member, onChange }: { member: MemberRow; onChange: () => voi
   }
 
   async function remove() {
-    if (!confirm(`${member.email}-ის წაშლა?`)) return;
+    if (!confirm(en ? `Remove ${member.email}?` : `${member.email}-ის წაშლა?`)) return;
     setBusy(true);
     try {
       await fetch(`/api/settings/team/${member.id}`, { method: 'DELETE' });
@@ -201,7 +205,7 @@ function MemberTr({ member, onChange }: { member: MemberRow; onChange: () => voi
       </td>
       <td className="py-3">
         <Pill kind={member.status === 'active' ? 'active' : member.status === 'pending' ? 'pending' : 'revoked'}>
-          {member.status === 'pending' ? 'მოლოდინში' : member.status === 'active' ? 'აქტიური' : 'გაუქმებული'}
+          {member.status === 'pending' ? (en ? 'Pending' : 'მოლოდინში') : member.status === 'active' ? (en ? 'Active' : 'აქტიური') : (en ? 'Revoked' : 'გაუქმებული')}
         </Pill>
       </td>
       <td className="py-3 text-right">
@@ -228,6 +232,7 @@ function Pill({ kind, children }: { kind: 'owner' | 'active' | 'pending' | 'revo
 }
 
 function InviteModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const en = useLanguage().lang === 'en';
   const [email, setEmail] = useState('');
   const [role,  setRole]  = useState<'admin' | 'member'>('member');
   const [busy,  setBusy]  = useState(false);
@@ -259,7 +264,7 @@ function InviteModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         className="w-full max-w-md bg-[#0d0d1a] border border-white/10 rounded-2xl p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold">წევრის მოწვევა</h3>
+          <h3 className="text-white font-semibold">{en ? 'Invite member' : 'წევრის მოწვევა'}</h3>
           <button type="button" onClick={onClose} className="text-gray-500 hover:text-white">
             <X className="w-4 h-4" />
           </button>
@@ -278,14 +283,14 @@ function InviteModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         </label>
 
         <label className="block mt-3">
-          <span className="text-[11px] uppercase tracking-wider text-gray-500">როლი</span>
+          <span className="text-[11px] uppercase tracking-wider text-gray-500">{en ? 'Role' : 'როლი'}</span>
           <select
             value={role}
             onChange={e => setRole(e.target.value as 'admin' | 'member')}
             className="mt-1 w-full bg-white/[0.04] border border-white/[0.06] focus:border-violet-500/40 rounded-lg px-3 py-2 text-sm text-white outline-none"
           >
-            <option value="member">Member — გუნდის ჩვეულებრივი წევრი</option>
-            <option value="admin">Admin — შეუძლია სხვების მოწვევა</option>
+            <option value="member">{en ? 'Member — regular team member' : 'Member — გუნდის ჩვეულებრივი წევრი'}</option>
+            <option value="admin">{en ? 'Admin — can invite others' : 'Admin — შეუძლია სხვების მოწვევა'}</option>
           </select>
         </label>
 
@@ -302,10 +307,10 @@ function InviteModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-2 rounded-lg disabled:opacity-50"
           >
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-            მოწვევის გაგზავნა
+            {en ? 'Send invite' : 'მოწვევის გაგზავნა'}
           </button>
           <button type="button" onClick={onClose} className="text-xs text-gray-400 hover:text-white">
-            გაუქმება
+            {en ? 'Cancel' : 'გაუქმება'}
           </button>
         </div>
       </form>

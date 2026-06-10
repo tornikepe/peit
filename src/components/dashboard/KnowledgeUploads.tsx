@@ -4,6 +4,7 @@
 // Renders an upload button + the existing-uploads list with delete.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Upload, FileText, Trash2, Loader2, Check, AlertCircle } from 'lucide-react';
 
 interface UploadRow {
@@ -16,6 +17,7 @@ interface UploadRow {
 const ACCEPT = '.pdf,.docx,.txt';
 
 export default function KnowledgeUploads({ botId }: { botId: string }) {
+  const en = useLanguage().lang === 'en';
   const [items, setItems]     = useState<UploadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -73,16 +75,16 @@ export default function KnowledgeUploads({ botId }: { botId: string }) {
     <div className="glass rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-2">
         <FileText className="w-4 h-4 text-emerald-400" />
-        <h2 className="text-white font-semibold">დოკუმენტები</h2>
+        <h2 className="text-white font-semibold">{en ? 'Documents' : 'დოკუმენტები'}</h2>
       </div>
       <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-        ატვირთე PDF, DOCX ან TXT (max 10 MB). სისტემა ამოიღებს ტექსტს, დაყოფს ნაწილებად და დააინდექსებს AI-სთვის.
+        {en ? 'Upload PDF, DOCX or TXT (max 10 MB). The system extracts the text, splits it into chunks and indexes it for AI.' : 'ატვირთე PDF, DOCX ან TXT (max 10 MB). სისტემა ამოიღებს ტექსტს, დაყოფს ნაწილებად და დააინდექსებს AI-სთვის.'}
       </p>
 
       <label className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600/25 transition-colors cursor-pointer disabled:opacity-50">
         {uploading
-          ? <><Loader2 className="w-4 h-4 animate-spin" /> ვამუშავებ...</>
-          : <><Upload className="w-4 h-4" /> ფაილის ატვირთვა</>}
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> {en ? 'Processing...' : 'ვამუშავებ...'}</>
+          : <><Upload className="w-4 h-4" /> {en ? 'Upload file' : 'ფაილის ატვირთვა'}</>}
         <input
           ref={inputRef}
           type="file"
@@ -107,7 +109,7 @@ export default function KnowledgeUploads({ botId }: { botId: string }) {
       <div className="mt-4 flex flex-col gap-2">
         {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
         {!loading && items.length === 0 && (
-          <p className="text-xs text-gray-600 italic">ჯერ ფაილები არ გაქვს ატვირთული.</p>
+          <p className="text-xs text-gray-600 italic">{en ? 'No files uploaded yet.' : 'ჯერ ფაილები არ გაქვს ატვირთული.'}</p>
         )}
         {items.map(it => (
           <div
@@ -132,7 +134,7 @@ export default function KnowledgeUploads({ botId }: { botId: string }) {
               type="button"
               onClick={() => remove(it.filename)}
               className="p-1.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10"
-              title="წაშლა"
+              title={en ? 'Delete' : 'წაშლა'}
             >
               <Trash2 className="w-3 h-3" />
             </button>

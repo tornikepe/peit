@@ -1,10 +1,12 @@
 'use client';
 
 import { useBots } from '@/context/BotsContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { MessageSquare, TrendingUp, Users, BarChart3 } from 'lucide-react';
 
 export default function DashboardStats() {
   const { bots } = useBots();
+  const en = useLanguage().lang === 'en';
 
   const totalMessages = bots.reduce((s, b) => s + b.stats.messages, 0);
   const totalLeads    = bots.reduce((s, b) => s + b.stats.leads, 0);
@@ -13,10 +15,10 @@ export default function DashboardStats() {
     totalMessages > 0 ? Math.round((totalLeads / totalMessages) * 100) + '%' : '—';
 
   const stats = [
-    { label: 'შეტყობინება სულ',  value: totalMessages.toString(), icon: MessageSquare, color: 'text-violet-400',  bg: 'bg-violet-600/10 border-violet-500/20' },
-    { label: 'ლიდი სულ',          value: totalLeads.toString(),    icon: TrendingUp,    color: 'text-emerald-400', bg: 'bg-emerald-600/10 border-emerald-500/20' },
-    { label: 'აქტიური ბოტი',      value: activeBots.toString(),    icon: Users,         color: 'text-blue-400',    bg: 'bg-blue-600/10 border-blue-500/20' },
-    { label: 'კონვერსია',         value: conversion,               icon: BarChart3,     color: 'text-orange-400',  bg: 'bg-orange-600/10 border-orange-500/20' },
+    { label: en ? 'Total messages' : 'შეტყობინება სულ', value: totalMessages.toString(), icon: MessageSquare, color: 'text-violet-400',  bg: 'bg-violet-600/10 border-violet-500/20' },
+    { label: en ? 'Total leads' : 'ლიდი სულ',           value: totalLeads.toString(),    icon: TrendingUp,    color: 'text-emerald-400', bg: 'bg-emerald-600/10 border-emerald-500/20' },
+    { label: en ? 'Active bots' : 'აქტიური ბოტი',       value: activeBots.toString(),    icon: Users,         color: 'text-blue-400',    bg: 'bg-blue-600/10 border-blue-500/20' },
+    { label: en ? 'Conversion' : 'კონვერსია',           value: conversion,               icon: BarChart3,     color: 'text-orange-400',  bg: 'bg-orange-600/10 border-orange-500/20' },
   ];
 
   return (

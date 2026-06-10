@@ -44,6 +44,7 @@ import Funnel from '@/components/dashboard/analytics/Funnel';
 import GeoTable from '@/components/dashboard/analytics/GeoTable';
 import Heatmap from '@/components/dashboard/analytics/Heatmap';
 import ExportButtons from '@/components/dashboard/analytics/ExportButtons';
+import T from '@/components/T';
 
 export const metadata: Metadata = {
   title: 'ანალიტიკა — Peit',
@@ -103,15 +104,16 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     getHourHeatmap(user.id, range),
   ]);
 
-  const rangeLabel = formatRangeLabel(range, preset);
+  const rangeLabelKa = formatRangeLabel(range, preset, false);
+  const rangeLabelEn = formatRangeLabel(range, preset, true);
 
   return (
     <div className="print:bg-white">
       <div className="print:hidden">
         <PageHeader
           eyebrow="Analytics"
-          title="ანალიტიკა"
-          subtitle={rangeLabel}
+          title={<T ka="ანალიტიკა" en="Analytics" />}
+          subtitle={<T ka={rangeLabelKa} en={rangeLabelEn} />}
           action={
             <>
               <RangePicker current={preset} />
@@ -123,8 +125,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
       {/* Print-only header — narrower, no controls. */}
       <header className="hidden print:block mb-3">
-        <h1 className="text-2xl font-bold text-black">ანალიტიკა</h1>
-        <p className="text-sm text-gray-700 mt-1">{rangeLabel}</p>
+        <h1 className="text-2xl font-bold text-black"><T ka="ანალიტიკა" en="Analytics" /></h1>
+        <p className="text-sm text-gray-700 mt-1"><T ka={rangeLabelKa} en={rangeLabelEn} /></p>
       </header>
 
       <section className="mb-6">
@@ -151,20 +153,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       </section>
 
       <p className="text-[10px] text-gray-600 text-center mt-8 print:mt-4">
-        ანალიტიკის მონაცემები რეალურ დროში მუშავდება — განახლება ხდება ყოველ მოთხოვნაზე
+        <T ka="ანალიტიკის მონაცემები რეალურ დროში მუშავდება — განახლება ხდება ყოველ მოთხოვნაზე" en="Analytics are processed in real time — refreshed on every request" />
       </p>
     </div>
   );
 }
 
-function formatRangeLabel(range: { from: Date; to: Date }, preset: RangePreset): string {
-  const fmt = new Intl.DateTimeFormat('ka-GE', { day: 'numeric', month: 'short', year: 'numeric' });
+function formatRangeLabel(range: { from: Date; to: Date }, preset: RangePreset, en: boolean): string {
+  const fmt = new Intl.DateTimeFormat(en ? 'en-US' : 'ka-GE', { day: 'numeric', month: 'short', year: 'numeric' });
   const from = fmt.format(range.from);
   const to   = fmt.format(range.to);
-  const presetLabel =
-    preset === '7d' ? 'უკანასკნელი 7 დღე'
-  : preset === '90d' ? 'უკანასკნელი 90 დღე'
-  : preset === 'custom' ? 'მორგებული პერიოდი'
-  :                     'უკანასკნელი 30 დღე';
+  const presetLabel = en
+    ? (preset === '7d' ? 'Last 7 days' : preset === '90d' ? 'Last 90 days' : preset === 'custom' ? 'Custom range' : 'Last 30 days')
+    : (preset === '7d' ? 'უკანასკნელი 7 დღე' : preset === '90d' ? 'უკანასკნელი 90 დღე' : preset === 'custom' ? 'მორგებული პერიოდი' : 'უკანასკნელი 30 დღე');
   return `${presetLabel} · ${from} – ${to}`;
 }

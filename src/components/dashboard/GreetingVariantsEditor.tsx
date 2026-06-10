@@ -6,6 +6,7 @@
 // highest CR (min 50 impressions) gets a "Winner" badge.
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Plus, Trash2, Loader2, Trophy, Play, Pause } from 'lucide-react';
 
 interface Variant {
@@ -20,6 +21,7 @@ interface Variant {
 const MIN_IMPRESSIONS_FOR_WINNER = 50;
 
 export default function GreetingVariantsEditor({ botId }: { botId: string }) {
+  const en = useLanguage().lang === 'en';
   const [variants, setVariants]   = useState<Variant[]>([]);
   const [loading, setLoading]     = useState(true);
   const [busy, setBusy]           = useState(false);
@@ -85,18 +87,18 @@ export default function GreetingVariantsEditor({ botId }: { botId: string }) {
     <div className="glass rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-2">
         <Trophy className="w-4 h-4 text-amber-400" />
-        <h2 className="text-white font-semibold">მისალმების A/B ტესტი</h2>
+        <h2 className="text-white font-semibold">{en ? 'Greeting A/B test' : 'მისალმების A/B ტესტი'}</h2>
       </div>
       <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-        ვიჯეტი თითო ვიზიტორზე შერეცხილად ირჩევს ერთ ვერსიას. კონვერსია = ვიზიტორმა მინიმუმ ერთი შეტყობინება გააგზავნა.
+        {en ? 'The widget randomly picks one variant per visitor. Conversion = the visitor sent at least one message.' : 'ვიჯეტი თითო ვიზიტორზე შემთხვევითად ირჩევს ერთ ვერსიას. კონვერსია = ვიზიტორმა მინიმუმ ერთი შეტყობინება გააგზავნა.'}
       </p>
 
       {loading
         ? <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Loader2 className="w-3 h-3 animate-spin" /> იტვირთება...
+            <Loader2 className="w-3 h-3 animate-spin" /> {en ? 'Loading...' : 'იტვირთება...'}
           </div>
         : variants.length === 0
-          ? <p className="text-xs text-gray-600 italic mb-3">ჯერ ვერსიები არ გაქვს. დაამატე ქვემოთ ↓</p>
+          ? <p className="text-xs text-gray-600 italic mb-3">{en ? 'No variants yet. Add one below ↓' : 'ჯერ ვერსიები არ გაქვს. დაამატე ქვემოთ ↓'}</p>
           : (
             <div className="flex flex-col gap-2 mb-4">
               {variants.map(v => (
@@ -105,7 +107,7 @@ export default function GreetingVariantsEditor({ botId }: { botId: string }) {
                     type="button"
                     onClick={() => patchVariant(v.id, { isActive: !v.isActive })}
                     className={`mt-1 p-1.5 rounded-md ${v.isActive ? 'text-emerald-400 bg-emerald-500/10' : 'text-gray-500 bg-white/5'} hover:bg-white/10`}
-                    title={v.isActive ? 'აქტიური' : 'პაუზაზე'}
+                    title={v.isActive ? (en ? 'Active' : 'აქტიური') : (en ? 'Paused' : 'პაუზაზე')}
                   >
                     {v.isActive ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
                   </button>
@@ -121,7 +123,7 @@ export default function GreetingVariantsEditor({ botId }: { botId: string }) {
                     />
                     <div className="flex items-center gap-3 text-[11px] text-gray-500">
                       <label className="flex items-center gap-1.5">
-                        წონა
+                        {en ? 'Weight' : 'წონა'}
                         <input
                           type="number"
                           min={1}
@@ -132,8 +134,8 @@ export default function GreetingVariantsEditor({ botId }: { botId: string }) {
                           className="w-14 bg-black/40 border border-white/[0.08] rounded px-1.5 py-0.5 text-gray-100"
                         />
                       </label>
-                      <span>· {v.impressions} ჩვენება</span>
-                      <span>· {v.conversions} კონვერსია</span>
+                      <span>· {v.impressions} {en ? 'impressions' : 'ჩვენება'}</span>
+                      <span>· {v.conversions} {en ? 'conversions' : 'კონვერსია'}</span>
                       <span>· CR <strong className="text-gray-300">{(cr(v) * 100).toFixed(1)}%</strong></span>
                       {winnerId === v.id && (
                         <span className="inline-flex items-center gap-1 text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
@@ -147,7 +149,7 @@ export default function GreetingVariantsEditor({ botId }: { botId: string }) {
                     type="button"
                     onClick={() => removeVariant(v.id)}
                     className="mt-1 p-1.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                    title="წაშლა"
+                    title={en ? 'Delete' : 'წაშლა'}
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -161,7 +163,7 @@ export default function GreetingVariantsEditor({ botId }: { botId: string }) {
           value={newMsg}
           maxLength={500}
           onChange={e => setNewMsg(e.target.value)}
-          placeholder="ახალი მისალმების ვერსია..."
+          placeholder={en ? 'New greeting variant...' : 'ახალი მისალმების ვერსია...'}
           rows={2}
           className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-xs text-gray-100 placeholder:text-gray-600 outline-none focus:border-violet-500/40 resize-y"
         />
@@ -172,7 +174,7 @@ export default function GreetingVariantsEditor({ botId }: { botId: string }) {
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 self-start"
         >
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-          დამატება
+          {en ? 'Add' : 'დამატება'}
         </button>
       </div>
     </div>

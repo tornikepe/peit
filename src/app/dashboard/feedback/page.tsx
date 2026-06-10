@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ThumbsDown, MessageSquare, ChevronRight, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Negative {
   content:        string;
@@ -20,6 +21,7 @@ interface Negative {
 }
 
 export default function FeedbackPage() {
+  const en = useLanguage().lang === 'en';
   const [items, setItems]     = useState<Negative[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr]         = useState<string | null>(null);
@@ -50,29 +52,29 @@ export default function FeedbackPage() {
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <ThumbsDown className="w-5 h-5 text-rose-400" />
-          ნეგატიური გამოხმაურება
+          {en ? 'Negative feedback' : 'ნეგატიური გამოხმაურება'}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          პასუხები, რომლებსაც ვიზიტორებმა 👎 დაუჭირეს. სიხშირის მიხედვით — გასასწორებელი პასუხების პრიორიტეტი.
+          {en ? 'Answers visitors rated 👎, sorted by frequency — your priority list of answers to fix.' : 'პასუხები, რომლებსაც ვიზიტორებმა 👎 დაუჭირეს. სიხშირის მიხედვით — გასასწორებელი პასუხების პრიორიტეტი.'}
         </p>
       </header>
 
       {loading && (
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Loader2 className="w-4 h-4 animate-spin" /> იტვირთება...
+          <Loader2 className="w-4 h-4 animate-spin" /> {en ? 'Loading...' : 'იტვირთება...'}
         </div>
       )}
 
       {err && (
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 px-4 py-3 text-sm">
-          ვერ ჩავტვირთე ({err}).
+          {en ? 'Failed to load' : 'ვერ ჩავტვირთე'} ({err}).
         </div>
       )}
 
       {!loading && !err && items.length === 0 && (
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-6 py-12 text-center">
           <ThumbsDown className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 text-sm">ჯერ ნეგატიური გამოხმაურება არ გაქვს. 🎉</p>
+          <p className="text-gray-400 text-sm">{en ? 'No negative feedback yet. 🎉' : 'ჯერ ნეგატიური გამოხმაურება არ გაქვს. 🎉'}</p>
         </div>
       )}
 
@@ -97,7 +99,7 @@ export default function FeedbackPage() {
                   <MessageSquare className="w-3 h-3" />
                   {it.botName}
                   <span className="opacity-50">·</span>
-                  {new Date(it.lastAt).toLocaleDateString('ka-GE', {
+                  {new Date(it.lastAt).toLocaleDateString(en ? 'en-US' : 'ka-GE', {
                     year: 'numeric', month: 'short', day: 'numeric',
                   })}
                 </p>

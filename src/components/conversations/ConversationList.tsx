@@ -13,6 +13,7 @@ import { Search, Globe, Send, ChevronLeft, ChevronRight, Loader2, Filter, X } fr
 import { InstagramIcon, FacebookIcon } from '@/components/icons/BrandIcons';
 import TranscriptPanel from './TranscriptPanel';
 import { useFetch } from './useConversations';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ConversationRow {
   id:           string;
@@ -45,12 +46,14 @@ const CHANNEL_ICON: Record<string, React.ReactNode> = {
   facebook:  <FacebookIcon  className="w-3.5 h-3.5" />,
   playground:<Globe         className="w-3.5 h-3.5" />,
 };
-const CHANNEL_LABEL: Record<string, string> = {
-  web: 'ვებსაიტი', telegram: 'Telegram', instagram: 'Instagram', facebook: 'Messenger', playground: 'Playground',
-};
+const CHANNEL_LABEL = (en: boolean): Record<string, string> => ({
+  web: en ? 'Website' : 'ვებსაიტი', telegram: 'Telegram', instagram: 'Instagram', facebook: 'Messenger', playground: 'Playground',
+});
 const CHANNELS = ['web', 'telegram', 'instagram', 'facebook'] as const;
 
 export default function ConversationList() {
+  const en = useLanguage().lang === 'en';
+  const chLabel = CHANNEL_LABEL(en);
   const router = useRouter();
   const path   = usePathname();
   const params = useSearchParams();
@@ -121,7 +124,7 @@ export default function ConversationList() {
               type="text"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
-              placeholder="ეძებე მესიჯებში..."
+              placeholder={en ? 'Search messages...' : 'ეძებე მესიჯებში...'}
               className="w-full bg-white/[0.04] border border-white/[0.06] focus:border-violet-500/40 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none"
             />
           </div>
@@ -138,7 +141,7 @@ export default function ConversationList() {
           <div className="px-4 py-2 flex flex-wrap gap-1.5 border-b border-white/[0.04]">
             {urlChannel && (
               <FilterChip
-                label={CHANNEL_LABEL[urlChannel] ?? urlChannel}
+                label={chLabel[urlChannel] ?? urlChannel}
                 onRemove={() => setParam('channel', undefined)}
               />
             )}
@@ -158,7 +161,7 @@ export default function ConversationList() {
           <div className="p-8 text-center">
             <p className="text-sm text-red-400">{error}</p>
             <button type="button" onClick={refetch} className="mt-2 text-xs text-violet-400 hover:text-violet-300">
-              ხელახლა სცადე
+              {en ? 'Try again' : 'ხელახლა სცადე'}
             </button>
           </div>
         ) : !data || data.conversations.length === 0 ? (
@@ -184,15 +187,15 @@ export default function ConversationList() {
                           {c.botName}
                         </span>
                         <span className="text-[11px] text-gray-500 shrink-0">
-                          {formatRelative(c.startedAt)}
+                          {formatRelative(c.startedAt, en)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5 flex-wrap">
-                        <span>{CHANNEL_LABEL[c.channel] ?? c.channel}</span>
+                        <span>{chLabel[c.channel] ?? c.channel}</span>
                         <span>·</span>
-                        <span>{c.messageCount} მესიჯი</span>
+                        <span>{c.messageCount} {en ? 'messages' : 'მესიჯი'}</span>
                         <span>·</span>
-                        <span>{formatDuration(c)}</span>
+                        <span>{formatDuration(c, en)}</span>
                         {c.city && <><span>·</span><span>{c.city}</span></>}
                         {c.tags.length > 0 && (
                           <>
@@ -218,7 +221,7 @@ export default function ConversationList() {
             {/* Pagination */}
             <div className="px-4 py-3 flex items-center justify-between border-t border-white/[0.04]">
               <span className="text-xs text-gray-500 tabular-nums">
-                {data.total.toLocaleString('ka-GE')} საუბარი · გვერდი {data.page} / {totalPages}
+                {data.total.toLocaleString(en ? 'en-US' : 'ka-GE')} {en ? 'conversations' : 'საუბარი'} · {en ? 'page' : 'გვერდი'} {data.page} / {totalPages}
               </span>
               <div className="flex items-center gap-1">
                 <button
@@ -265,29 +268,31 @@ function FilterMenu({
   allTags: string[];
   onChange: (k: 'channel' | 'tag', v: string | undefined) => void;
 }) {
+  const en = useLanguage().lang === 'en';
+  const chLabel = CHANNEL_LABEL(en);
   return (
     <details className="relative">
       <summary className="list-none cursor-pointer px-3 py-2 text-xs text-gray-300 hover:text-white border border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.06] rounded-lg inline-flex items-center gap-1.5">
-        <Filter className="w-3.5 h-3.5" /> ფილტრი
+        <Filter className="w-3.5 h-3.5" /> {en ? 'Filter' : 'ფილტრი'}
         {(channel || tag) && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
       </summary>
       <div className="absolute top-full mt-1 right-0 z-10 w-64 bg-[#0d0d1a] border border-white/10 rounded-lg p-3 shadow-2xl">
         <div className="mb-3">
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">არხი</p>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">{en ? 'Channel' : 'არხი'}</p>
           <div className="flex flex-wrap gap-1">
-            <ChipBtn active={!channel} onClick={() => onChange('channel', undefined)}>ყველა</ChipBtn>
+            <ChipBtn active={!channel} onClick={() => onChange('channel', undefined)}>{en ? 'All' : 'ყველა'}</ChipBtn>
             {CHANNELS.map(c => (
               <ChipBtn key={c} active={channel === c} onClick={() => onChange('channel', c)}>
-                {CHANNEL_LABEL[c]}
+                {chLabel[c]}
               </ChipBtn>
             ))}
           </div>
         </div>
         {allTags.length > 0 && (
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">ჭდე</p>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">{en ? 'Tag' : 'ჭდე'}</p>
             <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
-              <ChipBtn active={!tag} onClick={() => onChange('tag', undefined)}>ყველა</ChipBtn>
+              <ChipBtn active={!tag} onClick={() => onChange('tag', undefined)}>{en ? 'All' : 'ყველა'}</ChipBtn>
               {allTags.map(t => (
                 <ChipBtn key={t} active={tag === t} onClick={() => onChange('tag', t)}>
                   {t}
@@ -329,16 +334,17 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 }
 
 function StatusPill({ handedOff }: { handedOff: boolean }) {
+  const en = useLanguage().lang === 'en';
   if (handedOff) {
     return (
       <span className="text-[10px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
-        ოპერატორი
+        {en ? 'Operator' : 'ოპერატორი'}
       </span>
     );
   }
   return (
     <span className="text-[10px] text-gray-500 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
-      აქტიური
+      {en ? 'Active' : 'აქტიური'}
     </span>
   );
 }
@@ -361,34 +367,35 @@ function SkeletonRows() {
 }
 
 function EmptyState({ hasFilters }: { hasFilters: boolean }) {
+  const en = useLanguage().lang === 'en';
   return (
     <div className="p-12 text-center">
       <p className="text-sm text-gray-400 mb-1">
-        {hasFilters ? 'შედეგი ვერ მოიძებნა' : 'ჯერ საუბრები არ არის'}
+        {hasFilters ? (en ? 'No results found' : 'შედეგი ვერ მოიძებნა') : (en ? 'No conversations yet' : 'ჯერ საუბრები არ არის')}
       </p>
       <p className="text-[11px] text-gray-600">
-        {hasFilters ? 'სცადე ფილტრის შემცირება' : 'როცა customer-ი დაიწყებს დიალოგს, აქ გამოჩნდება'}
+        {hasFilters ? (en ? 'Try removing some filters' : 'სცადე ფილტრის შემცირება') : (en ? 'When a customer starts a chat, it will appear here' : 'როცა customer-ი დაიწყებს დიალოგს, აქ გამოჩნდება')}
       </p>
     </div>
   );
 }
 
-function formatRelative(iso: string): string {
+function formatRelative(iso: string, en: boolean): string {
   const now = Date.now();
   const t   = new Date(iso).getTime();
   const sec = Math.max(0, Math.round((now - t) / 1000));
-  if (sec < 60)    return `${sec}წმ`;
-  if (sec < 3600)  return `${Math.round(sec / 60)} წთ`;
-  if (sec < 86400) return `${Math.round(sec / 3600)} სთ`;
-  if (sec < 604800) return `${Math.round(sec / 86400)} დღე`;
-  return new Date(iso).toLocaleDateString('ka-GE', { day: 'numeric', month: 'short' });
+  if (sec < 60)    return en ? `${sec}s` : `${sec}წმ`;
+  if (sec < 3600)  return en ? `${Math.round(sec / 60)} min` : `${Math.round(sec / 60)} წთ`;
+  if (sec < 86400) return en ? `${Math.round(sec / 3600)} h` : `${Math.round(sec / 3600)} სთ`;
+  if (sec < 604800) return en ? `${Math.round(sec / 86400)} d` : `${Math.round(sec / 86400)} დღე`;
+  return new Date(iso).toLocaleDateString(en ? 'en-US' : 'ka-GE', { day: 'numeric', month: 'short' });
 }
 
-function formatDuration(c: ConversationRow): string {
+function formatDuration(c: ConversationRow, en: boolean): string {
   const start = new Date(c.startedAt).getTime();
   const end   = c.endedAt ? new Date(c.endedAt).getTime() : Date.now();
   const sec   = Math.max(0, Math.round((end - start) / 1000));
-  if (sec < 60)   return `${sec}წმ`;
-  if (sec < 3600) return `${Math.round(sec / 60)} წთ`;
-  return `${(sec / 3600).toFixed(1)} სთ`;
+  if (sec < 60)   return en ? `${sec}s` : `${sec}წმ`;
+  if (sec < 3600) return en ? `${Math.round(sec / 60)} min` : `${Math.round(sec / 60)} წთ`;
+  return en ? `${(sec / 3600).toFixed(1)} h` : `${(sec / 3600).toFixed(1)} სთ`;
 }

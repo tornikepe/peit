@@ -3,22 +3,23 @@
 // the side label shows the drop-off percentage from the previous step.
 
 import { Filter } from 'lucide-react';
+import T from '@/components/T';
 import type { Funnel as FunnelData } from '@/lib/analytics';
 
 interface Props { data: FunnelData }
 
 interface Step {
-  label:   string;
+  label:   { ka: string; en: string };
   value:   number;
   color:   string;
 }
 
 export default function Funnel({ data }: Props) {
   const steps: Step[] = [
-    { label: 'ვიზიტორები',  value: data.visitors,      color: 'bg-violet-500/60' },
-    { label: 'საუბრები',    value: data.conversations, color: 'bg-violet-500/80' },
-    { label: 'ლიდები',      value: data.leads,         color: 'bg-fuchsia-500/80' },
-    { label: 'დახურული',    value: data.converted,     color: 'bg-emerald-500/80' },
+    { label: { ka: 'ვიზიტორები', en: 'Visitors' },      value: data.visitors,      color: 'bg-violet-500/60' },
+    { label: { ka: 'საუბრები', en: 'Conversations' },    value: data.conversations, color: 'bg-violet-500/80' },
+    { label: { ka: 'ლიდები', en: 'Leads' },              value: data.leads,         color: 'bg-fuchsia-500/80' },
+    { label: { ka: 'დახურული', en: 'Converted' },        value: data.converted,     color: 'bg-emerald-500/80' },
   ];
 
   const max = Math.max(steps[0].value, 1);
@@ -28,12 +29,12 @@ export default function Funnel({ data }: Props) {
     <div className="glass rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Filter className="w-4 h-4 text-violet-300" />
-        <h3 className="text-white font-semibold">კონვერსიის ფანჯარა</h3>
+        <h3 className="text-white font-semibold"><T ka="კონვერსიის ფანჯარა" en="Conversion funnel" /></h3>
       </div>
 
       {!hasData ? (
         <p className="text-xs text-gray-500 py-6 text-center">
-          ჯერ მონაცემები არ არის
+          <T ka="ჯერ მონაცემები არ არის" en="No data yet" />
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
@@ -43,9 +44,9 @@ export default function Funnel({ data }: Props) {
               ? Math.round((s.value / steps[i - 1].value) * 1000) / 10
               : null;
             return (
-              <li key={s.label}>
+              <li key={s.label.en}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-300">{s.label}</span>
+                  <span className="text-xs text-gray-300"><T ka={s.label.ka} en={s.label.en} /></span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-white tabular-nums">
                       {s.value.toLocaleString('ka-GE')}

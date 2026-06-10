@@ -5,6 +5,7 @@
 // question text, count badge, and a relative bar showing share-of-top.
 
 import { HelpCircle } from 'lucide-react';
+import T from '@/components/T';
 import type { TopQuestion } from '@/lib/analytics';
 
 interface Props { items: TopQuestion[] }
@@ -16,12 +17,12 @@ export default function TopQuestionsList({ items }: Props) {
     <div className="glass rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <HelpCircle className="w-4 h-4 text-violet-300" />
-        <h3 className="text-white font-semibold">პოპულარული კითხვები</h3>
+        <h3 className="text-white font-semibold"><T ka="პოპულარული კითხვები" en="Top questions" /></h3>
       </div>
 
       {items.length === 0 ? (
         <p className="text-xs text-gray-500 py-6 text-center">
-          ჯერ არც ერთი კითხვა არ არის
+          <T ka="ჯერ არც ერთი კითხვა არ არის" en="No questions yet" />
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

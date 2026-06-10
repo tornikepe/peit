@@ -1,5 +1,6 @@
 import PageHeader from '@/components/dashboard-shell/PageHeader';
 import BackupLogView from '@/components/dashboard/BackupLogView';
+import T from '@/components/T';
 
 export const metadata = { title: 'Backups — Peit' };
 
@@ -12,7 +13,7 @@ export default function AdminBackupsPage() {
       <PageHeader
         eyebrow="ADMIN"
         title="Database backups"
-        subtitle="ბაზის backup-ების ყოველდღიური აუდიტი (Neon managed + point-in-time recovery)."
+        subtitle={<T ka="ბაზის backup-ების ყოველდღიური აუდიტი (Neon managed + point-in-time recovery)." en="Daily audit of database backups (Neon managed + point-in-time recovery)." />}
       />
       <BackupLogView />
     </>

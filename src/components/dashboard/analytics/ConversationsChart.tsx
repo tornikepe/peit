@@ -9,6 +9,7 @@
 import { useMemo, useState } from 'react';
 import type { DayPoint, Channel } from '@/lib/analytics';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   points: DayPoint[];
@@ -16,8 +17,8 @@ interface Props {
   channel?: Channel;
 }
 
-const CHANNELS: { key: Channel | 'all'; label: string }[] = [
-  { key: 'all',       label: 'ყველა' },
+const CHANNELS = (en: boolean): { key: Channel | 'all'; label: string }[] => [
+  { key: 'all',       label: en ? 'All' : 'ყველა' },
   { key: 'web',       label: 'Web widget' },
   { key: 'telegram',  label: 'Telegram' },
   { key: 'instagram', label: 'Instagram' },
@@ -29,6 +30,7 @@ const VIEW_W  = 800;
 const VIEW_H  = 240;
 
 export default function ConversationsChart({ points, channel }: Props) {
+  const en = useLanguage().lang === 'en';
   const router = useRouter();
   const path   = usePathname();
   const params = useSearchParams();
@@ -51,13 +53,13 @@ export default function ConversationsChart({ points, channel }: Props) {
     <div className="glass rounded-2xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-white font-semibold">საუბრების დინამიკა</h3>
+          <h3 className="text-white font-semibold">{en ? 'Conversation trend' : 'საუბრების დინამიკა'}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            სულ {total.toLocaleString('ka-GE')} · საშუალოდ {avg}/დღე
+            {en ? 'Total' : 'სულ'} {total.toLocaleString(en ? 'en-US' : 'ka-GE')} · {en ? 'avg' : 'საშუალოდ'} {avg}/{en ? 'day' : 'დღე'}
           </p>
         </div>
         <div className="flex bg-white/[0.04] border border-white/[0.06] rounded-lg p-0.5 overflow-x-auto">
-          {CHANNELS.map(c => (
+          {CHANNELS(en).map(c => (
             <button
               key={c.key}
               type="button"
@@ -159,8 +161,8 @@ export default function ConversationsChart({ points, channel }: Props) {
               className="absolute -translate-x-1/2 -translate-y-full pointer-events-none bg-[#0d0d1a] border border-white/10 rounded-md px-2 py-1 text-[11px] text-white whitespace-nowrap"
               style={{ left: `${(hover.x / VIEW_W) * 100}%`, top: `${(hover.y / VIEW_H) * 100}%` }}
             >
-              <div className="text-gray-400">{formatDayLabel(hover.p.day)}</div>
-              <div className="font-medium">{hover.p.count} საუბარი</div>
+              <div className="text-gray-400">{formatDayLabel(hover.p.day, en)}</div>
+              <div className="font-medium">{hover.p.count} {en ? 'conversations' : 'საუბარი'}</div>
             </div>
           )}
         </div>
@@ -170,11 +172,12 @@ export default function ConversationsChart({ points, channel }: Props) {
 }
 
 function EmptyChart() {
+  const en = useLanguage().lang === 'en';
   return (
     <div className="h-56 flex flex-col items-center justify-center text-gray-500">
-      <div className="text-xs">მონაცემები ჯერ არ არის</div>
+      <div className="text-xs">{en ? 'No data yet' : 'მონაცემები ჯერ არ არის'}</div>
       <div className="text-[10px] mt-1 text-gray-600">
-        გადააქცი ბოტი აქტიურად და დაელოდე პირველ საუბრებს
+        {en ? 'Activate your bot and wait for the first conversations' : 'გადააქცი ბოტი აქტიურად და დაელოდე პირველ საუბრებს'}
       </div>
     </div>
   );
@@ -269,8 +272,8 @@ function shortDay(iso: string): string {
   return `${d}/${m}`;
 }
 
-function formatDayLabel(iso: string): string {
+function formatDayLabel(iso: string, en: boolean): string {
   try {
-    return new Date(iso).toLocaleDateString('ka-GE', { day: 'numeric', month: 'short' });
+    return new Date(iso).toLocaleDateString(en ? 'en-US' : 'ka-GE', { day: 'numeric', month: 'short' });
   } catch { return iso; }
 }

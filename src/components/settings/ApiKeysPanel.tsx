@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Trash2, Copy, Check, X, Key, AlertCircle } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ApiKey {
   id:         string;
@@ -17,6 +18,7 @@ interface ApiKey {
 }
 
 export default function ApiKeysPanel() {
+  const en = useLanguage().lang === 'en';
   const [keys,    setKeys]    = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -35,7 +37,7 @@ export default function ApiKeysPanel() {
   useEffect(() => { void load(); }, [load]);
 
   async function revoke(id: string) {
-    if (!confirm('ნამდვილად გაუქმდეს ეს გასაღები? ეს არ შეიძლება გაუქმდეს.')) return;
+    if (!confirm(en ? 'Really revoke this key? This cannot be undone.' : 'ნამდვილად გაუქმდეს ეს გასაღები? ამის დაბრუნება შეუძლებელია.')) return;
     await fetch(`/api/settings/api-keys/${id}`, { method: 'DELETE' });
     void load();
   }
@@ -46,10 +48,10 @@ export default function ApiKeysPanel() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="text-white font-semibold text-lg flex items-center gap-2">
-              <Key className="w-4 h-4 text-violet-300" /> API გასაღებები
+              <Key className="w-4 h-4 text-violet-300" /> {en ? 'API keys' : 'API გასაღებები'}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              გასაღების მნიშვნელობა ჩანს მხოლოდ ერთხელ შექმნისას — შემდეგ მხოლოდ prefix
+              {en ? 'The key value is shown only once at creation — afterwards only the prefix' : 'გასაღების მნიშვნელობა ჩანს მხოლოდ ერთხელ შექმნისას — შემდეგ მხოლოდ prefix'}
             </p>
           </div>
           <button
@@ -57,7 +59,7 @@ export default function ApiKeysPanel() {
             onClick={() => setShowNew(true)}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-2 rounded-lg"
           >
-            <Plus className="w-3.5 h-3.5" /> ახალი გასაღები
+            <Plus className="w-3.5 h-3.5" /> {en ? 'New key' : 'ახალი გასაღები'}
           </button>
         </div>
 
@@ -68,10 +70,10 @@ export default function ApiKeysPanel() {
             <table className="w-full text-sm">
               <thead className="text-[10px] uppercase tracking-wider text-gray-600">
                 <tr>
-                  <th className="text-left font-medium pb-2">სახელი</th>
+                  <th className="text-left font-medium pb-2">{en ? 'Name' : 'სახელი'}</th>
                   <th className="text-left font-medium pb-2">Prefix</th>
-                  <th className="text-left font-medium pb-2">შექმნა</th>
-                  <th className="text-left font-medium pb-2">ბოლო გამოყენება</th>
+                  <th className="text-left font-medium pb-2">{en ? 'Created' : 'შექმნა'}</th>
+                  <th className="text-left font-medium pb-2">{en ? 'Last used' : 'ბოლო გამოყენება'}</th>
                   <th className="text-right font-medium pb-2"></th>
                 </tr>
               </thead>
@@ -79,7 +81,7 @@ export default function ApiKeysPanel() {
                 {keys.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="text-center text-xs text-gray-500 py-8">
-                      ჯერ API გასაღები არ შეგიქმნია
+                      {en ? 'No API keys created yet' : 'ჯერ API გასაღები არ შეგიქმნია'}
                     </td>
                   </tr>
                 ) : keys.map(k => (
@@ -90,20 +92,20 @@ export default function ApiKeysPanel() {
                         {k.prefix}…
                       </code>
                     </td>
-                    <td className="py-2.5 text-gray-400">{formatDate(k.createdAt)}</td>
+                    <td className="py-2.5 text-gray-400">{formatDate(k.createdAt, en)}</td>
                     <td className="py-2.5 text-gray-400">
-                      {k.lastUsedAt ? formatDate(k.lastUsedAt) : <span className="text-gray-600">—</span>}
+                      {k.lastUsedAt ? formatDate(k.lastUsedAt, en) : <span className="text-gray-600">—</span>}
                     </td>
                     <td className="py-2.5 text-right">
                       {k.revokedAt ? (
-                        <span className="text-[10px] text-gray-500">გაუქმებული</span>
+                        <span className="text-[10px] text-gray-500">{en ? 'Revoked' : 'გაუქმებული'}</span>
                       ) : (
                         <button
                           type="button"
                           onClick={() => revoke(k.id)}
                           className="text-red-400 hover:text-red-300 inline-flex items-center gap-1 text-xs"
                         >
-                          <Trash2 className="w-3 h-3" /> გაუქმება
+                          <Trash2 className="w-3 h-3" /> {en ? 'Revoke' : 'გაუქმება'}
                         </button>
                       )}
                     </td>
@@ -136,6 +138,7 @@ function NewKeyModal({ onClose, onCreated }: {
   onClose: () => void;
   onCreated: (k: { name: string; rawKey: string }) => void;
 }) {
+  const en = useLanguage().lang === 'en';
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,17 +168,17 @@ function NewKeyModal({ onClose, onCreated }: {
         className="w-full max-w-md bg-[#0d0d1a] border border-white/10 rounded-2xl p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold">ახალი API გასაღები</h3>
+          <h3 className="text-white font-semibold">{en ? 'New API key' : 'ახალი API გასაღები'}</h3>
           <button type="button" onClick={onClose} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
         </div>
         <label className="block">
-          <span className="text-[11px] uppercase tracking-wider text-gray-500">სახელი</span>
+          <span className="text-[11px] uppercase tracking-wider text-gray-500">{en ? 'Name' : 'სახელი'}</span>
           <input
             required
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder='მაგ. "Production server"'
+            placeholder={en ? 'e.g. "Production server"' : 'მაგ. "Production server"'}
             className="mt-1 w-full bg-white/[0.04] border border-white/[0.06] focus:border-violet-500/40 rounded-lg px-3 py-2 text-sm text-white outline-none"
           />
         </label>
@@ -191,10 +194,10 @@ function NewKeyModal({ onClose, onCreated }: {
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-2 rounded-lg disabled:opacity-50"
           >
             {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            გენერაცია
+            {en ? 'Generate' : 'გენერაცია'}
           </button>
           <button type="button" onClick={onClose} className="text-xs text-gray-400 hover:text-white">
-            გაუქმება
+            {en ? 'Cancel' : 'გაუქმება'}
           </button>
         </div>
       </form>
@@ -207,6 +210,7 @@ function ShowKeyModal({ name, rawKey, onClose }: {
   rawKey: string;
   onClose: () => void;
 }) {
+  const en = useLanguage().lang === 'en';
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -220,10 +224,10 @@ function ShowKeyModal({ name, rawKey, onClose }: {
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center px-4">
       <div className="w-full max-w-lg bg-[#0d0d1a] border border-violet-500/30 rounded-2xl p-6 shadow-2xl">
-        <h3 className="text-white font-semibold">გასაღები შექმნილია: {name}</h3>
+        <h3 className="text-white font-semibold">{en ? 'Key created' : 'გასაღები შექმნილია'}: {name}</h3>
         <p className="text-xs text-amber-300 mt-2 leading-relaxed inline-flex items-start gap-1.5">
           <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          ეს გასაღები ჩანს მხოლოდ ერთხელ. გადაინახე ახლავე — ვერ ნახავ ხელახლა.
+          {en ? 'This key is shown only once. Save it now — you won\u2019t see it again.' : 'ეს გასაღები ჩანს მხოლოდ ერთხელ. გადაინახე ახლავე — ვერ ნახავ ხელახლა.'}
         </p>
 
         <div className="mt-4 flex items-stretch gap-2">
@@ -245,7 +249,7 @@ function ShowKeyModal({ name, rawKey, onClose }: {
             onClick={onClose}
             className="text-xs font-medium text-gray-300 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg"
           >
-            დახურვა
+            {en ? 'Close' : 'დახურვა'}
           </button>
         </div>
       </div>
@@ -253,6 +257,6 @@ function ShowKeyModal({ name, rawKey, onClose }: {
   );
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ka-GE', { day: 'numeric', month: 'short', year: 'numeric' });
+function formatDate(iso: string, en: boolean): string {
+  return new Date(iso).toLocaleDateString(en ? 'en-US' : 'ka-GE', { day: 'numeric', month: 'short', year: 'numeric' });
 }

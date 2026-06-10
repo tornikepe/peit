@@ -8,16 +8,18 @@
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useTransition } from 'react';
 import { Calendar, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
-const PRESETS: { key: '7d' | '30d' | '90d'; label: string }[] = [
-  { key: '7d',  label: '7 დღე' },
-  { key: '30d', label: '30 დღე' },
-  { key: '90d', label: '90 დღე' },
+const PRESETS = (en: boolean): { key: '7d' | '30d' | '90d'; label: string }[] => [
+  { key: '7d',  label: en ? '7 days' : '7 დღე' },
+  { key: '30d', label: en ? '30 days' : '30 დღე' },
+  { key: '90d', label: en ? '90 days' : '90 დღე' },
 ];
 
 interface Props { current: '7d' | '30d' | '90d' | 'custom' }
 
 export default function RangePicker({ current }: Props) {
+  const en = useLanguage().lang === 'en';
   const router = useRouter();
   const path   = usePathname();
   const params = useSearchParams();
@@ -45,7 +47,7 @@ export default function RangePicker({ current }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex bg-white/[0.04] border border-white/[0.06] rounded-lg p-0.5">
-        {PRESETS.map(p => (
+        {PRESETS(en).map(p => (
           <button
             key={p.key}
             type="button"
@@ -69,7 +71,7 @@ export default function RangePicker({ current }: Props) {
             : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'
         }`}>
           <Calendar className="w-3 h-3" />
-          {isCustom ? 'მორგებული' : 'მორგებული'}
+          {en ? 'Custom' : 'მორგებული'}
         </summary>
         <div className="absolute top-full mt-1 left-0 z-10 bg-[#0d0d1a] border border-white/10 rounded-lg p-3 shadow-2xl w-64">
           <CustomDateInput onApply={setCustom} />
@@ -85,6 +87,7 @@ export default function RangePicker({ current }: Props) {
 }
 
 function CustomDateInput({ onApply }: { onApply: (from: string, to: string) => void }) {
+  const en = useLanguage().lang === 'en';
   return (
     <form
       onSubmit={e => {
@@ -95,7 +98,7 @@ function CustomDateInput({ onApply }: { onApply: (from: string, to: string) => v
       className="flex flex-col gap-2"
     >
       <label className="text-[11px] text-gray-500 flex flex-col gap-1">
-        დაწყება
+        {en ? 'From' : 'დაწყება'}
         <input
           name="from"
           type="date"
@@ -104,7 +107,7 @@ function CustomDateInput({ onApply }: { onApply: (from: string, to: string) => v
         />
       </label>
       <label className="text-[11px] text-gray-500 flex flex-col gap-1">
-        დასასრული
+        {en ? 'To' : 'დასასრული'}
         <input
           name="to"
           type="date"
@@ -116,7 +119,7 @@ function CustomDateInput({ onApply }: { onApply: (from: string, to: string) => v
         type="submit"
         className="text-xs bg-violet-500/90 hover:bg-violet-500 text-white rounded py-1.5 mt-1"
       >
-        გამოყენება
+        {en ? 'Apply' : 'გამოყენება'}
       </button>
     </form>
   );

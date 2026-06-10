@@ -10,6 +10,7 @@ import {
   Database, Workflow, LayoutDashboard, Palette,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { INDUSTRIES, TONES, type BotStatus, type FAQItem, createFaqId } from '@/lib/bots';
 import AllowedOrigins from '@/components/dashboard/AllowedOrigins';
 import BotInstructionsEditor from '@/components/dashboard/BotInstructionsEditor';
@@ -21,6 +22,7 @@ import FlowsEditor from '@/components/dashboard/FlowsEditor';
 import KnowledgeUploads from '@/components/dashboard/KnowledgeUploads';
 
 export default function BotDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const en = useLanguage().lang === 'en';
   const { id } = use(params);
   const router = useRouter();
   const { getBot, updateBot, deleteBot, loaded } = useBots();
@@ -53,11 +55,11 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/bots/${bot.id}/recrawl`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setRecrawlResult(`❌ ${data.message || data.error || 'შეცდომა'}`);
+        setRecrawlResult(`❌ ${data.message || data.error || (en ? 'Error' : 'შეცდომა')}`);
       } else {
         const parts = [
-          `${data.pagesScraped} გვერდი`,
-          data.sitemapPages > 0 && `📍 ${data.sitemapPages} sitemap-დან`,
+          `${data.pagesScraped} ${en ? 'pages' : 'გვერდი'}`,
+          data.sitemapPages > 0 && `📍 ${data.sitemapPages} ${en ? 'from sitemap' : 'sitemap-დან'}`,
           `${data.chunksCreated} chunk`,
           data.embedded > 0 && `🧠 ${data.embedded} embedded`,
         ].filter(Boolean);
@@ -86,11 +88,11 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
       if (!res.ok || !data.ok) {
         setReindexResult(
           data.error === 'EMBEDDINGS_NOT_CONFIGURED'
-            ? '⚠ VOYAGE_API_KEY არ არის დაყენებული'
-            : `❌ ${data.error || 'შეცდომა'}`,
+            ? (en ? '⚠ VOYAGE_API_KEY is not configured' : '⚠ VOYAGE_API_KEY არ არის დაყენებული')
+            : `❌ ${data.error || (en ? 'Error' : 'შეცდომა')}`,
         );
       } else {
-        setReindexResult(`✅ ${data.indexed} chunk-ი indexed-ულია`);
+        setReindexResult(`✅ ${data.indexed} ${en ? 'chunks indexed' : 'chunk-ი indexed-ულია'}`);
       }
       setTimeout(() => setReindexResult(null), 5000);
     } catch (e) {
@@ -111,13 +113,13 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
   if (!bot) {
     return (
       <div className="py-24 flex flex-col items-center justify-center">
-        <p className="text-white text-lg mb-2">ბოტი ვერ მოიძებნა</p>
-        <p className="text-gray-500 text-sm mb-6">ეს ბოტი არ არსებობს ან წაშლილია</p>
+        <p className="text-white text-lg mb-2">{en ? 'Bot not found' : 'ბოტი ვერ მოიძებნა'}</p>
+        <p className="text-gray-500 text-sm mb-6">{en ? 'This bot does not exist or was deleted' : 'ეს ბოტი არ არსებობს ან წაშლილია'}</p>
         <Link
           href="/dashboard"
           className="btn-primary text-white font-semibold px-6 py-3 rounded-xl text-sm"
         >
-          Dashboard-ზე დაბრუნება
+          {en ? 'Back to dashboard' : 'Dashboard-ზე დაბრუნება'}
         </Link>
       </div>
     );
@@ -208,12 +210,12 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 {bot.status === 'active' ? (
                   <span className="inline-flex items-center gap-1 text-emerald-400 text-xs font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    აქტიური
+                    {en ? 'Active' : 'აქტიური'}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-amber-400 text-xs font-medium">
                     <Pause className="w-3 h-3" />
-                    შეჩერებული
+                    {en ? 'Paused' : 'შეჩერებული'}
                   </span>
                 )}
               </div>
@@ -233,7 +235,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/[0.05] border border-white/10 text-white hover:bg-white/[0.08] transition-colors"
             >
               {bot.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              {bot.status === 'active' ? 'შეჩერება' : 'გააქტიურება'}
+              {bot.status === 'active' ? (en ? 'Pause' : 'შეჩერება') : (en ? 'Activate' : 'გააქტიურება')}
             </button>
           </div>
         </div>
@@ -241,9 +243,9 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { label: 'შეტყობინება', value: bot.stats.messages, icon: MessageSquare, color: 'text-violet-400' },
-            { label: 'ლიდი',         value: bot.stats.leads,    icon: TrendingUp,    color: 'text-emerald-400' },
-            { label: 'საუბარი',     value: bot.stats.conversations, icon: Globe,    color: 'text-blue-400' },
+            { label: en ? 'Messages' : 'შეტყობინება', value: bot.stats.messages, icon: MessageSquare, color: 'text-violet-400' },
+            { label: en ? 'Leads' : 'ლიდი',            value: bot.stats.leads,    icon: TrendingUp,    color: 'text-emerald-400' },
+            { label: en ? 'Conversations' : 'საუბარი', value: bot.stats.conversations, icon: Globe,    color: 'text-blue-400' },
           ].map(s => (
             <div key={s.label} className="glass rounded-2xl p-5">
               <s.icon className={`w-4 h-4 ${s.color} mb-3`} />
@@ -259,10 +261,10 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             for look-and-feel, automation for flows + channels. */}
         <div className="mb-6 flex items-center gap-1 overflow-x-auto border-b border-white/[0.06] pb-0">
           {[
-            { id: 'overview',   label: 'მიმოხილვა',     icon: LayoutDashboard },
-            { id: 'knowledge',  label: 'ცოდნა',         icon: Database },
-            { id: 'widget',     label: 'ვიჯეტი',        icon: Palette },
-            { id: 'automation', label: 'ავტომატიზაცია', icon: Workflow },
+            { id: 'overview',   label: en ? 'Overview' : 'მიმოხილვა',        icon: LayoutDashboard },
+            { id: 'knowledge',  label: en ? 'Knowledge' : 'ცოდნა',            icon: Database },
+            { id: 'widget',     label: en ? 'Widget' : 'ვიჯეტი',              icon: Palette },
+            { id: 'automation', label: en ? 'Automation' : 'ავტომატიზაცია',   icon: Workflow },
           ].map(t => {
             const active = tab === t.id;
             return (
@@ -291,23 +293,23 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             <div className="glass rounded-2xl p-6">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="text-white font-semibold">FAQ ბაზა</h2>
-                  <p className="text-gray-500 text-sm mt-0.5">{editFaqs.length} ჩანაწერი</p>
+                  <h2 className="text-white font-semibold">{en ? 'FAQ base' : 'FAQ ბაზა'}</h2>
+                  <p className="text-gray-500 text-sm mt-0.5">{editFaqs.length} {en ? 'entries' : 'ჩანაწერი'}</p>
                 </div>
                 <button
                   onClick={addQuickFaq}
                   className="text-violet-400 hover:text-violet-300 text-sm font-medium flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  დამატება
+                  {en ? 'Add' : 'დამატება'}
                 </button>
               </div>
 
               {editFaqs.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 text-sm">FAQ ჯერ არ არის</p>
+                  <p className="text-gray-500 text-sm">{en ? 'No FAQs yet' : 'FAQ ჯერ არ არის'}</p>
                   <button onClick={addQuickFaq} className="text-violet-400 hover:text-violet-300 text-sm mt-2">
-                    + პირველი FAQ-ის დამატება
+                    {en ? '+ Add your first FAQ' : '+ პირველი FAQ-ის დამატება'}
                   </button>
                 </div>
               ) : (
@@ -328,14 +330,14 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                         value={faq.q}
                         onChange={e => editFaqLocal(faq.id, { q: e.target.value })}
                         onBlur={saveFaqsIfChanged}
-                        placeholder="კითხვა..."
+                        placeholder={en ? 'Question...' : 'კითხვა...'}
                         className="w-full bg-[#13131f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 mb-2"
                       />
                       <textarea
                         value={faq.a}
                         onChange={e => editFaqLocal(faq.id, { a: e.target.value })}
                         onBlur={saveFaqsIfChanged}
-                        placeholder="პასუხი..."
+                        placeholder={en ? 'Answer...' : 'პასუხი...'}
                         rows={2}
                         className="w-full bg-[#13131f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 resize-none"
                       />
@@ -352,23 +354,23 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             <div className="glass rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-5">
                 <Settings className="w-4 h-4 text-gray-400" />
-                <h2 className="text-white font-semibold">პარამეტრები</h2>
+                <h2 className="text-white font-semibold">{en ? 'Settings' : 'პარამეტრები'}</h2>
               </div>
               <dl className="grid grid-cols-2 gap-y-4 gap-x-6">
                 <div>
-                  <dt className="text-xs text-gray-500 mb-1">ტონი</dt>
+                  <dt className="text-xs text-gray-500 mb-1">{en ? 'Tone' : 'ტონი'}</dt>
                   <dd className="text-white text-sm">{toneInfo?.emoji} {toneInfo?.label}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-500 mb-1">ენები</dt>
+                  <dt className="text-xs text-gray-500 mb-1">{en ? 'Languages' : 'ენები'}</dt>
                   <dd className="text-white text-sm">{bot.languages.join(', ').toUpperCase()}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-500 mb-1">ვებსაიტი</dt>
+                  <dt className="text-xs text-gray-500 mb-1">{en ? 'Website' : 'ვებსაიტი'}</dt>
                   <dd className="text-white text-sm truncate">{bot.websiteUrl || '—'}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-500 mb-1">ბრენდის ფერი</dt>
+                  <dt className="text-xs text-gray-500 mb-1">{en ? 'Brand color' : 'ბრენდის ფერი'}</dt>
                   <dd className="flex items-center gap-2">
                     <span className="w-4 h-4 rounded" style={{ background: bot.brandColor }} />
                     <span className="text-white text-sm font-mono">{bot.brandColor}</span>
@@ -385,10 +387,10 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             <div className="glass rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
                 <Code2 className="w-4 h-4 text-violet-400" />
-                <h2 className="text-white font-semibold">ჩასმის კოდი</h2>
+                <h2 className="text-white font-semibold">{en ? 'Embed code' : 'ჩასმის კოდი'}</h2>
               </div>
               <p className="text-gray-500 text-xs mb-4">
-                ჩასვი ეს კოდი ვებსაიტის <code className="text-violet-400">&lt;/body&gt;</code>-ის წინ
+                {en ? 'Paste this code just before your site\u2019s ' : 'ჩასვი ეს კოდი ვებსაიტის '}<code className="text-violet-400">&lt;/body&gt;</code>{en ? ' tag' : '-ის წინ'}
               </p>
               <div className="relative">
                 <pre className="bg-[#0a0a14] border border-white/[0.08] rounded-xl p-3 text-xs text-gray-300 overflow-x-auto font-mono">
@@ -397,13 +399,13 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 <button
                   onClick={copyEmbed}
                   className="absolute top-2 right-2 p-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-gray-400 hover:text-white transition-colors"
-                  title="დაკოპირება"
+                  title={en ? 'Copy' : 'დაკოპირება'}
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
               {copied && (
-                <p className="text-emerald-400 text-xs mt-2">✓ დაკოპირდა!</p>
+                <p className="text-emerald-400 text-xs mt-2">✓ {en ? 'Copied!' : 'დაკოპირდა!'}</p>
               )}
 
               <a
@@ -413,7 +415,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 className="mt-3 flex items-center justify-center gap-2 text-xs text-violet-400 hover:text-violet-300 border border-violet-500/20 hover:bg-violet-500/5 rounded-lg py-2 transition-colors"
               >
                 <Globe className="w-3 h-3" />
-                ცალკე ფანჯარაში ნახვა
+                {en ? 'Open in a new window' : 'ცალკე ფანჯარაში ნახვა'}
               </a>
             </div>
 
@@ -439,10 +441,10 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             <div className="glass rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-2">
                 <Globe className="w-4 h-4 text-blue-400" />
-                <h2 className="text-white font-semibold">საიტიდან განახლება</h2>
+                <h2 className="text-white font-semibold">{en ? 'Refresh from site' : 'საიტიდან განახლება'}</h2>
               </div>
               <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-                წაიკითხავს {bot.websiteUrl?.replace(/^https?:\/\//, '')}-ს ხელახლა, ჩაანაცვლებს ყველა chunk-ს და დააინდექსებს AI-სთვის.
+                {en ? 'Re-reads ' : 'წაიკითხავს '}{bot.websiteUrl?.replace(/^https?:\/\//, '')}{en ? ' again, replaces every chunk and re-indexes for AI.' : '-ს ხელახლა, ჩაანაცვლებს ყველა chunk-ს და დააინდექსებს AI-სთვის.'}
               </p>
 
               <button
@@ -458,7 +460,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 ) : (
                   <>
                     <RefreshCw className="w-4 h-4" />
-                    ხელახლა წაკითხვა
+                    {en ? 'Re-crawl' : 'ხელახლა წაკითხვა'}
                   </>
                 )}
               </button>
@@ -469,22 +471,22 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
 
               {bot.lastCrawledAt && (
                 <p className="mt-3 text-[11px] text-gray-600 text-center">
-                  ბოლო წაკითხვა: {new Date(bot.lastCrawledAt).toLocaleString('ka-GE')}
+                  {en ? 'Last crawl' : 'ბოლო წაკითხვა'}: {new Date(bot.lastCrawledAt).toLocaleString(en ? 'en-US' : 'ka-GE')}
                 </p>
               )}
 
               <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between gap-2">
-                <label className="text-xs text-gray-400">ავტომატური განახლება</label>
+                <label className="text-xs text-gray-400">{en ? 'Automatic refresh' : 'ავტომატური განახლება'}</label>
                 <select
                   value={bot.syncIntervalDays ?? 7}
                   onChange={e => updateBot(bot.id, { syncIntervalDays: Number(e.target.value) })}
                   className="bg-black/30 border border-white/[0.08] rounded-md px-2 py-1 text-xs text-gray-100 outline-none focus:border-blue-500/40"
                 >
-                  <option value={0}>გამორთული</option>
-                  <option value={1}>ყოველდღე</option>
-                  <option value={7}>ყოველ კვირას</option>
-                  <option value={14}>2 კვირაში ერთხელ</option>
-                  <option value={30}>თვეში ერთხელ</option>
+                  <option value={0}>{en ? 'Off' : 'გამორთული'}</option>
+                  <option value={1}>{en ? 'Daily' : 'ყოველდღე'}</option>
+                  <option value={7}>{en ? 'Weekly' : 'ყოველ კვირას'}</option>
+                  <option value={14}>{en ? 'Every 2 weeks' : '2 კვირაში ერთხელ'}</option>
+                  <option value={30}>{en ? 'Monthly' : 'თვეში ერთხელ'}</option>
                 </select>
               </div>
             </div>
@@ -497,7 +499,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               <h2 className="text-white font-semibold">AI Index</h2>
             </div>
             <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-              ცოდნის ბაზის Vector embeddings — საშუალებას აძლევს ბოტს გაიგოს კითხვა ბუნებრივად, არა მხოლოდ keyword-ებით.
+              {en ? 'Vector embeddings for the knowledge base — lets the bot understand questions naturally, not just by keywords.' : 'ცოდნის ბაზის Vector embeddings — საშუალებას აძლევს ბოტს გაიგოს კითხვა ბუნებრივად, არა მხოლოდ keyword-ებით.'}
             </p>
             <button
               onClick={rebuildIndex}
@@ -507,12 +509,12 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               {reindexing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  ინდექსაცია...
+                  {en ? 'Indexing...' : 'ინდექსაცია...'}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  AI Index-ის გადაშენება
+                  {en ? 'Rebuild AI index' : 'AI Index-ის განახლება'}
                 </>
               )}
             </button>
@@ -565,9 +567,9 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
             Deletion is a high-stakes action that shouldn't hide behind a
             sub-navigation. */}
         <div className="mt-10 rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6">
-          <h2 className="text-red-400 font-semibold mb-2">სახიფათო ზონა</h2>
+          <h2 className="text-red-400 font-semibold mb-2">{en ? 'Danger zone' : 'სახიფათო ზონა'}</h2>
           <p className="text-gray-500 text-xs mb-4">
-            ბოტის წაშლის შემდეგ მონაცემები ვერ აღდგება.
+            {en ? 'After deleting a bot the data cannot be recovered.' : 'ბოტის წაშლის შემდეგ მონაცემები ვერ აღდგება.'}
           </p>
           {!confirmDelete ? (
             <button
@@ -575,7 +577,7 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              ბოტის წაშლა
+              {en ? 'Delete bot' : 'ბოტის წაშლა'}
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
@@ -583,13 +585,13 @@ export default function BotDetailsPage({ params }: { params: Promise<{ id: strin
                 onClick={handleDelete}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors"
               >
-                დადასტურება — წაშლა
+                {en ? 'Confirm — delete' : 'დადასტურება — წაშლა'}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 className="px-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition-colors"
               >
-                გაუქმება
+                {en ? 'Cancel' : 'გაუქმება'}
               </button>
             </div>
           )}

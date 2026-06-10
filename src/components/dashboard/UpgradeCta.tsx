@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Sparkles } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 type PlanSlug = 'basic' | 'pro' | 'ultimate';
 
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export default function UpgradeCta({ plan = 'pro', label, compact }: Props) {
+  const en = useLanguage().lang === 'en';
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,16 +63,16 @@ export default function UpgradeCta({ plan = 'pro', label, compact }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(humanizeError(data.error, data.message));
+        setError(humanizeError(data.error, data.message, en));
         return;
       }
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setError('გადახდის ბმული ვერ მოვიდა — სცადე ხელახლა.');
+        setError(en ? 'Checkout link did not arrive — try again.' : 'გადახდის ბმული ვერ მოვიდა — სცადე ხელახლა.');
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+      setError(e instanceof Error ? e.message : (en ? 'Unknown error' : 'უცნობი შეცდომა'));
     } finally {
       setBusy(false);
     }
@@ -81,9 +83,9 @@ export default function UpgradeCta({ plan = 'pro', label, compact }: Props) {
     : 'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold btn-primary text-white disabled:opacity-60 disabled:cursor-not-allowed';
 
   const buttonLabel =
-    label ?? (plan === 'pro'      ? 'Pro-ზე გადასვლა'
-            : plan === 'ultimate' ? 'Ultimate-ზე გადასვლა'
-            :                       'Basic-ის შეძენა');
+    label ?? (plan === 'pro'      ? (en ? 'Upgrade to Pro' : 'Pro-ზე გადასვლა')
+            : plan === 'ultimate' ? (en ? 'Upgrade to Ultimate' : 'Ultimate-ზე გადასვლა')
+            :                       (en ? 'Buy Basic' : 'Basic-ის შეძენა'));
 
   return (
     <div className="flex flex-col gap-1">
@@ -100,15 +102,15 @@ export default function UpgradeCta({ plan = 'pro', label, compact }: Props) {
   );
 }
 
-function humanizeError(code?: string, msg?: string): string {
+function humanizeError(code: string | undefined, msg: string | undefined, en: boolean): string {
   switch (code) {
-    case 'DB_NOT_CONFIGURED':       return 'სერვისი მომზადების პროცესშია — სცადე რამდენიმე წუთში.';
-    case 'LEMON_NOT_CONFIGURED':    return msg ?? 'გადახდის სისტემა ჯერ არ არის დაყენებული.';
-    case 'VARIANT_NOT_CONFIGURED':  return msg ?? 'ეს პლანი ჯერ არაა აქტიური.';
-    case 'LEMON_API_ERROR':         return 'გადახდის სერვისი დროებით მიუწვდომელია.';
+    case 'DB_NOT_CONFIGURED':       return en ? 'The service is being prepared — try again in a few minutes.' : 'სერვისი მომზადების პროცესშია — სცადე რამდენიმე წუთში.';
+    case 'LEMON_NOT_CONFIGURED':    return msg ?? (en ? 'Payments are not configured yet.' : 'გადახდის სისტემა ჯერ არ არის დაყენებული.');
+    case 'VARIANT_NOT_CONFIGURED':  return msg ?? (en ? 'This plan is not active yet.' : 'ეს პლანი ჯერ არაა აქტიური.');
+    case 'LEMON_API_ERROR':         return en ? 'The payment service is temporarily unavailable.' : 'გადახდის სერვისი დროებით მიუწვდომელია.';
     case 'AUTH_ERROR':
-    case 'UNAUTHORIZED':            return 'შესვლა გჭირდება.';
-    case 'INVALID_PLAN':            return 'არასწორი პლანი.';
-    default:                        return msg || 'შეცდომა გადახდის გაშვებისას.';
+    case 'UNAUTHORIZED':            return en ? 'You need to sign in.' : 'შესვლა გჭირდება.';
+    case 'INVALID_PLAN':            return en ? 'Invalid plan.' : 'არასწორი პლანი.';
+    default:                        return msg || (en ? 'Error starting checkout.' : 'შეცდომა გადახდის გაშვებისას.');
   }
 }

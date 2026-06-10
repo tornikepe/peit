@@ -3,6 +3,7 @@
 // busiest cell in the window. Server-rendered — pure CSS grid, no JS.
 
 import { Clock } from 'lucide-react';
+import T from '@/components/T';
 import type { HeatCell } from '@/lib/analytics';
 
 interface Props { cells: HeatCell[] }
@@ -10,7 +11,8 @@ interface Props { cells: HeatCell[] }
 // Postgres EXTRACT(dow) → 0=Sunday..6=Saturday. We display Mon→Sun so the
 // reader's working week reads left-to-right; reorder + remap accordingly.
 const DOW_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
-const DOW_LABEL = ['ორ', 'სა', 'ოთ', 'ხუ', 'პა', 'შა', 'კვ'];
+const DOW_LABEL_KA = ['ორ', 'სა', 'ოთ', 'ხუ', 'პა', 'შა', 'კვ'];
+const DOW_LABEL_EN = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 export default function Heatmap({ cells }: Props) {
   const max = cells.reduce((m, c) => Math.max(m, c.count), 0);
@@ -27,14 +29,14 @@ export default function Heatmap({ cells }: Props) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-violet-300" />
-          <h3 className="text-white font-semibold">აქტიური საათები</h3>
+          <h3 className="text-white font-semibold"><T ka="აქტიური საათები" en="Active hours" /></h3>
         </div>
         <span className="text-[10px] text-gray-600">UTC</span>
       </div>
 
       {max === 0 ? (
         <p className="text-xs text-gray-500 py-6 text-center">
-          ჯერ მონაცემები არ არის
+          <T ka="ჯერ მონაცემები არ არის" en="No data yet" />
         </p>
       ) : (
         <div className="overflow-x-auto">
@@ -55,7 +57,7 @@ export default function Heatmap({ cells }: Props) {
             {DOW_ORDER.map((d, rowIdx) => (
               <div key={d} className="grid grid-cols-[28px_repeat(24,1fr)] gap-px mb-px">
                 <div className="text-[10px] text-gray-500 flex items-center justify-end pr-1.5">
-                  {DOW_LABEL[rowIdx]}
+                  <T ka={DOW_LABEL_KA[rowIdx]} en={DOW_LABEL_EN[rowIdx]} />
                 </div>
                 {Array.from({ length: 24 }, (_, h) => {
                   const v       = lookup.get(d)?.get(h) ?? 0;
@@ -67,14 +69,14 @@ export default function Heatmap({ cells }: Props) {
                       style={{
                         backgroundColor: v === 0 ? 'rgba(255,255,255,0.03)' : `rgba(37, 99, 235, ${opacity})`,
                       }}
-                      title={`${DOW_LABEL[rowIdx]} ${String(h).padStart(2, '0')}:00 — ${v} საუბარი`}
+                      title={`${DOW_LABEL_KA[rowIdx]} ${String(h).padStart(2, '0')}:00 — ${v}`}
                     />
                   );
                 })}
               </div>
             ))}
             <div className="mt-3 flex items-center gap-2 text-[10px] text-gray-600">
-              <span>ნაკლები</span>
+              <span><T ka="ნაკლები" en="less" /></span>
               <div className="flex gap-px">
                 {[0.15, 0.35, 0.55, 0.75, 1].map(o => (
                   <div
@@ -84,7 +86,7 @@ export default function Heatmap({ cells }: Props) {
                   />
                 ))}
               </div>
-              <span>მეტი · max {max}</span>
+              <span><T ka="მეტი" en="more" /> · max {max}</span>
             </div>
           </div>
         </div>

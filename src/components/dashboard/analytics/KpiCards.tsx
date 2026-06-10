@@ -4,6 +4,7 @@
 // fetched Kpis object from lib/analytics.
 
 import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
+import T from '@/components/T';
 import type { Kpis } from '@/lib/analytics';
 
 interface Props { kpis: Kpis }
@@ -15,26 +16,26 @@ export default function KpiCards({ kpis }: Props) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <Card
         icon={<MessageSquare className="w-4 h-4" />}
-        label="საუბრები"
+        label={<T ka="საუბრები" en="Conversations" />}
         value={kpis.conversations}
         delta={delta}
       />
       <Card
         icon={<Send className="w-4 h-4" />}
-        label="ბოტის პასუხები"
+        label={<T ka="ბოტის პასუხები" en="Bot replies" />}
         value={kpis.messagesFromBot}
       />
       <Card
         icon={<Users className="w-4 h-4" />}
-        label="ლიდები"
+        label={<T ka="ლიდები" en="Leads" />}
         value={kpis.leads}
         sub={kpis.leadsConverted > 0 ? `${kpis.leadsConverted} won` : undefined}
       />
       <Card
         icon={<TrendingUp className="w-4 h-4" />}
-        label="კონვერსია"
+        label={<T ka="კონვერსია" en="Conversion" />}
         value={`${kpis.conversionRatePct}%`}
-        sub={kpis.leads === 0 ? 'ლიდები ჯერ არ არის' : `${kpis.leadsConverted} / ${kpis.leads}`}
+        sub={kpis.leads === 0 ? <T ka="ლიდები ჯერ არ არის" en="No leads yet" /> : `${kpis.leadsConverted} / ${kpis.leads}`}
       />
     </div>
   );
@@ -53,9 +54,9 @@ function Card({
   icon, label, value, sub, delta,
 }: {
   icon:   React.ReactNode;
-  label:  string;
+  label:  React.ReactNode;
   value:  number | string;
-  sub?:   string;
+  sub?:   React.ReactNode;
   delta?: Delta | null;
 }) {
   return (

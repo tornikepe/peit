@@ -9,6 +9,7 @@ import {
   Globe, Loader2, AlertCircle, Wand2,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   INDUSTRIES, TONES, BRAND_COLORS,
   DEFAULT_GREETINGS, DEFAULT_FALLBACKS,
@@ -22,14 +23,15 @@ const LANG_OPTIONS: { value: BotLang; label: string; flag: string }[] = [
   { value: 'en', label: 'English',  flag: '🇬🇧' },
 ];
 
-const STEPS = [
-  { num: 1, label: 'საფუძველი',     icon: BotIcon },
-  { num: 2, label: 'ცოდნის ბაზა',   icon: MessageSquare },
-  { num: 3, label: 'პერსონალი',     icon: Palette },
-  { num: 4, label: 'მიმოხილვა',     icon: Sparkles },
+const STEPS = (en: boolean) => [
+  { num: 1, label: en ? 'Basics' : 'საფუძველი',          icon: BotIcon },
+  { num: 2, label: en ? 'Knowledge base' : 'ცოდნის ბაზა', icon: MessageSquare },
+  { num: 3, label: en ? 'Personality' : 'პერსონალი',      icon: Palette },
+  { num: 4, label: en ? 'Review' : 'მიმოხილვა',           icon: Sparkles },
 ];
 
 export default function NewBotPage() {
+  const en = useLanguage().lang === 'en';
   const router = useRouter();
   const { addBot } = useBots();
 
@@ -66,7 +68,7 @@ export default function NewBotPage() {
 
   async function analyzeSite() {
     if (!websiteUrl.trim()) {
-      setAnalyzeError('გთხოვთ შეიყვანოთ ვებსაიტის URL');
+      setAnalyzeError(en ? 'Please enter your website URL' : 'გთხოვთ შეიყვანოთ ვებსაიტის URL');
       return;
     }
     setAnalyzing(true);
@@ -80,7 +82,7 @@ export default function NewBotPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'ანალიზი ვერ მოხერხდა');
+        throw new Error(data.error || (en ? 'Analysis failed' : 'ანალიზი ვერ მოხერხდა'));
       }
 
       // Auto-fill industry if detected and user hasn't customized
@@ -123,7 +125,7 @@ export default function NewBotPage() {
         source: data.source,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'უცნობი შეცდომა';
+      const msg = err instanceof Error ? err.message : (en ? 'Unknown error' : 'უცნობი შეცდომა');
       setAnalyzeError(msg);
     } finally {
       setAnalyzing(false);
@@ -198,7 +200,7 @@ export default function NewBotPage() {
       const created = await addBot(draft);
       router.push(`/dashboard/bots/${created.id}`);
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : 'შენახვა ვერ მოხერხდა');
+      setSubmitError(e instanceof Error ? e.message : (en ? 'Save failed' : 'შენახვა ვერ მოხერხდა'));
       setSubmitting(false);
     }
   }
@@ -208,7 +210,7 @@ export default function NewBotPage() {
         {/* Stepper */}
         <div className="mb-10">
           <div className="flex items-center justify-between mb-3">
-            {STEPS.map((s, i) => {
+            {STEPS(en).map((s, i) => {
               const done = step > s.num;
               const active = step === s.num;
               return (
@@ -225,7 +227,7 @@ export default function NewBotPage() {
                       active ? 'text-white' : done ? 'text-violet-400' : 'text-gray-600'
                     }`}>{s.label}</p>
                   </div>
-                  {i < STEPS.length - 1 && (
+                  {i < STEPS(en).length - 1 && (
                     <div className={`flex-1 h-px mx-2 -mt-5 ${done ? 'bg-violet-500' : 'bg-white/[0.08]'}`} />
                   )}
                 </div>
@@ -240,20 +242,20 @@ export default function NewBotPage() {
           {step === 1 && (
             <div className="flex flex-col gap-7">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">დავიწყოთ ბოტი</h2>
-                <p className="text-gray-400 text-sm">საბაზისო ინფორმაცია შენი ბოტის შესახებ.</p>
+                <h2 className="text-2xl font-bold text-white mb-2">{en ? 'Let\u2019s start your bot' : 'დავიწყოთ ბოტი'}</h2>
+                <p className="text-gray-400 text-sm">{en ? 'Basic information about your bot.' : 'საბაზისო ინფორმაცია შენი ბოტის შესახებ.'}</p>
               </div>
 
               {/* Bot name */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  ბოტის სახელი <span className="text-red-400">*</span>
+                  {en ? 'Bot name' : 'ბოტის სახელი'} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="მაგ. Restorani XYZ Assistant"
+                  placeholder={en ? 'e.g. Restaurant XYZ Assistant' : 'მაგ. Restorani XYZ Assistant'}
                   className="w-full bg-[#13131f] border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 transition-colors"
                 />
               </div>
@@ -261,7 +263,7 @@ export default function NewBotPage() {
               {/* Industry */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  ინდუსტრია
+                  {en ? 'Industry' : 'ინდუსტრია'}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {INDUSTRIES.map(ind => (
@@ -284,7 +286,7 @@ export default function NewBotPage() {
               {/* Languages */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  ენები <span className="text-red-400">*</span>
+                  {en ? 'Languages' : 'ენები'} <span className="text-red-400">*</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {LANG_OPTIONS.map(l => {
@@ -309,7 +311,7 @@ export default function NewBotPage() {
 
                 {languages.length > 1 && (
                   <div className="mt-4">
-                    <p className="text-xs text-gray-500 mb-2">ძირითადი ენა (default):</p>
+                    <p className="text-xs text-gray-500 mb-2">{en ? 'Primary language (default):' : 'ძირითადი ენა (default):'}</p>
                     <div className="flex gap-2">
                       {languages.map(l => {
                         const opt = LANG_OPTIONS.find(o => o.value === l)!;
@@ -339,20 +341,20 @@ export default function NewBotPage() {
           {step === 2 && (
             <div className="flex flex-col gap-7">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">ცოდნის ბაზა</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">{en ? 'Knowledge base' : 'ცოდნის ბაზა'}</h2>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  ჩაწერე საიტის URL და ბოტი ავტომატურად ისწავლის — FAQ-ები სავალდებულო არ არის.
+                  {en ? 'Enter your site URL and the bot learns automatically — FAQs are optional.' : 'ჩაწერე საიტის URL და ბოტი ავტომატურად ისწავლის — FAQ-ები სავალდებულო არ არის.'}
                 </p>
                 <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 px-2.5 py-1 rounded-full">
                   <Sparkles className="w-3 h-3" />
-                  URL-ით საკმარისია — Sitemap + 12 გვერდი + AI-grounded პასუხები
+                  {en ? 'A URL is enough — sitemap + 12 pages + AI-grounded answers' : 'URL-ით საკმარისია — Sitemap + 12 გვერდი + AI-grounded პასუხები'}
                 </div>
               </div>
 
               {/* Website URL + Analyze */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  ვებსაიტის URL <span className="text-gray-600 font-normal">(ავტო-ანალიზი)</span>
+                  {en ? 'Website URL' : 'ვებსაიტის URL'} <span className="text-gray-600 font-normal">{en ? '(auto-analysis)' : '(ავტო-ანალიზი)'}</span>
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
@@ -375,18 +377,18 @@ export default function NewBotPage() {
                     {analyzing ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        ანალიზი...
+                        {en ? 'Analyzing...' : 'ანალიზი...'}
                       </>
                     ) : (
                       <>
                         <Wand2 className="w-4 h-4" />
-                        გაანალიზე
+                        {en ? 'Analyze' : 'გაანალიზე'}
                       </>
                     )}
                   </button>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">
-                  ბოტი ავტომატურად წაიკითხავს საიტს, გაიგებს რას აკეთებთ და შექმნის FAQ-ებს.
+                  {en ? 'The bot reads your site automatically, learns what you do and builds FAQs.' : 'ბოტი ავტომატურად წაიკითხავს საიტს, გაიგებს რას აკეთებთ და შექმნის FAQ-ებს.'}
                 </p>
 
                 {/* Error */}
@@ -404,10 +406,10 @@ export default function NewBotPage() {
                       <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-emerald-300 text-sm font-semibold mb-0.5">
-                          ანალიზი დასრულდა
+                          {en ? 'Analysis complete' : 'ანალიზი დასრულდა'}
                         </p>
                         <p className="text-gray-400 text-xs">
-                          {analysisResult.pagesScraped} გვერდი წაიკითხა ·{' '}
+                          {analysisResult.pagesScraped} {en ? 'pages read' : 'გვერდი წაიკითხა'} ·{' '}
                           {analysisResult.source === 'ai' ? '🧠 AI-powered' : '⚡ Rule-based'} ·{' '}
                           {faqs.length} FAQ · {knowledgeChunks.length} chunk
                         </p>
@@ -416,7 +418,7 @@ export default function NewBotPage() {
 
                     {analysisResult.title && (
                       <div className="mb-2">
-                        <p className="text-xs text-gray-500">გაიგო რას აკეთებთ:</p>
+                        <p className="text-xs text-gray-500">{en ? 'Understood what you do:' : 'გაიგო რას აკეთებთ:'}</p>
                         <p className="text-white text-sm font-medium">{analysisResult.title}</p>
                         {analysisResult.description && (
                           <p className="text-gray-400 text-xs mt-1 line-clamp-2">{analysisResult.description}</p>
@@ -432,16 +434,16 @@ export default function NewBotPage() {
                         </span>
                       )}
                       {analysisResult.signals.hasPricing && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">💰 ფასები</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">💰 {en ? 'Prices' : 'ფასები'}</span>
                       )}
                       {analysisResult.signals.hasHours && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">🕒 საათები</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">🕒 {en ? 'Hours' : 'საათები'}</span>
                       )}
                       {analysisResult.signals.hasBooking && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">📅 ჯავშანი</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">📅 {en ? 'Booking' : 'ჯავშანი'}</span>
                       )}
                       {analysisResult.signals.hasShipping && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">🚚 მიწოდება</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">🚚 {en ? 'Delivery' : 'მიწოდება'}</span>
                       )}
                       {analysisResult.contact.phones.length > 0 && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-gray-300">📞 {analysisResult.contact.phones[0]}</span>
@@ -452,7 +454,7 @@ export default function NewBotPage() {
                     </div>
 
                     <p className="text-gray-500 text-[11px] mt-3">
-                      ↓ FAQ-ები ქვემოთ ავტომატურად შეივსო. შეგიძლია შეცვალო ან ჩაამატო.
+                      {en ? '↓ FAQs below were filled automatically. You can edit or add more.' : '↓ FAQ-ები ქვემოთ ავტომატურად შეივსო. შეგიძლია შეცვალო ან ჩაამატო.'}
                     </p>
                   </div>
                 )}
@@ -462,8 +464,8 @@ export default function NewBotPage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-medium text-gray-300">
-                    ხშირად დასმული კითხვები
-                    <span className="ml-2 text-xs font-normal text-gray-600">(არჩევითი)</span>
+                    {en ? 'Frequently asked questions' : 'ხშირად დასმული კითხვები'}
+                    <span className="ml-2 text-xs font-normal text-gray-600">{en ? '(optional)' : '(არჩევითი)'}</span>
                   </label>
                   <button
                     type="button"
@@ -471,7 +473,7 @@ export default function NewBotPage() {
                     className="text-violet-400 hover:text-violet-300 text-sm font-medium flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    დამატება
+                    {en ? 'Add' : 'დამატება'}
                   </button>
                 </div>
 
@@ -494,13 +496,13 @@ export default function NewBotPage() {
                         type="text"
                         value={faq.q}
                         onChange={e => updateFaq(faq.id, { q: e.target.value })}
-                        placeholder="კითხვა (მაგ. რა არის თქვენი სამუშაო საათები?)"
+                        placeholder={en ? 'Question (e.g. What are your working hours?)' : 'კითხვა (მაგ. რა არის თქვენი სამუშაო საათები?)'}
                         className="w-full bg-[#13131f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 mb-2"
                       />
                       <textarea
                         value={faq.a}
                         onChange={e => updateFaq(faq.id, { a: e.target.value })}
-                        placeholder="პასუხი..."
+                        placeholder={en ? 'Answer...' : 'პასუხი...'}
                         rows={2}
                         className="w-full bg-[#13131f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/60 resize-none"
                       />
@@ -515,14 +517,14 @@ export default function NewBotPage() {
           {step === 3 && (
             <div className="flex flex-col gap-7">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">პერსონალი და სტილი</h2>
-                <p className="text-gray-400 text-sm">როგორ ესაუბრება ბოტი შენს კლიენტებს.</p>
+                <h2 className="text-2xl font-bold text-white mb-2">{en ? 'Personality & style' : 'პერსონალი და სტილი'}</h2>
+                <p className="text-gray-400 text-sm">{en ? 'How the bot talks to your customers.' : 'როგორ ესაუბრება ბოტი შენს კლიენტებს.'}</p>
               </div>
 
               {/* Tone */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  ტონი
+                  {en ? 'Tone' : 'ტონი'}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {TONES.map(t => (
@@ -547,7 +549,7 @@ export default function NewBotPage() {
               {/* Greetings per language */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  მისალმების შეტყობინება
+                  {en ? 'Greeting message' : 'მისალმების შეტყობინება'}
                 </label>
                 <div className="flex flex-col gap-3">
                   {languages.map(l => {
@@ -570,7 +572,7 @@ export default function NewBotPage() {
               {/* Brand color */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  ბრენდის ფერი
+                  {en ? 'Brand color' : 'ბრენდის ფერი'}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {BRAND_COLORS.map(c => (
@@ -594,8 +596,8 @@ export default function NewBotPage() {
           {step === 4 && (
             <div className="flex flex-col gap-6">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">თითქმის მზადაა! ✨</h2>
-                <p className="text-gray-400 text-sm">გადახედე და დაადასტურე — ამის შემდეგ ბოტი აქტიური იქნება.</p>
+                <h2 className="text-2xl font-bold text-white mb-2">{en ? 'Almost ready! ✨' : 'თითქმის მზადაა! ✨'}</h2>
+                <p className="text-gray-400 text-sm">{en ? 'Review and confirm — after this your bot goes live.' : 'გადახედე და დაადასტურე — ამის შემდეგ ბოტი აქტიური იქნება.'}</p>
               </div>
 
               <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-5">
@@ -616,25 +618,25 @@ export default function NewBotPage() {
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/[0.08]">
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">ენები</p>
+                    <p className="text-xs text-gray-500 mb-1">{en ? 'Languages' : 'ენები'}</p>
                     <p className="text-white text-sm">
                       {languages.map(l => LANG_OPTIONS.find(o => o.value === l)!.flag).join(' ')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">ტონი</p>
+                    <p className="text-xs text-gray-500 mb-1">{en ? 'Tone' : 'ტონი'}</p>
                     <p className="text-white text-sm">
                       {TONES.find(t => t.value === tone)?.emoji} {TONES.find(t => t.value === tone)?.label}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">FAQ ჩანაწერი</p>
+                    <p className="text-xs text-gray-500 mb-1">{en ? 'FAQ entries' : 'FAQ ჩანაწერი'}</p>
                     <p className="text-white text-sm">
-                      {faqs.filter(f => f.q.trim() && f.a.trim()).length} კითხვა
+                      {faqs.filter(f => f.q.trim() && f.a.trim()).length} {en ? 'questions' : 'კითხვა'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">ვებსაიტი</p>
+                    <p className="text-xs text-gray-500 mb-1">{en ? 'Website' : 'ვებსაიტი'}</p>
                     <p className="text-white text-sm truncate">{websiteUrl || '—'}</p>
                   </div>
                 </div>
@@ -643,9 +645,9 @@ export default function NewBotPage() {
               <div className="rounded-xl border border-violet-500/20 bg-violet-600/5 p-4 flex gap-3">
                 <Sparkles className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-white text-sm font-medium mb-1">შემდეგი ნაბიჯი</p>
+                  <p className="text-white text-sm font-medium mb-1">{en ? 'Next step' : 'შემდეგი ნაბიჯი'}</p>
                   <p className="text-gray-400 text-xs leading-relaxed">
-                    შექმნის შემდეგ მიიღებ ჩასმის კოდს ვებსაიტისთვის და შეგიძლია გაწვრთნო ბოტი ცოცხალი ჩატის playground-ში.
+                    {en ? 'After creating you get an embed code for your website and can train the bot in the live chat playground.' : 'შექმნის შემდეგ მიიღებ ჩასმის კოდს ვებსაიტისთვის და შეგიძლია გაწვრთნო ბოტი ცოცხალი ჩატის playground-ში.'}
                   </p>
                 </div>
               </div>
@@ -662,7 +664,7 @@ export default function NewBotPage() {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            უკან
+            {en ? 'Back' : 'უკან'}
           </button>
 
           {step < 4 ? (
@@ -672,7 +674,7 @@ export default function NewBotPage() {
               disabled={!canNext}
               className="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              შემდეგი
+              {en ? 'Next' : 'შემდეგი'}
               <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
@@ -689,12 +691,12 @@ export default function NewBotPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    ვქმნი...
+                    {en ? 'Creating...' : 'ვქმნი...'}
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    ბოტის შექმნა
+                    {en ? 'Create bot' : 'ბოტის შექმნა'}
                   </>
                 )}
               </button>

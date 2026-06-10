@@ -4,6 +4,7 @@
 // a single "უცნობი" row.
 
 import { MapPin } from 'lucide-react';
+import T from '@/components/T';
 import type { GeoRow } from '@/lib/analytics';
 
 interface Props { rows: GeoRow[] }
@@ -28,21 +29,21 @@ export default function GeoTable({ rows }: Props) {
     <div className="glass rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <MapPin className="w-4 h-4 text-violet-300" />
-        <h3 className="text-white font-semibold">გეოგრაფია</h3>
+        <h3 className="text-white font-semibold"><T ka="გეოგრაფია" en="Geography" /></h3>
       </div>
 
       {rows.length === 0 ? (
         <p className="text-xs text-gray-500 py-6 text-center">
-          ჯერ მონაცემები არ არის
+          <T ka="ჯერ მონაცემები არ არის" en="No data yet" />
         </p>
       ) : (
         <div className="max-h-72 overflow-y-auto">
           <table className="w-full text-sm">
             <thead className="text-[10px] uppercase tracking-wider text-gray-600">
               <tr>
-                <th className="text-left font-medium pb-2">ქვეყანა</th>
-                <th className="text-left font-medium pb-2">ქალაქი</th>
-                <th className="text-right font-medium pb-2">საუბრები</th>
+                <th className="text-left font-medium pb-2"><T ka="ქვეყანა" en="Country" /></th>
+                <th className="text-left font-medium pb-2"><T ka="ქალაქი" en="City" /></th>
+                <th className="text-right font-medium pb-2"><T ka="საუბრები" en="Conversations" /></th>
               </tr>
             </thead>
             <tbody>
@@ -50,7 +51,7 @@ export default function GeoTable({ rows }: Props) {
                 <tr key={i} className="border-t border-white/[0.04]">
                   <td className="py-1.5">
                     <span className="mr-1.5">{flag(r.country)}</span>
-                    <span className="text-gray-300">{r.country ?? 'უცნობი'}</span>
+                    <span className="text-gray-300">{r.country ?? <T ka="უცნობი" en="Unknown" />}</span>
                   </td>
                   <td className="py-1.5 text-gray-400">
                     {r.city ?? <span className="text-gray-600">—</span>}

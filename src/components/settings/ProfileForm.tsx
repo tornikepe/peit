@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { UserButton } from '@clerk/nextjs';
 import { Loader2, Save, ExternalLink, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Profile {
   name:     string | null;
@@ -18,6 +19,7 @@ interface Profile {
 }
 
 export default function ProfileForm() {
+  const en = useLanguage().lang === 'en';
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name,    setName]    = useState('');
   const [locale,  setLocale]  = useState('ka');
@@ -54,7 +56,7 @@ export default function ProfileForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'save failed');
-      setMsg({ kind: 'ok', text: 'შენახულია' });
+      setMsg({ kind: 'ok', text: en ? 'Saved' : 'შენახულია' });
       // Auto-dismiss success — error stays until next save.
       setTimeout(() => setMsg(null), 2400);
     } catch (e) {
@@ -84,9 +86,9 @@ export default function ProfileForm() {
     <div className="flex flex-col gap-6">
       {/* Profile card */}
       <form onSubmit={save} className="glass rounded-2xl p-6">
-        <h2 className="text-white font-semibold text-lg">პროფილი</h2>
+        <h2 className="text-white font-semibold text-lg">{en ? 'Profile' : 'პროფილი'}</h2>
         <p className="text-xs text-gray-500 mt-1">
-          საჯაროდ ხილული სახელი და მაგზავნი email-ის ენა
+          {en ? 'Your display name and the language of emails we send you' : 'საჯაროდ ხილული სახელი და გასაგზავნი email-ის ენა'}
         </p>
 
         <div className="mt-5 flex items-center gap-4">
@@ -99,25 +101,25 @@ export default function ProfileForm() {
               rel="noopener noreferrer"
               className="text-[11px] text-violet-400 hover:text-violet-300 inline-flex items-center gap-1 mt-0.5"
             >
-              <ExternalLink className="w-3 h-3" /> Email, ავატარი, პაროლი
+              <ExternalLink className="w-3 h-3" /> {en ? 'Email, avatar, password' : 'Email, ავატარი, პაროლი'}
             </a>
           </div>
         </div>
 
         <label className="block mt-5">
-          <span className="text-[11px] uppercase tracking-wider text-gray-500">სახელი</span>
+          <span className="text-[11px] uppercase tracking-wider text-gray-500">{en ? 'Name' : 'სახელი'}</span>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="შენი სრული სახელი"
+            placeholder={en ? 'Your full name' : 'შენი სრული სახელი'}
             maxLength={120}
             className="mt-1 w-full bg-white/[0.04] border border-white/[0.06] focus:border-violet-500/40 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none"
           />
         </label>
 
         <label className="block mt-4">
-          <span className="text-[11px] uppercase tracking-wider text-gray-500">Email-ის ენა</span>
+          <span className="text-[11px] uppercase tracking-wider text-gray-500">{en ? 'Email language' : 'Email-ის ენა'}</span>
           <select
             value={locale}
             onChange={e => setLocale(e.target.value)}
@@ -125,7 +127,6 @@ export default function ProfileForm() {
           >
             <option value="ka">ქართული</option>
             <option value="en">English</option>
-            <option value="ru">Русский</option>
           </select>
         </label>
 
@@ -136,7 +137,7 @@ export default function ProfileForm() {
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-2 rounded-lg disabled:opacity-50"
           >
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            შენახვა
+            {en ? 'Save' : 'შენახვა'}
           </button>
           {msg && (
             <span className={`text-[11px] inline-flex items-center gap-1 ${msg.kind === 'ok' ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -149,9 +150,9 @@ export default function ProfileForm() {
 
       {/* Password / security card — punts to Clerk. */}
       <div className="glass rounded-2xl p-6">
-        <h3 className="text-white font-semibold">პაროლი + უსაფრთხოება</h3>
+        <h3 className="text-white font-semibold">{en ? 'Password & security' : 'პაროლი + უსაფრთხოება'}</h3>
         <p className="text-sm text-gray-400 mt-1 leading-relaxed">
-          პაროლის, 2FA-ის და დაკავშირებული ანგარიშების მართვა ხდება Clerk-ის ჰოსტიდან.
+          {en ? 'Password, 2FA and connected accounts are managed on Clerk\u2019s hosted portal.' : 'პაროლის, 2FA-ის და დაკავშირებული ანგარიშების მართვა ხდება Clerk-ის ჰოსტიდან.'}
         </p>
         <a
           href="https://accounts.clerk.com/user"
@@ -159,7 +160,7 @@ export default function ProfileForm() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-violet-300 border border-violet-500/30 hover:bg-violet-500/10 px-3 py-1.5 rounded-lg"
         >
-          <Mail className="w-3.5 h-3.5" /> ანგარიშის მართვა
+          <Mail className="w-3.5 h-3.5" /> {en ? 'Manage account' : 'ანგარიშის მართვა'}
           <ExternalLink className="w-3 h-3" />
         </a>
       </div>

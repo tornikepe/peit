@@ -1,5 +1,6 @@
 import PageHeader from '@/components/dashboard-shell/PageHeader';
 import ReferralView from '@/components/dashboard/ReferralView';
+import T from '@/components/T';
 
 export const metadata = { title: 'მოწვევა — Peit' };
 
@@ -8,8 +9,8 @@ export default function ReferralPage() {
     <>
       <PageHeader
         eyebrow="REFERRAL"
-        title="მოწვევის პროგრამა"
-        subtitle="მოიწვიე მეგობრები და ბიზნესები — ორივე იღებთ ჯილდოს."
+        title={<T ka="მოწვევის პროგრამა" en="Referral program" />}
+        subtitle={<T ka="მოიწვიე მეგობრები და ბიზნესები — ორივე იღებთ ჯილდოს." en="Invite friends and businesses — you both get rewarded." />}
       />
       <ReferralView />
     </>

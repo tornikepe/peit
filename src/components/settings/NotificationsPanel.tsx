@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Bell, Check } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Prefs {
   leadAlerts:     boolean;
@@ -16,20 +17,21 @@ interface Prefs {
   trialReminders: boolean;
 }
 
-const ROWS: Array<{
+const ROWS = (en: boolean): Array<{
   key:    keyof Prefs;
   label:  string;
   hint:   string;
   primary?: boolean;
-}> = [
-  { key: 'leadAlerts',     label: 'ლიდის შემოსვლა',           hint: 'როცა customer-ი დატოვებს კონტაქტს', primary: true },
-  { key: 'handoffAlerts',  label: 'ოპერატორზე გადაცემა',     hint: 'როცა საუბარი დაიყვანება ცოცხალ ოპერატორზე', primary: true },
-  { key: 'weeklyReport',   label: 'კვირის ანგარიში',         hint: 'ორშაბათ დილით ბოლო კვირის სტატისტიკა', primary: true },
-  { key: 'productUpdates', label: 'პროდუქტის სიახლეები',     hint: 'მარკეტინგი — ფუნქციები, რჩევები' },
-  { key: 'trialReminders', label: 'ტრიალის შეხსენებები',     hint: 'ტრიალის დასრულებამდე 3 დღით ადრე' },
+}> => [
+  { key: 'leadAlerts',     label: en ? 'New lead' : 'ლიდის შემოსვლა',                      hint: en ? 'When a customer leaves contact details' : 'როცა customer-ი დატოვებს კონტაქტს', primary: true },
+  { key: 'handoffAlerts',  label: en ? 'Operator handoff' : 'ოპერატორზე გადაცემა',          hint: en ? 'When a conversation is handed to a live operator' : 'როცა საუბარი დაიყვანება ცოცხალ ოპერატორზე', primary: true },
+  { key: 'weeklyReport',   label: en ? 'Weekly report' : 'კვირის ანგარიში',                hint: en ? 'Last week\u2019s stats every Monday morning' : 'ორშაბათ დილით ბოლო კვირის სტატისტიკა', primary: true },
+  { key: 'productUpdates', label: en ? 'Product updates' : 'პროდუქტის სიახლეები',          hint: en ? 'Marketing — features, tips' : 'მარკეტინგი — ფუნქციები, რჩევები' },
+  { key: 'trialReminders', label: en ? 'Trial reminders' : 'ტრიალის შეხსენებები',          hint: en ? '3 days before your trial ends' : 'ტრიალის დასრულებამდე 3 დღით ადრე' },
 ];
 
 export default function NotificationsPanel() {
+  const en = useLanguage().lang === 'en';
   const [prefs,   setPrefs]   = useState<Prefs | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<keyof Prefs | null>(null);
@@ -77,14 +79,14 @@ export default function NotificationsPanel() {
   return (
     <div className="glass rounded-2xl p-6">
       <h2 className="text-white font-semibold text-lg flex items-center gap-2">
-        <Bell className="w-4 h-4 text-violet-300" /> ნოტიფიკაციები
+        <Bell className="w-4 h-4 text-violet-300" /> {en ? 'Notifications' : 'ნოტიფიკაციები'}
       </h2>
       <p className="text-xs text-gray-500 mt-1">
-        ცვლილებები ინახება ავტომატურად
+        {en ? 'Changes are saved automatically' : 'ცვლილებები ინახება ავტომატურად'}
       </p>
 
       <ul className="mt-5 divide-y divide-white/[0.04]">
-        {ROWS.map(row => (
+        {ROWS(en).map(row => (
           <li key={row.key} className="py-4 flex items-center justify-between gap-4">
             <div className="min-w-0">
               <div className="text-sm text-white">{row.label}</div>

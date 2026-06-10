@@ -13,6 +13,7 @@ import { InstagramIcon, FacebookIcon } from '@/components/icons/BrandIcons';
 import { useFetch } from './useConversations';
 import TagInput from './TagInput';
 import HandoffButton from './HandoffButton';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Message {
   id:        string;
@@ -64,15 +65,16 @@ const CHANNEL_ICON: Record<string, React.ReactNode> = {
   facebook:  <FacebookIcon  className="w-4 h-4" />,
   playground:<Globe         className="w-4 h-4" />,
 };
-const CHANNEL_LABEL: Record<string, string> = {
-  web:       'ვებსაიტი',
+const CHANNEL_LABEL = (en: boolean): Record<string, string> => ({
+  web:       en ? 'Website' : 'ვებსაიტი',
   telegram:  'Telegram',
   instagram: 'Instagram',
   facebook:  'Messenger',
   playground:'Playground',
-};
+});
 
 export default function TranscriptPanel({ conversationId, onClose, onChange }: Props) {
+  const en = useLanguage().lang === 'en';
   const { data, loading, error, refetch } = useFetch<{ conversation: ConversationDetail }>(
     `/api/conversations/${conversationId}`,
     { revalidateOnFocus: false },
@@ -135,7 +137,7 @@ export default function TranscriptPanel({ conversationId, onClose, onChange }: P
               </div>
               <div className="text-[11px] text-gray-500 truncate">
                 {c
-                  ? `${CHANNEL_LABEL[c.channel] ?? c.channel}${c.city ? ` · ${c.city}` : ''}${c.country ? ` · ${c.country}` : ''}`
+                  ? `${CHANNEL_LABEL(en)[c.channel] ?? c.channel}${c.city ? ` · ${c.city}` : ''}${c.country ? ` · ${c.country}` : ''}`
                   : ''}
               </div>
             </div>
@@ -167,7 +169,7 @@ export default function TranscriptPanel({ conversationId, onClose, onChange }: P
               onClick={refetch}
               className="mt-2 text-xs text-violet-400 hover:text-violet-300"
             >
-              ხელახლა სცადე
+              {en ? 'Try again' : 'ხელახლა სცადე'}
             </button>
           </div>
         )}
@@ -178,24 +180,24 @@ export default function TranscriptPanel({ conversationId, onClose, onChange }: P
             <div className="px-4 py-2 border-b border-white/[0.04] grid grid-cols-2 gap-2 text-[11px]">
               <div className="flex items-center gap-1.5 text-gray-500">
                 <Clock className="w-3 h-3" />
-                {new Date(c.startedAt).toLocaleString('ka-GE', {
+                {new Date(c.startedAt).toLocaleString(en ? 'en-US' : 'ka-GE', {
                   day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                 })}
               </div>
               <div className="flex items-center gap-1.5 text-gray-500">
                 <MapPin className="w-3 h-3" />
-                {c.city ?? c.country ?? 'უცნობი'}
+                {c.city ?? c.country ?? (en ? 'Unknown' : 'უცნობი')}
               </div>
               <div className="col-span-2 text-gray-500">
-                ხანგრძლივობა: {formatDuration(c.startedAt, c.endedAt, c.messages)}
-                {' · '}{c.messages.length} მესიჯი
+                {en ? 'Duration' : 'ხანგრძლივობა'}: {formatDuration(c.startedAt, c.endedAt, c.messages, en)}
+                {' · '}{c.messages.length} {en ? 'messages' : 'მესიჯი'}
               </div>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5">
               {c.messages.length === 0 ? (
-                <p className="text-center text-xs text-gray-500 py-8">მესიჯები არ არის</p>
+                <p className="text-center text-xs text-gray-500 py-8">{en ? 'No messages' : 'მესიჯები არ არის'}</p>
               ) : c.messages.map(m => <Bubble key={m.id} message={m} />)}
             </div>
 
@@ -203,7 +205,7 @@ export default function TranscriptPanel({ conversationId, onClose, onChange }: P
             <div className="border-t border-white/[0.06] p-4 flex flex-col gap-3 bg-black/30">
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5 block">
-                  ჭდეები
+                  {en ? 'Tags' : 'ჭდეები'}
                 </label>
                 <TagInput
                   value={c.tags}
@@ -226,6 +228,7 @@ export default function TranscriptPanel({ conversationId, onClose, onChange }: P
 }
 
 function Bubble({ message }: { message: Message }) {
+  const en = useLanguage().lang === 'en';
   const isUser = message.role === 'user';
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -254,12 +257,12 @@ function Bubble({ message }: { message: Message }) {
           isUser ? 'text-violet-100/70' : 'text-gray-500'
         }`}>
           <span>
-            {new Date(message.createdAt).toLocaleTimeString('ka-GE', {
+            {new Date(message.createdAt).toLocaleTimeString(en ? 'en-US' : 'ka-GE', {
               hour: '2-digit', minute: '2-digit',
             })}
           </span>
           {message.source && message.source !== null && (
-            <span className="opacity-60">· {sourceLabel(message.source)}</span>
+            <span className="opacity-60">· {sourceLabel(message.source, en)}</span>
           )}
           {/* Sentiment dot (Feature #5) — visible only on user messages
               where the classifier returned a label. Helps the owner scan
@@ -286,18 +289,18 @@ function Bubble({ message }: { message: Message }) {
   );
 }
 
-function sourceLabel(s: string): string {
+function sourceLabel(s: string, en: boolean): string {
   switch (s) {
     case 'faq':       return 'FAQ';
-    case 'knowledge': return 'საიტიდან';
+    case 'knowledge': return en ? 'from site' : 'საიტიდან';
     case 'ai':        return 'AI';
     case 'fallback':  return 'fallback';
-    case 'human':     return 'ოპერატორი';
+    case 'human':     return en ? 'operator' : 'ოპერატორი';
     default:          return s;
   }
 }
 
-function formatDuration(startedAt: string, endedAt: string | null, messages: Message[]): string {
+function formatDuration(startedAt: string, endedAt: string | null, messages: Message[], en: boolean): string {
   const startMs = new Date(startedAt).getTime();
   const endMs   = endedAt
     ? new Date(endedAt).getTime()
@@ -305,9 +308,9 @@ function formatDuration(startedAt: string, endedAt: string | null, messages: Mes
       ? new Date(messages[messages.length - 1].createdAt).getTime()
       : Date.now();
   const secs = Math.max(0, Math.round((endMs - startMs) / 1000));
-  if (secs < 60)    return `${secs}წმ`;
-  if (secs < 3600)  return `${Math.round(secs / 60)} წთ`;
-  return `${(secs / 3600).toFixed(1)} სთ`;
+  if (secs < 60)    return en ? `${secs}s` : `${secs}წმ`;
+  if (secs < 3600)  return en ? `${Math.round(secs / 60)} min` : `${Math.round(secs / 60)} წთ`;
+  return en ? `${(secs / 3600).toFixed(1)} h` : `${(secs / 3600).toFixed(1)} სთ`;
 }
 
 function ExportDropdown({ id }: { id: string }) {

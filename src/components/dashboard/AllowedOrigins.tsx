@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Globe, Plus, Trash2, AlertCircle, Check } from 'lucide-react';
 
 interface Props {
@@ -27,6 +28,7 @@ function isValidOriginEntry(s: string): boolean {
 }
 
 export default function AllowedOrigins({ value, onSave }: Props) {
+  const en = useLanguage().lang === 'en';
   const [list, setList] = useState<string[]>(value);
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function AllowedOrigins({ value, onSave }: Props) {
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'შენახვა ვერ მოხერხდა');
+      setError(e instanceof Error ? e.message : (en ? 'Save failed' : 'შენახვა ვერ მოხერხდა'));
     } finally {
       setSaving(false);
     }
@@ -61,11 +63,11 @@ export default function AllowedOrigins({ value, onSave }: Props) {
     const v = input.trim();
     if (!v) return;
     if (!isValidOriginEntry(v)) {
-      setError('არასწორი ფორმატი — გამოიყენე example.com ან *.example.com');
+      setError(en ? 'Invalid format — use example.com or *.example.com' : 'არასწორი ფორმატი — გამოიყენე example.com ან *.example.com');
       return;
     }
     if (list.includes(v)) {
-      setError('ეს დომენი უკვე დამატებულია');
+      setError(en ? 'This domain is already added' : 'ეს დომენი უკვე დამატებულია');
       return;
     }
     setInput('');
@@ -81,17 +83,17 @@ export default function AllowedOrigins({ value, onSave }: Props) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-blue-400" />
-          <h2 className="text-white font-semibold">დაშვებული დომენები</h2>
+          <h2 className="text-white font-semibold">{en ? 'Allowed domains' : 'დაშვებული დომენები'}</h2>
         </div>
         {savedFlash && (
           <span className="flex items-center gap-1 text-emerald-400 text-xs">
-            <Check className="w-3 h-3" /> შენახულია
+            <Check className="w-3 h-3" /> {en ? 'Saved' : 'შენახულია'}
           </span>
         )}
       </div>
 
       <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-        თუ ცარიელია — ბოტი ნებისმიერ საიტზე ჩაიდევა. დაამატე დომენები რომ მხოლოდ შენი საიტებიდან მუშაობდეს.
+        {en ? 'If empty — the bot can be embedded on any site. Add domains so it only works from your sites.' : 'თუ ცარიელია — ბოტი ნებისმიერ საიტზე ჩაიდევა. დაამატე დომენები რომ მხოლოდ შენი საიტებიდან მუშაობდეს.'}
       </p>
 
       {/* Add form */}
@@ -101,7 +103,7 @@ export default function AllowedOrigins({ value, onSave }: Props) {
           value={input}
           onChange={e => { setInput(e.target.value); setError(null); }}
           onKeyDown={e => { if (e.key === 'Enter') add(); }}
-          placeholder="example.com ან *.example.com"
+          placeholder={en ? 'example.com or *.example.com' : 'example.com ან *.example.com'}
           disabled={saving}
           className="flex-1 bg-[#13131f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500/50 disabled:opacity-50"
         />
@@ -111,7 +113,7 @@ export default function AllowedOrigins({ value, onSave }: Props) {
           className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600/15 border border-blue-500/30 text-blue-300 hover:bg-blue-600/25 transition-colors disabled:opacity-50"
         >
           <Plus className="w-3.5 h-3.5" />
-          დამატება
+          {en ? 'Add' : 'დამატება'}
         </button>
       </div>
 
@@ -123,7 +125,7 @@ export default function AllowedOrigins({ value, onSave }: Props) {
 
       {/* List */}
       {list.length === 0 ? (
-        <p className="text-gray-600 text-xs italic">ცარიელია — ნებისმიერი დომენი დაშვებულია.</p>
+        <p className="text-gray-600 text-xs italic">{en ? 'Empty — any domain is allowed.' : 'ცარიელია — ნებისმიერი დომენი დაშვებულია.'}</p>
       ) : (
         <div className="flex flex-col gap-2">
           {list.map(entry => (

@@ -13,6 +13,7 @@ import BotsList from '@/components/dashboard/BotsList';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import MigrationBanner from '@/components/dashboard/MigrationBanner';
 import UsagePanel from '@/components/dashboard/UsagePanel';
+import T from '@/components/T';
 
 export const metadata: Metadata = {
   title: 'Dashboard — Peit',
@@ -35,21 +36,28 @@ export default async function DashboardPage() {
     console.warn('[dashboard] currentUser() failed, redirecting to /signin:', e instanceof Error ? e.message : e);
     redirect('/?signin=1');
   }
-  const firstName = user?.firstName ?? 'მომხმარებელი';
+  // Greet by the user's real name — first name, else username, else the
+  // local part of their email (so it never falls back to a generic word
+  // unless the account truly has nothing to show).
+  const firstName =
+    user?.firstName?.trim()
+    || user?.username?.trim()
+    || user?.primaryEmailAddress?.emailAddress?.split('@')[0]
+    || null;
 
   return (
     <>
       <PageHeader
         eyebrow="Overview"
-        title={`გამარჯობა, ${firstName} 👋`}
-        subtitle="ბოტების მართვა, საუბრების მონიტორინგი, ლიდების შეგროვება — ერთ ადგილზე."
+        title={<T ka={`გამარჯობა, ${firstName ?? 'მომხმარებელო'} 👋`} en={`Hello, ${firstName ?? 'there'} 👋`} />}
+        subtitle={<T ka="ბოტების მართვა, საუბრების მონიტორინგი, ლიდების შეგროვება — ერთ ადგილზე." en="Manage bots, monitor conversations, collect leads — all in one place." />}
         action={
           <Link
             href="/dashboard/bots/new"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-2 rounded-lg shadow-lg shadow-violet-500/20"
           >
             <Plus className="w-3.5 h-3.5" />
-            ახალი ბოტი
+            <T ka="ახალი ბოტი" en="New bot" />
           </Link>
         }
       />

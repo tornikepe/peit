@@ -7,22 +7,25 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, CreditCard, Users, Key, Bell } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 const ITEMS = [
-  { href: '/dashboard/settings/profile',       label: 'პროფილი',         icon: User       },
-  { href: '/dashboard/settings/billing',       label: 'გადახდები',       icon: CreditCard },
-  { href: '/dashboard/settings/team',          label: 'გუნდი',           icon: Users      },
-  { href: '/dashboard/settings/api-keys',      label: 'API გასაღებები',  icon: Key        },
-  { href: '/dashboard/settings/notifications', label: 'ნოტიფიკაციები',   icon: Bell       },
+  { href: '/dashboard/settings/profile',       ka: 'პროფილი',        en: 'Profile',       icon: User       },
+  { href: '/dashboard/settings/billing',       ka: 'გადახდები',      en: 'Billing',       icon: CreditCard },
+  { href: '/dashboard/settings/team',          ka: 'გუნდი',          en: 'Team',          icon: Users      },
+  { href: '/dashboard/settings/api-keys',      ka: 'API გასაღებები', en: 'API keys',      icon: Key        },
+  { href: '/dashboard/settings/notifications', ka: 'ნოტიფიკაციები',  en: 'Notifications', icon: Bell       },
 ];
 
 export default function SettingsNav() {
   const path = usePathname();
+  const en = useLanguage().lang === 'en';
 
   return (
     <nav className="md:sticky md:top-20 md:self-start">
       <ul className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-1 md:pb-0">
-        {ITEMS.map(({ href, label, icon: Icon }) => {
+        {ITEMS.map(({ href, ka, en: enLabel, icon: Icon }) => {
+          const label = en ? enLabel : ka;
           // `startsWith` so trailing-slash variants and nested routes
           // still highlight (currently we have no nesting under settings,
           // but better to future-proof).

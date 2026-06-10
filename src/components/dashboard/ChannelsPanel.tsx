@@ -15,6 +15,7 @@
 // successful change.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   Send, Loader2, Plug, Trash2, ExternalLink, AlertCircle, CheckCircle2,
 } from 'lucide-react';
@@ -54,6 +55,7 @@ interface ChannelView {
 interface Props { botId: string }
 
 export default function ChannelsPanel({ botId }: Props) {
+  const en = useLanguage().lang === 'en';
   const [channels, setChannels] = useState<ChannelView[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState<string | null>(null);
@@ -86,11 +88,12 @@ export default function ChannelsPanel({ botId }: Props) {
     <div className="glass rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-1">
         <Plug className="w-4 h-4 text-violet-400" />
-        <h2 className="text-white font-semibold">არხები</h2>
+        <h2 className="text-white font-semibold">{en ? 'Channels' : 'არხები'}</h2>
       </div>
       <p className="text-gray-500 text-xs mb-5 leading-relaxed">
-        დააკავშირე ბოტი Telegram, Instagram-სა და Facebook Messenger-თან —
-        ერთი და იგივე AI პასუხობს ყველგან.
+        {en
+          ? 'Connect your bot to Telegram, Instagram and Facebook Messenger — the same AI answers everywhere.'
+          : 'დააკავშირე ბოტი Telegram, Instagram-სა და Facebook Messenger-თან — ერთი და იგივე AI პასუხობს ყველგან.'}
       </p>
 
       {loading ? (
@@ -121,6 +124,7 @@ function TelegramRow({ botId, view, onChange }: {
   view:     ChannelView | undefined;
   onChange: () => void;
 }) {
+  const en = useLanguage().lang === 'en';
   const [expanded, setExpanded] = useState(false);
   const [token, setToken] = useState('');
   const [busy,  setBusy]  = useState(false);
@@ -145,8 +149,8 @@ function TelegramRow({ botId, view, onChange }: {
       // pass it through verbatim so the user knows why their fresh TG
       // bot isn't replying yet.
       const okText = data.warning
-        ? `✅ დაკავშირდა @${data.botUsername} — ⚠ ${data.warning}`
-        : `✅ დაკავშირდა @${data.botUsername}`;
+        ? `✅ ${en ? 'Connected' : 'დაკავშირდა'} @${data.botUsername} — ⚠ ${data.warning}`
+        : `✅ ${en ? 'Connected' : 'დაკავშირდა'} @${data.botUsername}`;
       setMsg({ kind: 'ok', text: okText });
       setToken('');
       setExpanded(false);
@@ -159,7 +163,7 @@ function TelegramRow({ botId, view, onChange }: {
   }
 
   async function disconnect() {
-    if (!confirm('მართლა გინდა Telegram-ის გათიშვა?')) return;
+    if (!confirm(en ? 'Really disconnect Telegram?' : 'მართლა გინდა Telegram-ის გათიშვა?')) return;
     setBusy(true); setMsg(null);
     try {
       const res = await fetch(`/api/channels/${botId}/telegram`, { method: 'DELETE' });
@@ -191,7 +195,7 @@ function TelegramRow({ botId, view, onChange }: {
               rel="noopener noreferrer"
               className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-500/20 hover:bg-violet-500/5"
             >
-              <ExternalLink className="w-3 h-3" /> ბოტი Telegram-ში
+              <ExternalLink className="w-3 h-3" /> {en ? 'Bot on Telegram' : 'ბოტი Telegram-ში'}
             </a>
           )}
           <button
@@ -200,7 +204,7 @@ function TelegramRow({ botId, view, onChange }: {
             disabled={busy}
             className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/5 disabled:opacity-50"
           >
-            <Trash2 className="w-3 h-3" /> გათიშვა
+            <Trash2 className="w-3 h-3" /> {en ? 'Disconnect' : 'გათიშვა'}
           </button>
         </div>
       ) : (
@@ -211,14 +215,14 @@ function TelegramRow({ botId, view, onChange }: {
               onClick={() => setExpanded(true)}
               className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg flex items-center gap-1.5"
             >
-              <Plug className="w-3 h-3" /> დაკავშირება
+              <Plug className="w-3 h-3" /> {en ? 'Connect' : 'დაკავშირება'}
             </button>
           ) : (
             <div className="flex flex-col gap-2">
               <p className="text-[11px] text-gray-500 leading-relaxed">
-                1. <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 underline">@BotFather</a>-ში ჩაწერე <code>/newbot</code><br />
-                2. დაარქვი სახელი → მიიღებ token-ს (<code>123456:ABC...</code>)<br />
-                3. ჩასვი აქ ↓
+                1. {en ? 'Message ' : ''}<a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 underline">@BotFather</a>{en ? ' with ' : '-ში ჩაწერე '}<code>/newbot</code><br />
+                2. {en ? 'Pick a name → you get a token' : 'დაარქვი სახელი → მიიღებ token-ს'} (<code>123456:ABC...</code>)<br />
+                3. {en ? 'Paste it here ↓' : 'ჩასვი აქ ↓'}
               </p>
               <div className="flex gap-2">
                 <input
@@ -283,6 +287,7 @@ function MetaRow({ botId, view, kind, onChange }: {
   kind:     'instagram' | 'facebook';
   onChange: () => void;
 }) {
+  const en = useLanguage().lang === 'en';
   const [busy,     setBusy]     = useState(false);
   const [msg,      setMsg]      = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -318,13 +323,13 @@ function MetaRow({ botId, view, kind, onChange }: {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? data.error ?? 'oauth url failed');
       const w = window.open(data.authUrl, 'peit-meta-oauth', 'width=600,height=700');
-      if (!w) { setMsg({ kind: 'err', text: 'Popup-ი დაიბლოკა' }); return; }
+      if (!w) { setMsg({ kind: 'err', text: en ? 'Popup was blocked' : 'Popup-ი დაიბლოკა' }); return; }
       const handler = (ev: MessageEvent) => {
         if (ev.origin !== window.location.origin) return;
         const m = ev.data as { source?: string; ok?: boolean; error?: string };
         if (m?.source !== 'peit-meta-oauth') return;
         window.removeEventListener('message', handler);
-        if (m.ok) { setMsg({ kind: 'ok', text: '✅ დაკავშირდა' }); onChange(); }
+        if (m.ok) { setMsg({ kind: 'ok', text: en ? '✅ Connected' : '✅ დაკავშირდა' }); onChange(); }
         else      { setMsg({ kind: 'err', text: m.error ?? 'oauth failed' }); }
       };
       window.addEventListener('message', handler);
@@ -347,7 +352,7 @@ function MetaRow({ botId, view, kind, onChange }: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? data.error ?? 'connect failed');
-      setMsg({ kind: 'ok', text: `✅ დაკავშირდა${data.pageName ? ` — ${data.pageName}` : ''}` });
+      setMsg({ kind: 'ok', text: `✅ ${en ? 'Connected' : 'დაკავშირდა'}${data.pageName ? ` — ${data.pageName}` : ''}` });
       setPageId(''); setToken(''); setExpanded(false);
       onChange();
     } catch (e) {
@@ -356,7 +361,7 @@ function MetaRow({ botId, view, kind, onChange }: {
   }
 
   async function disconnect() {
-    if (!confirm(`${label}-ის გათიშვა?`)) return;
+    if (!confirm(en ? `Disconnect ${label}?` : `${label}-ის გათიშვა?`)) return;
     setBusy(true); setMsg(null);
     try {
       const res = await fetch(`/api/channels/${botId}/meta?kind=${kind}`, { method: 'DELETE' });
@@ -384,7 +389,7 @@ function MetaRow({ botId, view, kind, onChange }: {
           disabled={busy}
           className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/5 disabled:opacity-50"
         >
-          <Trash2 className="w-3 h-3" /> გათიშვა
+          <Trash2 className="w-3 h-3" /> {en ? 'Disconnect' : 'გათიშვა'}
         </button>
       ) : !expanded ? (
         <button
@@ -392,7 +397,7 @@ function MetaRow({ botId, view, kind, onChange }: {
           onClick={() => { void loadInfo(); setExpanded(true); }}
           className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg flex items-center gap-1.5"
         >
-          <Plug className="w-3 h-3" /> დაკავშირება
+          <Plug className="w-3 h-3" /> {en ? 'Connect' : 'დაკავშირება'}
         </button>
       ) : (
         <div className="flex flex-col gap-3">
@@ -404,7 +409,7 @@ function MetaRow({ botId, view, kind, onChange }: {
               className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-50 self-start"
             >
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plug className="w-3 h-3" />}
-              {kind === 'instagram' ? 'Meta-ში ავტომატური' : 'Page-ის ავტომატური არჩევა'}
+              {kind === 'instagram' ? (en ? 'Auto via Meta' : 'Meta-ში ავტომატური') : (en ? 'Auto-pick a Page' : 'Page-ის ავტომატური არჩევა')}
             </button>
           )}
 
@@ -414,11 +419,11 @@ function MetaRow({ botId, view, kind, onChange }: {
               Page Access Token + Page ID
             </p>
             <p className="text-[10px] text-gray-500 leading-relaxed mb-3">
-              1. გახსენი <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Meta Business Suite → Settings → System Users</a>
+              1. {en ? 'Open ' : 'გახსენი '}<a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Meta Business Suite → Settings → System Users</a>
               <br />
-              2. Generate Token → აარჩიე {kind === 'instagram' ? 'IG-დაკავშირებული page' : 'page'} + <code className="text-violet-300">pages_messaging{kind === 'instagram' ? ', instagram_manage_messages' : ''}</code> ნებართვები
+              2. Generate Token → {en ? 'pick the ' : 'აარჩიე '}{kind === 'instagram' ? (en ? 'IG-connected page' : 'IG-დაკავშირებული page') : 'page'} + <code className="text-violet-300">pages_messaging{kind === 'instagram' ? ', instagram_manage_messages' : ''}</code> {en ? 'permissions' : 'ნებართვები'}
               <br />
-              3. დააკოპირე token + Page ID (Page Settings → About → Page ID)
+              3. {en ? 'Copy the token + Page ID' : 'დააკოპირე token + Page ID'} (Page Settings → About → Page ID)
             </p>
             <div className="flex flex-col gap-2">
               <input
@@ -447,7 +452,7 @@ function MetaRow({ botId, view, kind, onChange }: {
                   disabled={busy || pageId.length < 5 || token.length < 40}
                   className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-1.5 rounded-lg disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {busy && <Loader2 className="w-3 h-3 animate-spin" />} შემოწმება + დაკავშირება
+                  {busy && <Loader2 className="w-3 h-3 animate-spin" />} {en ? 'Verify + connect' : 'შემოწმება + დაკავშირება'}
                 </button>
                 <button
                   type="button"
@@ -467,7 +472,7 @@ function MetaRow({ botId, view, kind, onChange }: {
               tenants — it only authenticates Meta's setup handshake. */}
           <details className="text-[10px] text-gray-500">
             <summary className="cursor-pointer hover:text-gray-400">
-              ⚙ შემოსავალი მესიჯების მისაღებად (advanced)
+              {en ? '⚙ Receive incoming messages (advanced)' : '⚙ შემომავალი მესიჯების მისაღებად (advanced)'}
             </summary>
             <div className="mt-2 leading-relaxed flex flex-col gap-2">
               <div>
@@ -480,11 +485,11 @@ function MetaRow({ botId, view, kind, onChange }: {
               <div>
                 <span className="text-gray-600">Verify Token:</span>
                 <div className="mt-0.5 bg-black/40 rounded px-2 py-1 font-mono text-[10px] text-violet-300 break-all">
-                  {info?.verifyToken ?? '⚠ Peit-ის სერვერზე META_WEBHOOK_VERIFY_TOKEN არ არის დაყენებული'}
+                  {info?.verifyToken ?? (en ? '⚠ META_WEBHOOK_VERIFY_TOKEN is not set on the Peit server' : '⚠ Peit-ის სერვერზე META_WEBHOOK_VERIFY_TOKEN არ არის დაყენებული')}
                 </div>
               </div>
               <div className="text-gray-600">
-                გადაიწერე {kind === 'instagram'
+                {en ? 'Subscribe to ' : 'გადაიწერე '}{kind === 'instagram'
                   ? <>field: <code className="text-violet-300">messages</code></>
                   : <>fields: <code className="text-violet-300">messages, messaging_postbacks</code></>}
               </div>
@@ -515,10 +520,11 @@ function ChannelCard({
   lastError:      string | null;
   children:       React.ReactNode;
 }) {
+  const en = useLanguage().lang === 'en';
   const pill =
-    status === 'active'       ? <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-2.5 h-2.5"/> აქტიური</span>
-  : status === 'error'        ? <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full flex items-center gap-1"><AlertCircle className="w-2.5 h-2.5"/> შეცდომა</span>
-  : status === 'disconnected' ? <span className="text-[10px] text-gray-500 bg-gray-500/10 px-2 py-0.5 rounded-full">გათიშულია</span>
+    status === 'active'       ? <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-2.5 h-2.5"/> {en ? 'Active' : 'აქტიური'}</span>
+  : status === 'error'        ? <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full flex items-center gap-1"><AlertCircle className="w-2.5 h-2.5"/> {en ? 'Error' : 'შეცდომა'}</span>
+  : status === 'disconnected' ? <span className="text-[10px] text-gray-500 bg-gray-500/10 px-2 py-0.5 rounded-full">{en ? 'Disconnected' : 'გათიშულია'}</span>
   :                              null;
 
   return (
@@ -538,7 +544,7 @@ function ChannelCard({
         </div>
         {status === 'active' && totalInbound > 0 && (
           <div className="text-right">
-            <div className="text-[10px] text-gray-600 uppercase tracking-wider">სულ</div>
+            <div className="text-[10px] text-gray-600 uppercase tracking-wider">{en ? 'Total' : 'სულ'}</div>
             <div className="text-xs text-gray-300">{totalInbound.toLocaleString()}</div>
           </div>
         )}
@@ -549,7 +555,7 @@ function ChannelCard({
       <div className="mt-3">{children}</div>
       {status === 'active' && lastInboundAt && (
         <p className="mt-2 text-[10px] text-gray-600">
-          ბოლო შეტყობინება: {new Date(lastInboundAt).toLocaleString('ka-GE')}
+          {en ? 'Last message' : 'ბოლო შეტყობინება'}: {new Date(lastInboundAt).toLocaleString(en ? 'en-US' : 'ka-GE')}
         </p>
       )}
     </div>

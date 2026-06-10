@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { X, Plus, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   value:   string[];
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function TagInput({ value, onSave, disabled }: Props) {
+  const en = useLanguage().lang === 'en';
   const [tags,  setTags]  = useState<string[]>(value);
   const [draft, setDraft] = useState('');
   const [busy,  setBusy]  = useState(false);
@@ -96,7 +98,7 @@ export default function TagInput({ value, onSave, disabled }: Props) {
             }
           }}
           onBlur={() => { if (draft.trim()) commitDraft(); }}
-          placeholder={tags.length === 0 ? 'დაამატე tag (Enter ან ,)' : ''}
+          placeholder={tags.length === 0 ? (en ? 'Add a tag (Enter or ,)' : 'დაამატე tag (Enter ან ,)') : ''}
           className="flex-1 min-w-[120px] bg-transparent text-xs text-white outline-none placeholder:text-gray-600"
           disabled={disabled || busy}
         />

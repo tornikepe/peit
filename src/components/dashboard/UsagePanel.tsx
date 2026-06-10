@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Crown, MessageSquare, Bot as BotIcon, Clock, AlertCircle } from 'lucide-react';
 import UpgradeCta from './UpgradeCta';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface SubscriptionData {
   ok: true;
@@ -47,6 +48,7 @@ function progressColor(pct: number): string {
 }
 
 export default function UsagePanel() {
+  const en = useLanguage().lang === 'en';
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,13 +97,15 @@ export default function UsagePanel() {
               {isTrial && trialDays !== null && (
                 <>
                   <Clock className="inline w-3 h-3 mr-1" />
-                  {trialDays > 0 ? `${trialDays} დღე დარჩა` : 'ტრიალი დასრულდა'}
+                  {trialDays > 0
+                    ? (en ? `${trialDays} days left` : `${trialDays} დღე დარჩა`)
+                    : (en ? 'Trial ended' : 'ტრიალი დასრულდა')}
                 </>
               )}
               {!isTrial && sub.currentPeriodEnd && (
                 <>
                   <Clock className="inline w-3 h-3 mr-1" />
-                  განახლდება {new Date(sub.currentPeriodEnd).toLocaleDateString('ka-GE')}
+                  {en ? 'Renews' : 'განახლდება'} {new Date(sub.currentPeriodEnd).toLocaleDateString(en ? 'en-US' : 'ka-GE')}
                 </>
               )}
             </p>
@@ -114,7 +118,7 @@ export default function UsagePanel() {
             href="/dashboard/billing"
             className="text-violet-400 hover:text-violet-300 text-xs font-medium transition-colors"
           >
-            Billing →
+            {en ? 'Billing →' : 'გადახდები →'}
           </Link>
         </div>
       </div>
@@ -124,10 +128,10 @@ export default function UsagePanel() {
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-red-300 text-sm font-semibold">ტრიალი დასრულდა</p>
-            <p className="text-gray-400 text-xs mt-0.5">ბოტი აღარ პასუხობს — გადადი ფასიან პლანზე გასაგრძელებლად.</p>
+            <p className="text-red-300 text-sm font-semibold">{en ? 'Trial ended' : 'ტრიალი დასრულდა'}</p>
+            <p className="text-gray-400 text-xs mt-0.5">{en ? 'Your bot has stopped replying — upgrade to a paid plan to continue.' : 'ბოტი აღარ პასუხობს — გადადი ფასიან პლანზე გასაგრძელებლად.'}</p>
           </div>
-          <UpgradeCta plan="pro" label="ახლავე გადახდა" />
+          <UpgradeCta plan="pro" label={en ? 'Upgrade now' : 'ახლავე გადახდა'} />
         </div>
       )}
 
@@ -135,7 +139,7 @@ export default function UsagePanel() {
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-            <BotIcon className="w-3.5 h-3.5" /> ბოტები
+            <BotIcon className="w-3.5 h-3.5" /> {en ? 'Bots' : 'ბოტები'}
           </div>
           <span className="text-white text-xs font-mono">
             {usage.bots} / {limits.bots ?? '∞'}
@@ -153,7 +157,7 @@ export default function UsagePanel() {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-            <MessageSquare className="w-3.5 h-3.5" /> შეტყობინებები ამ თვეში
+            <MessageSquare className="w-3.5 h-3.5" /> {en ? 'Messages this month' : 'შეტყობინებები ამ თვეში'}
           </div>
           <span className="text-white text-xs font-mono">
             {usage.messages.toLocaleString()} / {limits.messagesPerMonth?.toLocaleString() ?? '∞'}

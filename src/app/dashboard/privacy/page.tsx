@@ -13,6 +13,7 @@ import {
   Cookie, ExternalLink, CheckCircle2, Mail, Globe,
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard-shell/PageHeader';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Locale = 'ka' | 'en' | 'ru';
 interface EmailPrefs {
@@ -22,6 +23,7 @@ interface EmailPrefs {
 }
 
 export default function PrivacyDataPage() {
+  const en = useLanguage().lang === 'en';
   const router    = useRouter();
   const { signOut } = useClerk();
 
@@ -51,11 +53,11 @@ export default function PrivacyDataPage() {
           setPrefs(d.prefs);
           setLocale(d.locale);
         } else {
-          setPrefsError(d.message ?? d.error ?? 'ვერ ჩაიტვირთა');
+          setPrefsError(d.message ?? d.error ?? (en ? 'Failed to load' : 'ვერ ჩაიტვირთა'));
         }
       })
       .catch(e => {
-        if (alive) setPrefsError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+        if (alive) setPrefsError(e instanceof Error ? e.message : (en ? 'Unknown error' : 'უცნობი შეცდომა'));
       })
       .finally(() => { if (alive) setPrefsLoading(false); });
     return () => { alive = false; };
@@ -83,7 +85,7 @@ export default function PrivacyDataPage() {
       // Hide the "saved" pill after 2s — non-blocking, never cancelled.
       setTimeout(() => setPrefsSaved(false), 2000);
     } catch (e) {
-      setPrefsError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+      setPrefsError(e instanceof Error ? e.message : (en ? 'Unknown error' : 'უცნობი შეცდომა'));
     } finally {
       setPrefsBusy(false);
     }
@@ -114,7 +116,7 @@ export default function PrivacyDataPage() {
       // Free the blob URL on the next microtask — the download has started.
       setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+      setExportError(e instanceof Error ? e.message : (en ? 'Unknown error' : 'უცნობი შეცდომა'));
     } finally {
       setExporting(false);
     }
@@ -138,7 +140,7 @@ export default function PrivacyDataPage() {
       // Successful — sign out and bounce home.
       await signOut(() => router.push('/?deleted=1'));
     } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+      setDeleteError(e instanceof Error ? e.message : (en ? 'Unknown error' : 'უცნობი შეცდომა'));
     } finally {
       setDeleting(false);
     }
@@ -155,8 +157,8 @@ export default function PrivacyDataPage() {
     <div className="max-w-3xl mx-auto">
       <PageHeader
         eyebrow="Privacy & Data"
-        title="Privacy & მონაცემები"
-        subtitle="GDPR-ის შესაბამისად, ნებისმიერ დროს შეგიძლია ჩამოტვირთო შენი მონაცემები ან წაშალო ანგარიში სრულად."
+        title={en ? 'Privacy & Data' : 'Privacy & მონაცემები'}
+        subtitle={en ? 'Under GDPR you can download your data or fully delete your account at any time.' : 'GDPR-ის შესაბამისად, ნებისმიერ დროს შეგიძლია ჩამოტვირთო შენი მონაცემები ან წაშალო ანგარიში სრულად.'}
       />
 
         {/* Export card */}
@@ -166,10 +168,11 @@ export default function PrivacyDataPage() {
               <Download className="w-5 h-5 text-violet-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold mb-1">მონაცემთა გადმოწერა</h3>
+              <h3 className="text-white font-semibold mb-1">{en ? 'Download your data' : 'მონაცემთა გადმოწერა'}</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                ჩამოტვირთე JSON-ფაილი ყველაფრით, რასაც ვინახავთ: პროფილი, ბოტები, FAQ, ცოდნის ბაზა,
-                საუბრები, ლიდები და გამოწერა. ფაილი მხოლოდ შენთვის — სხვა აღარავინ მიიღებს.
+                {en
+                  ? 'Download a JSON file with everything we store: profile, bots, FAQ, knowledge base, conversations, leads and subscription. The file is for you only.'
+                  : 'ჩამოტვირთე JSON-ფაილი ყველაფრით, რასაც ვინახავთ: პროფილი, ბოტები, FAQ, ცოდნის ბაზა, საუბრები, ლიდები და გამოწერა. ფაილი მხოლოდ შენთვის — სხვა აღარავინ მიიღებს.'}
               </p>
             </div>
           </div>
@@ -183,7 +186,7 @@ export default function PrivacyDataPage() {
               {exporting
                 ? <Loader2 className="w-4 h-4 animate-spin" />
                 : <Download className="w-4 h-4" />}
-              JSON გადმოწერა
+              {en ? 'Download JSON' : 'JSON გადმოწერა'}
             </button>
             <p className="text-xs text-gray-500 inline-flex items-center gap-1.5">
               <ShieldCheck className="w-3 h-3 text-emerald-400" />
@@ -206,9 +209,9 @@ export default function PrivacyDataPage() {
               <Cookie className="w-5 h-5 text-amber-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold mb-1">Cookie არჩევანი</h3>
+              <h3 className="text-white font-semibold mb-1">{en ? 'Cookie preferences' : 'Cookie არჩევანი'}</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                შეცვალე რომელ cookie-ს იღებ — აუცილებელი, ფუნქციური, ანალიტიკა.
+                {en ? 'Change which cookies you accept — essential, functional, analytics.' : 'შეცვალე რომელ cookie-ს იღებ — აუცილებელი, ფუნქციური, ანალიტიკა.'}
               </p>
             </div>
           </div>
@@ -219,13 +222,13 @@ export default function PrivacyDataPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-gray-200 text-sm font-medium px-5 py-2.5 transition-colors"
             >
               <Cookie className="w-4 h-4" />
-              არჩევანის შეცვლა
+              {en ? 'Change preferences' : 'არჩევანის შეცვლა'}
             </button>
             <Link
               href="/cookies"
               className="inline-flex items-center gap-1 text-violet-400 hover:text-violet-300 text-xs font-medium transition-colors"
             >
-              Cookie პოლიტიკა
+              {en ? 'Cookie policy' : 'Cookie პოლიტიკა'}
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
@@ -238,14 +241,14 @@ export default function PrivacyDataPage() {
               <Mail className="w-5 h-5 text-cyan-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold mb-1">Email არჩევანი</h3>
+              <h3 className="text-white font-semibold mb-1">{en ? 'Email preferences' : 'Email არჩევანი'}</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                გადაწყვიტე რომელი email-ის მიღება გინდა. ბილინგი და უსაფრთხოების შეტყობინება ყოველთვის ჩართულია.
+                {en ? 'Choose which emails you receive. Billing and security messages are always on.' : 'გადაწყვიტე რომელი email-ის მიღება გინდა. ბილინგი და უსაფრთხოების შეტყობინება ყოველთვის ჩართულია.'}
               </p>
             </div>
             {prefsSaved && (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full shrink-0">
-                <CheckCircle2 className="w-3 h-3" /> შენახულია
+                <CheckCircle2 className="w-3 h-3" /> {en ? 'Saved' : 'შენახულია'}
               </span>
             )}
           </div>
@@ -257,22 +260,22 @@ export default function PrivacyDataPage() {
           ) : prefs ? (
             <div className="flex flex-col gap-3">
               <PrefToggle
-                label="ლიდის შეტყობინებები"
-                desc="როცა ბოტი ახალ ლიდს დააფიქსირებს — email-ი ცხელ ლიდზე ხდება."
+                label={en ? 'Lead alerts' : 'ლიდის შეტყობინებები'}
+                desc={en ? 'When the bot captures a new lead — an email goes out for hot leads.' : 'როცა ბოტი ახალ ლიდს დააფიქსირებს — email-ი ცხელ ლიდზე ხდება.'}
                 value={prefs.leadAlerts}
                 disabled={prefsBusy}
                 onChange={v => patchPrefs({ leadAlerts: v })}
               />
               <PrefToggle
-                label="ტრიალის შეხსენებები"
-                desc="3 დღით ადრე და ტრიალის ბოლოს — რომ AI არ შეგიფერხდეს."
+                label={en ? 'Trial reminders' : 'ტრიალის შეხსენებები'}
+                desc={en ? '3 days before and at trial end — so your AI never stops.' : '3 დღით ადრე და ტრიალის ბოლოს — რომ AI არ შეგიფერხდეს.'}
                 value={prefs.trialReminders}
                 disabled={prefsBusy}
                 onChange={v => patchPrefs({ trialReminders: v })}
               />
               <PrefToggle
-                label="პროდუქტის სიახლეები"
-                desc="ფიჩერების გამოშვება, ტიპები, წინსვლის ისტორიები — თვეში მაქს. 2-ჯერ."
+                label={en ? 'Product updates' : 'პროდუქტის სიახლეები'}
+                desc={en ? 'Feature releases, tips, progress stories — max twice a month.' : 'ფიჩერების გამოშვება, ტიპები, წინსვლის ისტორიები — თვეში მაქს. 2-ჯერ.'}
                 value={prefs.productUpdates}
                 disabled={prefsBusy}
                 onChange={v => patchPrefs({ productUpdates: v })}
@@ -281,9 +284,9 @@ export default function PrivacyDataPage() {
               <div className="mt-4 pt-4 border-t border-white/[0.06]">
                 <div className="flex items-center gap-3 mb-2">
                   <Globe className="w-4 h-4 text-gray-500" />
-                  <p className="text-white text-sm font-medium">Email-ის ენა</p>
+                  <p className="text-white text-sm font-medium">{en ? 'Email language' : 'Email-ის ენა'}</p>
                 </div>
-                <p className="text-gray-500 text-xs mb-3">გადაგზავნილი email-ები ამ ენაზე იქნება.</p>
+                <p className="text-gray-500 text-xs mb-3">{en ? 'Emails we send will be in this language.' : 'გადაგზავნილი email-ები ამ ენაზე იქნება.'}</p>
                 <div className="inline-flex rounded-xl border border-white/[0.08] bg-white/[0.02] p-1">
                   {(['ka', 'en'] as const).map(l => (
                     <button
@@ -296,7 +299,7 @@ export default function PrivacyDataPage() {
                           : 'text-gray-400 hover:text-white'
                       }`}
                     >
-                      {l === 'ka' ? '🇬🇪 ქართული' : l === 'en' ? '🇬🇧 English' : '🇷🇺 Русский'}
+                      {l === 'ka' ? '🇬🇪 ქართული' : '🇬🇧 English'}
                     </button>
                   ))}
                 </div>
@@ -316,13 +319,13 @@ export default function PrivacyDataPage() {
 
         {/* Legal links card */}
         <section className="glass rounded-2xl p-6 mb-10">
-          <h3 className="text-white font-semibold mb-3">სამართლებრივი დოკუმენტები</h3>
+          <h3 className="text-white font-semibold mb-3">{en ? 'Legal documents' : 'სამართლებრივი დოკუმენტები'}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
-              { href: '/terms',   label: 'სერვისის წესები' },
-              { href: '/privacy', label: 'კონფიდენციალურობა' },
+              { href: '/terms',   label: en ? 'Terms of Service' : 'სერვისის წესები' },
+              { href: '/privacy', label: en ? 'Privacy Policy' : 'კონფიდენციალურობა' },
               { href: '/gdpr',    label: 'GDPR DPA' },
-              { href: '/cookies', label: 'Cookie პოლიტიკა' },
+              { href: '/cookies', label: en ? 'Cookie Policy' : 'Cookie პოლიტიკა' },
             ].map(l => (
               <Link
                 key={l.href}
@@ -343,15 +346,17 @@ export default function PrivacyDataPage() {
               <Trash2 className="w-5 h-5 text-red-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold mb-1">ანგარიშის წაშლა</h3>
+              <h3 className="text-white font-semibold mb-1">{en ? 'Delete account' : 'ანგარიშის წაშლა'}</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                ეს ქმედება შეუქცევადია. წაიშლება ყველაფერი: ბოტები, საუბრები, ლიდები, გამოწერა.
-                შენი მონაცემები 30 დღეში ფიზიკურად გადაიფარება, backup-ში — 90 დღემდე.
+                {en
+                  ? 'This action is irreversible. Everything is deleted: bots, conversations, leads, subscription. Your data is physically overwritten within 30 days, in backups — up to 90 days.'
+                  : 'ეს ქმედება შეუქცევადია. წაიშლება ყველაფერი: ბოტები, საუბრები, ლიდები, გამოწერა. შენი მონაცემები 30 დღეში ფიზიკურად გადაიფარება, backup-ში — 90 დღემდე.'}
               </p>
               <p className="text-amber-300 text-xs mt-2 leading-relaxed">
                 <AlertTriangle className="inline w-3 h-3 mr-1 -mt-px" />
-                გამოწერა ცალკე უნდა გააუქმო Billing → Manage Plan-ით, წინააღმდეგ შემთხვევაში გადახდის
-                ცდის შესახებ Lemon Squeezy მაინც გამოგიგზავნის email-ს.
+                {en
+                  ? 'Cancel your subscription separately via Billing → Manage Plan, otherwise Lemon Squeezy will still email you about payment attempts.'
+                  : 'გამოწერა ცალკე უნდა გააუქმო Billing → Manage Plan-ით, წინააღმდეგ შემთხვევაში გადახდის ცდის შესახებ Lemon Squeezy მაინც გამოგიგზავნის email-ს.'}
               </p>
             </div>
           </div>
@@ -362,13 +367,13 @@ export default function PrivacyDataPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-200 hover:text-red-100 text-sm font-semibold px-5 py-2.5 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              ანგარიშის წაშლა
+              {en ? 'Delete account' : 'ანგარიშის წაშლა'}
             </button>
           ) : (
             <div className="rounded-xl border border-red-500/30 bg-red-500/[0.08] p-4">
-              <p className="text-red-200 text-sm font-semibold mb-1">დარწმუნებული ხარ?</p>
+              <p className="text-red-200 text-sm font-semibold mb-1">{en ? 'Are you sure?' : 'დარწმუნებული ხარ?'}</p>
               <p className="text-gray-300 text-xs leading-relaxed mb-3">
-                ჩაწერე <code className="px-1.5 py-0.5 mx-0.5 rounded bg-white/[0.08] text-violet-300 font-mono text-[11px]">DELETE</code> დადასტურებისთვის.
+                {en ? 'Type ' : 'ჩაწერე '}<code className="px-1.5 py-0.5 mx-0.5 rounded bg-white/[0.08] text-violet-300 font-mono text-[11px]">DELETE</code>{en ? ' to confirm.' : ' დადასტურებისთვის.'}
               </p>
 
               <input
@@ -390,14 +395,14 @@ export default function PrivacyDataPage() {
                   {deleting
                     ? <Loader2 className="w-4 h-4 animate-spin" />
                     : <Trash2 className="w-4 h-4" />}
-                  სამუდამოდ წაშლა
+                  {en ? 'Delete forever' : 'სამუდამოდ წაშლა'}
                 </button>
                 <button
                   onClick={() => { setConfirmOpen(false); setConfirmText(''); setDeleteError(null); }}
                   disabled={deleting}
                   className="inline-flex items-center gap-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-gray-200 text-sm font-medium px-5 py-2.5 transition-colors disabled:opacity-50"
                 >
-                  გაუქმება
+                  {en ? 'Cancel' : 'გაუქმება'}
                 </button>
               </div>
 

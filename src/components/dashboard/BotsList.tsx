@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useBots } from '@/context/BotsContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { INDUSTRIES } from '@/lib/bots';
 import {
   Plus, Bot as BotIcon, MessageSquare, TrendingUp,
@@ -10,6 +11,7 @@ import {
 
 export default function BotsList() {
   const { bots, loaded } = useBots();
+  const en = useLanguage().lang === 'en';
 
   if (!loaded) {
     return (
@@ -26,17 +28,18 @@ export default function BotsList() {
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600/20 to-purple-600/20 border border-violet-500/20 flex items-center justify-center mx-auto mb-5">
           <BotIcon className="w-7 h-7 text-violet-400" />
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">პირველი ბოტი ჯერ არ გაქვს</h3>
+        <h3 className="text-xl font-bold text-white mb-2">{en ? "You don't have a bot yet" : 'პირველი ბოტი ჯერ არ გაქვს'}</h3>
         <p className="text-gray-400 mb-6 max-w-md mx-auto text-sm leading-relaxed">
-          შექმენი AI ასისტენტი, რომელიც 24/7 ემსახურება შენს კლიენტებს.
-          Setup სულ 4 ნაბიჯში — კოდი არ სჭირდება.
+          {en
+            ? 'Create an AI assistant that serves your customers 24/7. Setup takes just 4 steps — no code required.'
+            : 'შექმენი AI ასისტენტი, რომელიც 24/7 ემსახურება შენს კლიენტებს. Setup სულ 4 ნაბიჯში — კოდი არ სჭირდება.'}
         </p>
         <Link
           href="/dashboard/bots/new"
           className="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm"
         >
           <Plus className="w-4 h-4" />
-          ბოტის შექმნა
+          {en ? 'Create a bot' : 'ბოტის შექმნა'}
         </Link>
       </div>
     );
@@ -47,9 +50,9 @@ export default function BotsList() {
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-white font-bold text-lg">შენი ბოტები</h2>
+          <h2 className="text-white font-bold text-lg">{en ? 'Your bots' : 'შენი ბოტები'}</h2>
           <p className="text-gray-500 text-sm mt-0.5">
-            {bots.length} ბოტი · {bots.filter(b => b.status === 'active').length} აქტიური
+            {bots.length} {en ? 'bots' : 'ბოტი'} · {bots.filter(b => b.status === 'active').length} {en ? 'active' : 'აქტიური'}
           </p>
         </div>
         <Link
@@ -57,7 +60,7 @@ export default function BotsList() {
           className="btn-primary inline-flex items-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl text-sm"
         >
           <Plus className="w-4 h-4" />
-          ახალი ბოტი
+          {en ? 'New bot' : 'ახალი ბოტი'}
         </Link>
       </div>
 
@@ -97,11 +100,11 @@ export default function BotsList() {
               <div className="flex items-center gap-2 mb-4">
                 {bot.status === 'active' ? (
                   <span className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                    <Play className="w-3 h-3" /> აქტიური
+                    <Play className="w-3 h-3" /> {en ? 'Active' : 'აქტიური'}
                   </span>
                 ) : bot.status === 'paused' ? (
                   <span className="inline-flex items-center gap-1.5 text-amber-400 text-xs font-medium bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
-                    <Pause className="w-3 h-3" /> შეჩერებული
+                    <Pause className="w-3 h-3" /> {en ? 'Paused' : 'შეჩერებული'}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-gray-400 text-xs font-medium bg-white/[0.04] border border-white/[0.08] px-2.5 py-1 rounded-full">
@@ -109,7 +112,7 @@ export default function BotsList() {
                   </span>
                 )}
                 <span className="text-gray-600 text-xs">
-                  {bot.languages.length} ენა · {bot.faqs.length} FAQ
+                  {bot.languages.length} {en ? (bot.languages.length === 1 ? 'language' : 'languages') : 'ენა'} · {bot.faqs.length} FAQ
                 </span>
               </div>
 
@@ -119,21 +122,21 @@ export default function BotsList() {
                   <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
                   <div>
                     <p className="text-white text-sm font-semibold">{bot.stats.messages}</p>
-                    <p className="text-gray-600 text-[10px]">შეტყობინება</p>
+                    <p className="text-gray-600 text-[10px]">{en ? 'messages' : 'შეტყობინება'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                   <div>
                     <p className="text-white text-sm font-semibold">{bot.stats.leads}</p>
-                    <p className="text-gray-600 text-[10px]">ლიდი</p>
+                    <p className="text-gray-600 text-[10px]">{en ? 'leads' : 'ლიდი'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Hover arrow */}
               <div className="mt-4 flex items-center gap-1.5 text-violet-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                გახსნა <ArrowRight className="w-3 h-3" />
+                {en ? 'Open' : 'გახსნა'} <ArrowRight className="w-3 h-3" />
               </div>
             </Link>
           );

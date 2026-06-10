@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { Cloud, X, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function MigrationBanner() {
   const { hasLocalToMigrate, migrating, migrateLocalToCloud, mode } = useBots();
+  const en = useLanguage().lang === 'en';
   const [dismissed, setDismissed] = useState(false);
   const [result, setResult] = useState<{ imported: number; failed: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export default function MigrationBanner() {
       const r = await migrateLocalToCloud();
       setResult(r);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'მიგრაცია ვერ მოხერხდა');
+      setError(e instanceof Error ? e.message : (en ? 'Migration failed' : 'მიგრაცია ვერ მოხერხდა'));
     }
   }
 
@@ -27,10 +29,10 @@ export default function MigrationBanner() {
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4 mb-6 flex items-start gap-3">
         <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-emerald-300 font-semibold text-sm">მიგრაცია დასრულდა</p>
+          <p className="text-emerald-300 font-semibold text-sm">{en ? 'Migration complete' : 'მიგრაცია დასრულდა'}</p>
           <p className="text-gray-400 text-xs mt-0.5">
-            {result.imported} ბოტი წარმატებით გადაიტანე ღრუბელზე
-            {result.failed > 0 && ` · ${result.failed} ვერ გადავიდა`}
+            {result.imported} {en ? 'bots moved to the cloud' : 'ბოტი წარმატებით გადაიტანე ღრუბელზე'}
+            {result.failed > 0 && ` · ${result.failed} ${en ? 'failed' : 'ვერ გადავიდა'}`}
           </p>
         </div>
         <button
@@ -47,9 +49,9 @@ export default function MigrationBanner() {
     <div className="rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-600/10 to-purple-600/5 p-4 mb-6 flex items-start gap-3">
       <Cloud className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
       <div className="flex-1">
-        <p className="text-white font-semibold text-sm">ბრაუზერში შენახული ბოტები გამოვლინდა</p>
+        <p className="text-white font-semibold text-sm">{en ? 'Bots saved in this browser were found' : 'ბრაუზერში შენახული ბოტები გამოვლინდა'}</p>
         <p className="text-gray-400 text-xs mt-0.5">
-          გადაიტანე ღრუბელზე — შემდეგ ნებისმიერი მოწყობილობიდან გექნება წვდომა.
+          {en ? 'Move them to the cloud — then you can access them from any device.' : 'გადაიტანე ღრუბელზე — შემდეგ ნებისმიერი მოწყობილობიდან გექნება წვდომა.'}
         </p>
         {error && (
           <p className="flex items-center gap-1.5 text-red-400 text-xs mt-2">
@@ -67,12 +69,12 @@ export default function MigrationBanner() {
           {migrating ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              გადატანა...
+              {en ? 'Moving...' : 'გადატანა...'}
             </>
           ) : (
             <>
               <Cloud className="w-3.5 h-3.5" />
-              გადატანა
+              {en ? 'Move' : 'გადატანა'}
             </>
           )}
         </button>

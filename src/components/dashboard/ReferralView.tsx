@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { Gift, Copy, Check, Users, Clock, Award } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ReferredRow { email: string; joinedAt: string; status: 'pending' | 'rewarded' | 'expired' }
 interface ReferralData {
@@ -15,11 +16,11 @@ interface ReferralData {
   referred: ReferredRow[];
 }
 
-const STATUS_LABEL: Record<ReferredRow['status'], string> = {
-  pending:  'მოლოდინში',
-  rewarded: 'დაჯილდოვდა',
-  expired:  'ვადაგასული',
-};
+const STATUS_LABEL = (en: boolean): Record<ReferredRow['status'], string> => ({
+  pending:  en ? 'Pending' : 'მოლოდინში',
+  rewarded: en ? 'Rewarded' : 'დაჯილდოვდა',
+  expired:  en ? 'Expired' : 'ვადაგასული',
+});
 const STATUS_STYLE: Record<ReferredRow['status'], string> = {
   pending:  'bg-amber-500/15 text-amber-300 border-amber-500/20',
   rewarded: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20',
@@ -27,6 +28,7 @@ const STATUS_STYLE: Record<ReferredRow['status'], string> = {
 };
 
 export default function ReferralView() {
+  const en = useLanguage().lang === 'en';
   const [data, setData]   = useState<ReferralData | null>(null);
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -47,14 +49,14 @@ export default function ReferralView() {
     } catch { /* clipboard blocked — user can select manually */ }
   }
 
-  if (error) return <p className="text-sm text-gray-500">მონაცემების ჩატვირთვა ვერ მოხერხდა.</p>;
+  if (error) return <p className="text-sm text-gray-500">{en ? 'Failed to load data.' : 'მონაცემების ჩატვირთვა ვერ მოხერხდა.'}</p>;
   if (!data) return <div className="h-40 rounded-2xl bg-white/[0.03] animate-pulse" />;
 
   const cards = [
-    { label: 'მოწვეული',       value: data.stats.total,            icon: Users, color: 'text-blue-300' },
-    { label: 'გამოწერილი',     value: data.stats.rewarded,         icon: Award, color: 'text-emerald-300' },
-    { label: 'მოლოდინში',      value: data.stats.pending,          icon: Clock, color: 'text-amber-300' },
-    { label: 'უფასო თვეები',   value: data.stats.freeMonthsEarned, icon: Gift,  color: 'text-blue-300' },
+    { label: en ? 'Invited' : 'მოწვეული',            value: data.stats.total,            icon: Users, color: 'text-blue-300' },
+    { label: en ? 'Subscribed' : 'გამოწერილი',        value: data.stats.rewarded,         icon: Award, color: 'text-emerald-300' },
+    { label: en ? 'Pending' : 'მოლოდინში',            value: data.stats.pending,          icon: Clock, color: 'text-amber-300' },
+    { label: en ? 'Free months' : 'უფასო თვეები',     value: data.stats.freeMonthsEarned, icon: Gift,  color: 'text-blue-300' },
   ];
 
   return (
@@ -63,12 +65,12 @@ export default function ReferralView() {
       <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d1a] p-6">
         <div className="flex items-center gap-2 mb-1">
           <Gift className="w-4 h-4 text-blue-300" />
-          <h2 className="text-base font-semibold text-white">მოიწვიე და მიიღე ჯილდო</h2>
+          <h2 className="text-base font-semibold text-white">{en ? 'Invite & get rewarded' : 'მოიწვიე და მიიღე ჯილდო'}</h2>
         </div>
         <p className="text-sm text-gray-400 mb-4">
-          გააზიარე შენი ბმული. როცა მოწვეული გამოიწერს — შენ იღებ{' '}
-          <span className="text-blue-300 font-medium">{data.rewardRules.referrerFreeMonths} უფასო თვეს</span>,
-          ისინი კი <span className="text-blue-300 font-medium">{data.rewardRules.referredDiscountPercent}% ფასდაკლებას</span> პირველ თვეზე.
+          {en ? 'Share your link. When an invitee subscribes — you get ' : 'გააზიარე შენი ბმული. როცა მოწვეული გამოიწერს — შენ იღებ '}
+          <span className="text-blue-300 font-medium">{data.rewardRules.referrerFreeMonths} {en ? 'free months' : 'უფასო თვეს'}</span>{en ? ', and they get ' : ', ისინი კი '}
+          <span className="text-blue-300 font-medium">{data.rewardRules.referredDiscountPercent}% {en ? 'off' : 'ფასდაკლებას'}</span>{en ? ' their first month.' : ' პირველ თვეზე.'}
         </p>
         <div className="flex items-stretch gap-2">
           <div className="flex-1 min-w-0 rounded-xl bg-[#13131f] border border-white/10 px-4 py-3 text-sm text-gray-200 font-mono truncate">
@@ -80,7 +82,7 @@ export default function ReferralView() {
             className="inline-flex items-center gap-2 px-4 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors whitespace-nowrap"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'დაკოპირდა' : 'ბმულის კოპირება'}
+            {copied ? (en ? 'Copied' : 'დაკოპირდა') : (en ? 'Copy link' : 'ბმულის კოპირება')}
           </button>
         </div>
       </div>
@@ -99,19 +101,19 @@ export default function ReferralView() {
       {/* Referred table */}
       <div className="rounded-2xl border border-white/[0.06] bg-[#0d0d1a] overflow-hidden">
         <div className="px-5 py-3 border-b border-white/[0.06]">
-          <h3 className="text-sm font-semibold text-white">მოწვეული მომხმარებლები</h3>
+          <h3 className="text-sm font-semibold text-white">{en ? 'Referred users' : 'მოწვეული მომხმარებლები'}</h3>
         </div>
         {data.referred.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-gray-500">
-            ჯერ არავინ მოგიწვევია — გააზიარე ბმული დასაწყებად.
+            {en ? 'No one invited yet — share your link to get started.' : 'ჯერ არავინ მოგიწვევია — გააზიარე ბმული დასაწყებად.'}
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500">
-                <th className="px-5 py-2 font-medium">მომხმარებელი</th>
-                <th className="px-5 py-2 font-medium">თარიღი</th>
-                <th className="px-5 py-2 font-medium text-right">სტატუსი</th>
+                <th className="px-5 py-2 font-medium">{en ? 'User' : 'მომხმარებელი'}</th>
+                <th className="px-5 py-2 font-medium">{en ? 'Date' : 'თარიღი'}</th>
+                <th className="px-5 py-2 font-medium text-right">{en ? 'Status' : 'სტატუსი'}</th>
               </tr>
             </thead>
             <tbody>
@@ -119,11 +121,11 @@ export default function ReferralView() {
                 <tr key={i} className="border-t border-white/[0.05]">
                   <td className="px-5 py-3 text-gray-200 font-mono">{r.email}</td>
                   <td className="px-5 py-3 text-gray-400">
-                    {new Date(r.joinedAt).toLocaleDateString('ka-GE')}
+                    {new Date(r.joinedAt).toLocaleDateString(en ? 'en-US' : 'ka-GE')}
                   </td>
                   <td className="px-5 py-3 text-right">
                     <span className={`inline-block px-2.5 py-1 rounded-full text-xs border ${STATUS_STYLE[r.status]}`}>
-                      {STATUS_LABEL[r.status]}
+                      {STATUS_LABEL(en)[r.status]}
                     </span>
                   </td>
                 </tr>

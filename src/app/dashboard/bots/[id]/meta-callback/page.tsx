@@ -15,6 +15,7 @@
 // `{source: "peit-meta-oauth", ok, error?}`.
 
 import { use, useCallback, useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface Props { params: Promise<{ id: string }> }
@@ -28,6 +29,7 @@ interface Status {
 }
 
 export default function MetaCallbackPage({ params }: Props) {
+  const en = useLanguage().lang === 'en';
   const { id: botId } = use(params);
   const [status, setStatus] = useState<Status>({ phase: 'verifying' });
 
@@ -38,7 +40,7 @@ export default function MetaCallbackPage({ params }: Props) {
     }
     setStatus({
       phase: result.ok ? 'done' : 'error',
-      message: result.ok ? 'წარმატება — შეგიძლია დახურო ეს ფანჯარა.' : (result.error ?? 'შეცდომა'),
+      message: result.ok ? (en ? 'Success — you can close this window.' : 'წარმატება — შეგიძლია დახურო ეს ფანჯარა.') : (result.error ?? (en ? 'Error' : 'შეცდომა')),
     });
     setTimeout(() => { try { window.close(); } catch { /* ignore */ } }, 2500);
   }, []);
@@ -104,15 +106,15 @@ export default function MetaCallbackPage({ params }: Props) {
         {status.phase === 'verifying' && (
           <Centered>
             <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
-            <p className="text-gray-300 text-sm">დაკავშირების შემოწმება…</p>
+            <p className="text-gray-300 text-sm">{en ? 'Verifying connection…' : 'დაკავშირების შემოწმება…'}</p>
           </Centered>
         )}
 
         {status.phase === 'picking' && (
           <div className="flex flex-col gap-4">
-            <h1 className="text-white font-semibold">აარჩიე page</h1>
+            <h1 className="text-white font-semibold">{en ? 'Pick a page' : 'აარჩიე page'}</h1>
             <p className="text-gray-400 text-xs">
-              გადაკითხე — შემდეგ დააჭირე გვერდს, რომელიც ბოტთან გინდა დააკავშირო.
+              {en ? 'Review the list — then tap the page you want to connect to the bot.' : 'გადახედე სიას — შემდეგ დააჭირე გვერდს, რომელიც ბოტთან გინდა დააკავშირო.'}
             </p>
             {(status.pages?.length ?? 0) === 0 ? (
               // We don't pre-fetch pages — let the user paste the page ID.
@@ -136,7 +138,7 @@ export default function MetaCallbackPage({ params }: Props) {
         {status.phase === 'connecting' && (
           <Centered>
             <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
-            <p className="text-gray-300 text-sm">დაკავშირება Meta-სთან…</p>
+            <p className="text-gray-300 text-sm">{en ? 'Connecting to Meta…' : 'დაკავშირება Meta-სთან…'}</p>
           </Centered>
         )}
 
@@ -163,11 +165,12 @@ function Centered({ children }: { children: React.ReactNode }) {
 }
 
 function ManualPageId({ onSelect }: { onSelect: (pageId: string) => void }) {
+  const en = useLanguage().lang === 'en';
   const [val, setVal] = useState('');
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-gray-500 leading-relaxed">
-        Page-ის ID შეგიძლია იპოვო Meta Business Suite-ში → Settings → Page Details.
+        {en ? 'You can find the Page ID in Meta Business Suite → Settings → Page Details.' : 'Page-ის ID შეგიძლია იპოვო Meta Business Suite-ში → Settings → Page Details.'}
       </p>
       <div className="flex gap-2">
         <input

@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState, useRef, useEffect } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 import {
   Zap, ArrowLeft, Bot as BotIcon, Send, RotateCcw,
@@ -24,6 +25,7 @@ const LANG_LABELS: Record<BotLang, { flag: string; name: string; placeholder: st
 };
 
 export default function PlaygroundPage({ params }: { params: Promise<{ id: string }> }) {
+  const en = useLanguage().lang === 'en';
   const { id } = use(params);
   const { getBot, loaded, updateBot } = useBots();
   const bot = getBot(id);
@@ -75,7 +77,7 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
   if (!bot) {
     return (
       <div className="py-24 flex flex-col items-center justify-center">
-        <p className="text-white text-lg mb-2">ბოტი ვერ მოიძებნა</p>
+        <p className="text-white text-lg mb-2">{en ? 'Bot not found' : 'ბოტი ვერ მოიძებნა'}</p>
         <Link href="/dashboard" className="btn-primary text-white font-semibold px-6 py-3 rounded-xl text-sm mt-4">
           Dashboard
         </Link>
@@ -132,7 +134,7 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
         {
           id: uid + 1,
           from: 'bot',
-          text: e instanceof Error ? `⚠ ${e.message}` : '⚠ შეცდომა',
+          text: e instanceof Error ? `⚠ ${e.message}` : (en ? '⚠ Error' : '⚠ შეცდომა'),
           source: 'fallback',
         },
       ]);
@@ -161,9 +163,9 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
               <Sparkles className="w-3 h-3 text-violet-400" />
               <span className="text-violet-300 text-xs font-medium">Playground</span>
             </div>
-            <h1 className="text-2xl font-bold text-white">{bot.name}-ის ტესტი</h1>
+            <h1 className="text-2xl font-bold text-white">{en ? `Test ${bot.name}` : `${bot.name}-ის ტესტი`}</h1>
             <p className="text-gray-400 text-sm mt-1">
-              ცოცხალი ჩატი — სცადე FAQ-ებზე დაფუძნებული პასუხები
+              {en ? 'Live chat — try answers grounded in your FAQs' : 'ცოცხალი ჩატი — სცადე FAQ-ებზე დაფუძნებული პასუხები'}
             </p>
           </div>
 
@@ -213,7 +215,7 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
               <p className="text-white font-semibold text-sm">{bot.name}</p>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-gray-400 text-xs">ონლაინ · {ui.name}</span>
+                <span className="text-gray-400 text-xs">{en ? 'online' : 'ონლაინ'} · {ui.name}</span>
               </div>
             </div>
           </div>
@@ -247,9 +249,9 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
                       m.source === 'knowledge' ? 'text-blue-400' :
                       'text-amber-500'
                     }`}>
-                      {m.source === 'faq' ? '✓ FAQ-ში მოიძებნა' :
-                       m.source === 'knowledge' ? '🔍 საიტის კონტენტიდან' :
-                       '⚡ Fallback პასუხი'}
+                      {m.source === 'faq' ? (en ? '✓ Found in FAQ' : '✓ FAQ-ში მოიძებნა') :
+                       m.source === 'knowledge' ? (en ? '🔍 From site content' : '🔍 საიტის კონტენტიდან') :
+                       (en ? '⚡ Fallback answer' : '⚡ Fallback პასუხი')}
                     </p>
                   )}
                 </div>
@@ -311,7 +313,7 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <p className="text-center text-gray-600 text-xs mt-4">
-          ეს არის ტესტ-რეჟიმი. რეალური მომხმარებლებისთვის გამოიყენე ჩასმის კოდი.
+          {en ? 'This is test mode. For real visitors use the embed code.' : 'ეს არის ტესტ-რეჟიმი. რეალური მომხმარებლებისთვის გამოიყენე ჩასმის კოდი.'}
         </p>
     </div>
   );

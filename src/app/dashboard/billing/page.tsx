@@ -8,6 +8,7 @@ import {
   CheckCircle2, AlertCircle, ExternalLink, Sparkles,
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard-shell/PageHeader';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface SubscriptionData {
   ok: true;
@@ -47,6 +48,7 @@ export default function BillingPage() {
 }
 
 function BillingInner() {
+  const en = useLanguage().lang === 'en';
   const sp = useSearchParams();
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,12 +90,12 @@ function BillingInner() {
       const res = await fetch('/api/lemon/portal', { method: 'POST' });
       const d = await res.json();
       if (!res.ok || !d.url) {
-        setPortalError(d.message || d.error || 'Portal-ი ვერ გაიხსნა');
+        setPortalError(d.message || d.error || (en ? 'Could not open the portal' : 'Portal-ი ვერ გაიხსნა'));
         return;
       }
       window.location.href = d.url;
     } catch (e) {
-      setPortalError(e instanceof Error ? e.message : 'უცნობი შეცდომა');
+      setPortalError(e instanceof Error ? e.message : (en ? 'Unknown error' : 'უცნობი შეცდომა'));
     } finally {
       setPortalBusy(false);
     }
@@ -111,7 +113,7 @@ function BillingInner() {
     return (
       <div className="py-20 flex flex-col items-center justify-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-3" />
-        <p className="text-gray-300">Subscription ვერ ჩაიტვირთა</p>
+        <p className="text-gray-300">{en ? 'Failed to load subscription' : 'Subscription ვერ ჩაიტვირთა'}</p>
       </div>
     );
   }
@@ -125,7 +127,7 @@ function BillingInner() {
       <PageHeader
         eyebrow="Billing"
         title="Billing & Subscription"
-        subtitle="პლანის მართვა, ინვოისები, გადახდის მეთოდი."
+        subtitle={en ? 'Manage your plan, invoices and payment method.' : 'პლანის მართვა, ინვოისები, გადახდის მეთოდი.'}
       />
 
         {/* Checkout outcome banners */}
@@ -133,15 +135,15 @@ function BillingInner() {
           <div className="mb-6 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-emerald-300 font-semibold text-sm">გადახდა წარმატებულია</p>
-              <p className="text-gray-400 text-xs mt-0.5">თქვენი პლანი აქტიურია. webhook-ი ანახლებს მონაცემებს რამდენიმე წამში.</p>
+              <p className="text-emerald-300 font-semibold text-sm">{en ? 'Payment successful' : 'გადახდა წარმატებულია'}</p>
+              <p className="text-gray-400 text-xs mt-0.5">{en ? 'Your plan is active. The webhook refreshes the data within a few seconds.' : 'თქვენი პლანი აქტიურია. webhook-ი ანახლებს მონაცემებს რამდენიმე წამში.'}</p>
             </div>
           </div>
         )}
         {checkoutOutcome === 'canceled' && (
           <div className="mb-6 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-amber-300 text-sm">გადახდა გაუქმდა — შეგიძლია სცადო ისევ.</p>
+            <p className="text-amber-300 text-sm">{en ? 'Checkout was canceled — you can try again.' : 'გადახდა გაუქმდა — შეგიძლია სცადო ისევ.'}</p>
           </div>
         )}
 
@@ -157,23 +159,23 @@ function BillingInner() {
                   <p className="text-white font-bold text-2xl">{plan.label}</p>
                   {isTrialing && (
                     <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                      {trialDaysLeft} დღე trial
+                      {trialDaysLeft} {en ? 'days trial' : 'დღე trial'}
                     </span>
                   )}
                   {sub.status === 'past_due' && (
                     <span className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
-                      გადახდა ვერ მოხდა
+                      {en ? 'Payment failed' : 'გადახდა ვერ მოხდა'}
                     </span>
                   )}
                   {sub.status === 'canceled' && (
                     <span className="text-xs text-gray-400 bg-white/[0.05] border border-white/[0.08] px-2 py-0.5 rounded-full">
-                      გაუქმებული
+                      {en ? 'Canceled' : 'გაუქმებული'}
                     </span>
                   )}
                 </div>
                 <p className="text-gray-500 text-sm">
                   {sub.currentPeriodEnd && (
-                    <>განახლდება / მთავრდება: {new Date(sub.currentPeriodEnd).toLocaleDateString('ka-GE')}</>
+                    <>{en ? 'Renews / ends' : 'განახლდება / მთავრდება'}: {new Date(sub.currentPeriodEnd).toLocaleDateString(en ? 'en-US' : 'ka-GE')}</>
                   )}
                 </p>
               </div>
@@ -188,14 +190,14 @@ function BillingInner() {
                 {portalBusy
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <CreditCard className="w-4 h-4" />}
-                პლანის მართვა
+                {en ? 'Manage plan' : 'პლანის მართვა'}
                 <ExternalLink className="w-3 h-3" />
               </button>
               <Link
                 href="/pricing"
                 className="text-violet-400 hover:text-violet-300 text-xs text-center transition-colors"
               >
-                სხვა პლანი ნახე →
+                {en ? 'See other plans →' : 'სხვა პლანი ნახე →'}
               </Link>
             </div>
           </div>
@@ -208,28 +210,27 @@ function BillingInner() {
 
           {/* Usage rows */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-white/[0.06]">
-            <UsageRow label="ბოტები" used={usage.bots} cap={limits.bots} />
-            <UsageRow label="შეტყობინებები ამ თვეში" used={usage.messages} cap={limits.messagesPerMonth} />
+            <UsageRow label={en ? 'Bots' : 'ბოტები'} used={usage.bots} cap={limits.bots} />
+            <UsageRow label={en ? 'Messages this month' : 'შეტყობინებები ამ თვეში'} used={usage.messages} cap={limits.messagesPerMonth} />
           </div>
         </div>
 
         {/* What's included */}
         <div className="glass rounded-2xl p-6">
-          <h2 className="text-white font-semibold mb-4">მიმდინარე ლიმიტები</h2>
+          <h2 className="text-white font-semibold mb-4">{en ? 'Current limits' : 'მიმდინარე ლიმიტები'}</h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <Feature on={true} text={`${limits.bots ?? '∞'} ბოტი`} />
-            <Feature on={true} text={`${limits.messagesPerMonth?.toLocaleString() ?? '∞'} შეტყობინება/თვე`} />
-            <Feature on={true} text={`${limits.chunksPerBot ?? '∞'} chunk თითო ბოტზე`} />
-            <Feature on={true} text={`${limits.faqsPerBot ?? '∞'} FAQ თითო ბოტზე`} />
-            <Feature on={limits.domainAllowlist} text="დომენების allowlist" />
-            <Feature on={limits.removeBranding} text='"Powered by Peit" მოშორება' />
+            <Feature on={true} text={`${limits.bots ?? '∞'} ${en ? 'bots' : 'ბოტი'}`} />
+            <Feature on={true} text={`${limits.messagesPerMonth?.toLocaleString() ?? '∞'} ${en ? 'messages/month' : 'შეტყობინება/თვე'}`} />
+            <Feature on={true} text={`${limits.chunksPerBot ?? '∞'} ${en ? 'chunks per bot' : 'chunk თითო ბოტზე'}`} />
+            <Feature on={true} text={`${limits.faqsPerBot ?? '∞'} ${en ? 'FAQs per bot' : 'FAQ თითო ბოტზე'}`} />
+            <Feature on={limits.domainAllowlist} text={en ? 'Domain allowlist' : 'დომენების allowlist'} />
+            <Feature on={limits.removeBranding} text={en ? 'Remove "Powered by Peit"' : '"Powered by Peit" მოშორება'} />
           </ul>
 
           <div className="mt-6 flex items-start gap-3 rounded-xl border border-violet-500/20 bg-violet-500/[0.05] p-4">
             <Sparkles className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
             <p className="text-gray-400 text-xs leading-relaxed">
-              სცემს უფრო მეტი? <Link href="/pricing" className="text-violet-400 hover:text-violet-300 underline">გადადი ფასიან პლანზე</Link> და მიიღე
-              მეტი ბოტი, შეტყობინება, AI Index და დომენის allowlist.
+              {en ? 'Need more? ' : 'გჭირდება მეტი? '}<Link href="/pricing" className="text-violet-400 hover:text-violet-300 underline">{en ? 'Upgrade your plan' : 'გადადი ფასიან პლანზე'}</Link>{en ? ' and get more bots, messages, AI Index and a domain allowlist.' : ' და მიიღე მეტი ბოტი, შეტყობინება, AI Index და დომენის allowlist.'}
             </p>
           </div>
         </div>

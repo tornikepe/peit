@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CreditCard, Crown, ExternalLink, Loader2, Download } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Billing {
   plan:              string;
@@ -41,6 +42,7 @@ const PLAN_LABEL: Record<string, string> = {
 };
 
 export default function BillingView() {
+  const en = useLanguage().lang === 'en';
   const [data,    setData]    = useState<Billing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -96,16 +98,16 @@ export default function BillingView() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Crown className="w-4 h-4 text-violet-300" />
-              <span className="text-[11px] uppercase tracking-wider text-gray-500">მიმდინარე გეგმა</span>
+              <span className="text-[11px] uppercase tracking-wider text-gray-500">{en ? 'Current plan' : 'მიმდინარე გეგმა'}</span>
             </div>
             <h2 className="text-white text-2xl font-bold">{PLAN_LABEL[data.plan] ?? data.plan}</h2>
             <p className="text-xs text-gray-500 mt-1">
-              {labelStatus(data.status)}
+              {labelStatus(data.status, en)}
               {data.trialEndsAt && (
-                <> · ტრიალი მთავრდება {formatDate(data.trialEndsAt)}</>
+                <> · {en ? 'trial ends' : 'ტრიალი მთავრდება'} {formatDate(data.trialEndsAt, en)}</>
               )}
               {data.currentPeriodEnd && (
-                <> · შემდეგი {data.cancelAtPeriodEnd ? 'წყდება' : 'გადახდა'} {formatDate(data.currentPeriodEnd)}</>
+                <> · {data.cancelAtPeriodEnd ? (en ? 'ends' : 'წყდება') : (en ? 'next payment' : 'შემდეგი გადახდა')} {formatDate(data.currentPeriodEnd, en)}</>
               )}
             </p>
           </div>
@@ -113,15 +115,15 @@ export default function BillingView() {
             href="/pricing"
             className="text-xs font-medium text-white bg-violet-500/90 hover:bg-violet-500 px-4 py-2 rounded-lg inline-flex items-center gap-1.5"
           >
-            გეგმის შეცვლა
+            {en ? 'Change plan' : 'გეგმის შეცვლა'}
           </Link>
         </div>
 
         <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <Stat label="ბოტი" v={String(data.limits.botCount)} />
-          <Stat label="შეტყობინება/თვე" v={`${data.usage.messages.toLocaleString('ka-GE')} / ${data.limits.messagesPerMonth.toLocaleString('ka-GE')}`} />
-          <Stat label="chunk/ბოტი" v={String(data.limits.chunksPerBot)} />
-          <Stat label="FAQ/ბოტი" v={String(data.limits.faqsPerBot)} />
+          <Stat label={en ? 'Bots' : 'ბოტი'} v={String(data.limits.botCount)} />
+          <Stat label={en ? 'Messages/month' : 'შეტყობინება/თვე'} v={`${data.usage.messages.toLocaleString(en ? 'en-US' : 'ka-GE')} / ${data.limits.messagesPerMonth.toLocaleString(en ? 'en-US' : 'ka-GE')}`} />
+          <Stat label={en ? 'Chunks/bot' : 'chunk/ბოტი'} v={String(data.limits.chunksPerBot)} />
+          <Stat label={en ? 'FAQs/bot' : 'FAQ/ბოტი'} v={String(data.limits.faqsPerBot)} />
         </div>
       </div>
 
@@ -131,10 +133,10 @@ export default function BillingView() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <CreditCard className="w-4 h-4 text-violet-300" />
-              <span className="text-[11px] uppercase tracking-wider text-gray-500">გადახდის მეთოდი</span>
+              <span className="text-[11px] uppercase tracking-wider text-gray-500">{en ? 'Payment method' : 'გადახდის მეთოდი'}</span>
             </div>
             <p className="text-sm text-gray-300">
-              ბარათის + invoice email-ის მართვა Lemon Squeezy-ის portal-ში
+              {en ? 'Manage your card and invoice email in the Lemon Squeezy portal' : 'ბარათის + invoice email-ის მართვა Lemon Squeezy-ის portal-ში'}
             </p>
           </div>
           <button
@@ -144,32 +146,32 @@ export default function BillingView() {
             className="text-xs font-medium text-gray-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.06] px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 disabled:opacity-50"
           >
             {portalBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
-            Portal-ის გახსნა
+            {en ? 'Open portal' : 'Portal-ის გახსნა'}
           </button>
         </div>
       </div>
 
       {/* Invoices */}
       <div className="glass rounded-2xl p-6">
-        <h3 className="text-white font-semibold mb-1">ინვოისები</h3>
-        <p className="text-xs text-gray-500 mb-4">PDF ჩამოწერა Lemon Squeezy-დან</p>
+        <h3 className="text-white font-semibold mb-1">{en ? 'Invoices' : 'ინვოისები'}</h3>
+        <p className="text-xs text-gray-500 mb-4">{en ? 'Download PDFs from Lemon Squeezy' : 'PDF ჩამოწერა Lemon Squeezy-დან'}</p>
 
         {data.invoices.length === 0 ? (
-          <p className="text-xs text-gray-500 py-4 text-center">ჯერ ინვოისები არ არის</p>
+          <p className="text-xs text-gray-500 py-4 text-center">{en ? 'No invoices yet' : 'ჯერ ინვოისები არ არის'}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-[10px] uppercase tracking-wider text-gray-600">
               <tr>
-                <th className="text-left font-medium pb-2">თარიღი</th>
-                <th className="text-left font-medium pb-2">თანხა</th>
-                <th className="text-left font-medium pb-2">სტატუსი</th>
+                <th className="text-left font-medium pb-2">{en ? 'Date' : 'თარიღი'}</th>
+                <th className="text-left font-medium pb-2">{en ? 'Amount' : 'თანხა'}</th>
+                <th className="text-left font-medium pb-2">{en ? 'Status' : 'სტატუსი'}</th>
                 <th className="text-right font-medium pb-2">PDF</th>
               </tr>
             </thead>
             <tbody>
               {data.invoices.map(inv => (
                 <tr key={inv.id} className="border-t border-white/[0.04]">
-                  <td className="py-2 text-gray-300">{formatDate(inv.createdAt)}</td>
+                  <td className="py-2 text-gray-300">{formatDate(inv.createdAt, en)}</td>
                   <td className="py-2 text-white tabular-nums">
                     {formatAmount(inv.amount, inv.currency)}
                   </td>
@@ -215,8 +217,8 @@ function Stat({ label, v }: { label: string; v: string }) {
   );
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ka-GE', { day: 'numeric', month: 'short', year: 'numeric' });
+function formatDate(iso: string, en: boolean): string {
+  return new Date(iso).toLocaleDateString(en ? 'en-US' : 'ka-GE', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /** LS returns amounts in minor units (cents). */
@@ -225,13 +227,13 @@ function formatAmount(minor: number, currency: string): string {
   return new Intl.NumberFormat('ka-GE', { style: 'currency', currency }).format(major);
 }
 
-function labelStatus(s: string): string {
+function labelStatus(s: string, en: boolean): string {
   switch (s) {
-    case 'trialing':  return 'ტრიალში';
-    case 'active':    return 'აქტიური';
-    case 'past_due':  return 'ვადაგადაცილებული';
-    case 'canceled':  return 'გაუქმებული';
-    case 'incomplete':return 'არასრული';
+    case 'trialing':  return en ? 'Trialing' : 'ტრიალში';
+    case 'active':    return en ? 'Active' : 'აქტიური';
+    case 'past_due':  return en ? 'Past due' : 'ვადაგადაცილებული';
+    case 'canceled':  return en ? 'Canceled' : 'გაუქმებული';
+    case 'incomplete':return en ? 'Incomplete' : 'არასრული';
     default:          return s;
   }
 }
