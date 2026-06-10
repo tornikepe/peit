@@ -61,7 +61,6 @@ export default function MarketingFooter() {
         </div>
         <div className="footer-bottom">
           <span className="text-faint mono" style={{ fontSize: 13 }}>{t.footer.copy}</span>
-          <span className="text-faint" style={{ fontSize: 13 }}>{t.footer.made}</span>
         </div>
       </div>
     </footer>

@@ -5,10 +5,10 @@ const RAW = {
   ka: {
     nav: { how: "როგორ მუშაობს", pricing: "ფასები", industries: "ინდუსტრიები", blog: "ბლოგი", signin: "შესვლა", signup: "რეგისტრაცია", dashboard: "Dashboard" },
     hero: {
-      badge: "+12 ლიდი კვირაში — ღამეული ტრაფიკიდან",
-      title1: "კლიენტი გელოდება.",
-      title2: "შენი ბიზნესი — გძინავს.",
-      sub: "ატვირთე FAQ ან მიეცი ვებსაიტის URL — 10 წუთში Peit შენი ბიზნესის AI ასისტენტი ხდება. პასუხობს ქართულად, 24/7, ვებსაიტზე, Telegram-ში და Instagram-ში.",
+      badge: "+12 ლიდი კვირაში ღამის ტრაფიკიდან",
+      title1: "გადააქციე ყოველი ვიზიტორი",
+      title2: "მომხმარებლად.",
+      sub: "AI აგენტები, რომლებიც შენს ბიზნესს კარგად იცნობენ. პასუხობენ კითხვებს, აფასებენ ლიდებს და ყიდიან — ყველა არხზე, 24 საათის განმავლობაში.",
       cta1: "7 დღე უფასოდ სცადე",
       cta2: "როგორ მუშაობს — 2 წუთი",
       note: "საკრედიტო ბარათი არ გჭირდება · გაუქმება ერთი კლიკით",
@@ -85,8 +85,8 @@ const RAW = {
     },
     pricing: {
       kicker: "ფასები",
-      title: "ნაკლები ღირს ვიდრე ერთი support-ის სპეციალისტი.",
-      sub: "და მუშაობს 24/7, არასოდეს ავადდება და 10x მეტ მოცულობას ამუშავებს.",
+      title: "ნაკლები ღირს ვიდრე ერთი მხარდაჭერის თანამშრომელი.",
+      sub: "და მუშაობს 24/7, არასოდეს ავადდება და 10-ჯერ მეტ მოცულობას ამუშავებს.",
       compareA: "სრულ განაკვეთზე support-ის სპეციალისტი", compareAp: "~₾4,500/თვე",
       compareB: "Peit Pro — 33x უფრო იაფი", compareBp: "₾65/თვე",
       vs: "vs",
@@ -134,7 +134,6 @@ const RAW = {
       industries: ["რესტორნები","E-Commerce","სასტუმროები","უძრავი ქონება","კლინიკები","სალონები"],
       legal: ["სერვისის წესები","კონფიდენციალობა","GDPR DPA","Cookie პოლიტიკა"],
       copy: "© 2026 Peit. ყველა უფლება დაცულია.",
-      made: "დამზადებულია ❤️ საქართველოში",
     },
     ready: { title: "მზად ხარ დასაწყებად?", sub: "7 დღე უფასო. კოდი არ სჭირდება. 10 წუთი setup.", cta: "უფასოდ სცადე ახლა" },
     dash: {
@@ -161,10 +160,10 @@ const RAW = {
   en: {
     nav: { how: "How it works", pricing: "Pricing", industries: "Industries", blog: "Blog", signin: "Sign in", signup: "Sign up", dashboard: "Dashboard" },
     hero: {
-      badge: "+12 leads/week — from after-hours traffic",
-      title1: "Your customer is waiting.",
-      title2: "Your business — is asleep.",
-      sub: "Upload an FAQ or drop a website URL — in 10 minutes Peit becomes your business's AI assistant. Answers in Georgian, 24/7, on your website, Telegram and Instagram.",
+      badge: "+12 leads/week from after-hours traffic",
+      title1: "Turn every visitor",
+      title2: "into a Customer.",
+      sub: "AI agents that know your business inside out. They answer questions, qualify leads, and close sales — across every channel, 24 hours a day.",
       cta1: "Start 7-day free trial",
       cta2: "How it works — 2 min",
       note: "No credit card needed · Cancel in one click",
@@ -242,7 +241,7 @@ const RAW = {
     pricing: {
       kicker: "Pricing",
       title: "Costs less than one support hire.",
-      sub: "And it works 24/7, never gets sick, and handles 10x the volume.",
+      sub: "And it works 24/7, never calls in sick, and handles 10x the volume.",
       compareA: "Full-time support agent", compareAp: "~₾4,500/mo",
       compareB: "Peit Pro — 33x cheaper", compareBp: "₾65/mo",
       vs: "vs",
@@ -290,7 +289,6 @@ const RAW = {
       industries: ["Restaurants","E-Commerce","Hotels","Real Estate","Clinics","Salons"],
       legal: ["Terms of Service","Privacy","GDPR DPA","Cookie Policy"],
       copy: "© 2026 Peit. All rights reserved.",
-      made: "Made with ❤️ in Georgia",
     },
     ready: { title: "Ready to start?", sub: "7 days free. No code. 10-minute setup.", cta: "Try free now" },
     dash: {

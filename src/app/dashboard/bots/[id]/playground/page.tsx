@@ -8,7 +8,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useBots } from '@/context/BotsContext';
-import { DEFAULT_GREETINGS, type BotLang } from '@/lib/bots';
+import { BRAND_COLORS, DEFAULT_GREETINGS, type BotLang } from '@/lib/bots';
 
 interface Msg {
   id: number;
@@ -86,8 +86,12 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
   }
 
   async function send() {
-    if (!input.trim() || !bot || typing) return;
-    const msg = input.trim();
+    return sendText(input);
+  }
+
+  async function sendText(text: string) {
+    if (!text.trim() || !bot || typing) return;
+    const msg = text.trim();
     const uid = counter;
     setCounter(c => c + 2);
     setInput('');
@@ -198,6 +202,25 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
+        {/* Brand color — changes the bot's color live (persists; widget uses it too) */}
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500">{en ? 'Bot color:' : 'ბოტის ფერი:'}</span>
+          <div className="flex items-center gap-1.5">
+            {BRAND_COLORS.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => void updateBot(bot.id, { brandColor: c })}
+                aria-label={c}
+                className={`w-6 h-6 rounded-full transition-transform hover:scale-110 ${
+                  bot.brandColor === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#07070f]' : 'ring-1 ring-white/20'
+                }`}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+        </div>
+
         {/* Chat panel */}
         <div className="glass rounded-2xl overflow-hidden flex flex-col" style={{ height: '600px' }}>
           {/* Bot header */}
@@ -206,8 +229,8 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
             style={{ background: `linear-gradient(90deg, ${bot.brandColor}30, transparent)` }}
           >
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: `linear-gradient(135deg, ${bot.brandColor}, ${bot.brandColor}aa)` }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-white/15 shadow-lg"
+              style={{ background: `linear-gradient(135deg, ${bot.brandColor}, ${bot.brandColor}aa)`, boxShadow: `0 4px 14px ${bot.brandColor}40` }}
             >
               <BotIcon className="w-5 h-5 text-white" />
             </div>
@@ -282,8 +305,9 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
               {suggestionsByLang.map((s, i) => (
                 <button
                   key={i}
-                  onClick={() => { setInput(s); }}
-                  className="text-xs px-3 py-1.5 rounded-full border border-violet-500/30 text-violet-300 hover:bg-violet-500/10 transition-colors"
+                  onClick={() => { sendText(s); }}
+                  className="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-white/[0.05]"
+                  style={{ borderColor: `${bot.brandColor}55`, color: bot.brandColor }}
                 >
                   {s}
                 </button>
@@ -299,13 +323,15 @@ export default function PlaygroundPage({ params }: { params: Promise<{ id: strin
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') send(); }}
               placeholder={ui.placeholder}
-              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-violet-500/40"
+              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none transition-colors"
+              onFocus={e => { e.currentTarget.style.borderColor = `${bot.brandColor}66`; }}
+              onBlur={e => { e.currentTarget.style.borderColor = ''; }}
             />
             <button
               onClick={send}
               disabled={!input.trim() || typing}
-              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
-              style={{ background: bot.brandColor }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 disabled:opacity-40 hover:scale-105 active:scale-95"
+              style={{ background: bot.brandColor, boxShadow: `0 2px 10px ${bot.brandColor}50` }}
             >
               <Send className="w-4 h-4 text-white" />
             </button>
