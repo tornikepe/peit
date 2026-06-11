@@ -9,7 +9,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth, UserButton, SignInButton, SignUpButton } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
+import UserMenu from '@/components/auth/UserMenu';
 import { useLanguage } from '@/context/LanguageContext';
 import { LANDING } from '@/lib/landing-content';
 import Logo from '@/components/Logo';
@@ -116,16 +117,12 @@ export default function MarketingNav() {
           {isSignedIn ? (
             <>
               <Link href="/dashboard" className="nav-link nav-signin">{t.nav.dashboard}</Link>
-              <UserButton appearance={{ elements: { avatarBox: 'w-8 h-8' } }} />
+              <UserMenu />
             </>
           ) : (
             <>
-              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                <button type="button" className="nav-link nav-signin">{t.nav.signin}</button>
-              </SignInButton>
-              <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
-                <button type="button" className="nav-signup">{t.nav.signup}</button>
-              </SignUpButton>
+              <Link href="/signin" className="nav-link nav-signin">{t.nav.signin}</Link>
+              <Link href="/signup" className="nav-signup">{t.nav.signup}</Link>
             </>
           )}
           <button className="nav-burger" onClick={() => setOpen(o => !o)} aria-label="Menu">
@@ -141,12 +138,8 @@ export default function MarketingNav() {
           {isSignedIn
             ? <Link href="/dashboard" onClick={() => setOpen(false)}>{t.nav.dashboard}</Link>
             : <>
-                <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                  <button type="button" onClick={() => setOpen(false)}>{t.nav.signin}</button>
-                </SignInButton>
-                <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
-                  <button type="button" className="nav-signup" onClick={() => setOpen(false)}>{t.nav.signup}</button>
-                </SignUpButton>
+                <Link href="/signin" onClick={() => setOpen(false)}>{t.nav.signin}</Link>
+                <Link href="/signup" className="nav-signup" onClick={() => setOpen(false)}>{t.nav.signup}</Link>
               </>}
         </div>
       )}

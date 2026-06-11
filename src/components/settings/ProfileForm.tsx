@@ -6,7 +6,7 @@
 // password endpoint would conflict with Clerk's session model.
 
 import { useEffect, useState } from 'react';
-import { UserButton } from '@clerk/nextjs';
+import Image from 'next/image';
 import { Loader2, Save, ExternalLink, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -92,7 +92,13 @@ export default function ProfileForm() {
         </p>
 
         <div className="mt-5 flex items-center gap-4">
-          <UserButton />
+          {profile.imageUrl ? (
+            <Image src={profile.imageUrl} alt={profile.name ?? profile.email} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+          ) : (
+            <span className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold grid place-items-center">
+              {(profile.name ?? profile.email).slice(0, 1).toUpperCase()}
+            </span>
+          )}
           <div className="flex-1 min-w-0">
             <div className="text-sm text-white truncate">{profile.email}</div>
             <a

@@ -11,11 +11,9 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider
       appearance={clerkAppearance}
-      // No standalone auth pages — sign-in/up happen in a modal on the home
-      // page. Point Clerk at "/" so a protected-route redirect (and the modal's
-      // internal links) land on the homepage instead of a deleted /signin page.
-      signInUrl="/?signin=1"
-      signUpUrl="/?signup=1"
+      // Custom-built auth pages (headless Clerk flows) — no Clerk UI anywhere.
+      signInUrl="/signin"
+      signUpUrl="/signup"
       signInFallbackRedirectUrl="/dashboard"
       signUpFallbackRedirectUrl="/dashboard"
     >

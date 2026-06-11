@@ -12,7 +12,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Menu, Search, Bell, Plus, Settings, Sun, Moon } from 'lucide-react';
-import { UserButton } from '@clerk/nextjs';
+import UserMenu from '@/components/auth/UserMenu';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
@@ -117,7 +117,7 @@ export default function Topbar({ onMenuClick, theme = 'dark', onToggleTheme }: P
 
           <NotificationsBell copy={c} />
 
-          <UserButton />
+          <UserMenu />
         </div>
       </div>
     </header>
