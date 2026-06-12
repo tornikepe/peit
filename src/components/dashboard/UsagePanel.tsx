@@ -82,7 +82,7 @@ export default function UsagePanel() {
 
   return (
     <div className="glass rounded-2xl p-6 mb-6">
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center ${planMeta.color}`}>
             <Crown className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
