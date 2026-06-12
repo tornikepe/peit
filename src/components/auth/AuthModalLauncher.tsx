@@ -1,39 +1,38 @@
 'use client';
 
-// Legacy-link shim. Auth now lives on the custom /signin and /signup pages;
-// old URLs with ?signin=1 / ?signup=1 (emails, bookmarks, referral links with
-// ?ref=...) forward there. Keeps ?ref/?plan so the referral cookie and the
-// checkout-resume flow still work.
+// Opens the custom auth modal from URL flags, so /signin /signup redirects and
+// old links (?signin=1 / ?signup=1 / referral ?ref=...) land on the homepage
+// with the right modal open. Strips the flag, keeps ?plan/?ref in the URL.
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuthModal } from './AuthModalProvider';
 
 export default function AuthModalLauncher() {
   const { isSignedIn, isLoaded } = useAuth();
+  const { open } = useAuthModal();
   const params = useSearchParams();
   const router = useRouter();
-  const fired = useRef(false);
 
   useEffect(() => {
-    if (!isLoaded || fired.current) return;
+    if (!isLoaded) return;
 
     const wantSignin = params.get('signin') != null;
     const wantSignup = params.get('signup') != null || params.get('ref') != null;
     if (!wantSignin && !wantSignup) return;
 
-    fired.current = true;
-
     if (isSignedIn) { router.replace('/dashboard'); return; }
 
-    const sp = new URLSearchParams();
-    const plan = params.get('plan');
-    const ref  = params.get('ref');
-    if (plan) sp.set('plan', plan);
-    if (ref)  sp.set('ref', ref);
+    open(wantSignup ? 'signup' : 'signin');
+
+    // Strip the modal flag; keep ?plan (checkout resume) and ?ref (referral
+    // cookie on hard refresh) in the URL.
+    const sp = new URLSearchParams(params.toString());
+    sp.delete('signin'); sp.delete('signup');
     const qs = sp.toString();
-    router.replace(`${wantSignup ? '/signup' : '/signin'}${qs ? `?${qs}` : ''}`);
-  }, [isLoaded, isSignedIn, params, router]);
+    router.replace(qs ? `/?${qs}` : '/', { scroll: false });
+  }, [isLoaded, isSignedIn, params, open, router]);
 
   return null;
 }

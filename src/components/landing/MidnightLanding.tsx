@@ -383,7 +383,7 @@ export default function MidnightLanding() {
 
   // Signed-in visitors should land in the dashboard, not /signup (which
   // bounces them home since they're already authenticated).
-  const ctaHref = isSignedIn ? '/dashboard' : '/signup';
+  const ctaHref = isSignedIn ? '/dashboard' : '/?signup=1';
   return (
     <div className="ms-root">
       <div className="bg-grid" />

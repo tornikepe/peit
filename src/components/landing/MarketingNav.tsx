@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import UserMenu from '@/components/auth/UserMenu';
+import { useAuthModal } from '@/components/auth/AuthModalProvider';
 import { useLanguage } from '@/context/LanguageContext';
 import { LANDING } from '@/lib/landing-content';
 import Logo from '@/components/Logo';
@@ -35,6 +36,7 @@ function scrollToSection(id: string) {
 export default function MarketingNav() {
   const { lang, setLang } = useLanguage();
   const { isSignedIn } = useAuth();
+  const { open: openAuth } = useAuthModal();
   const t = lang === 'en' ? LANDING.en : LANDING.ka;
   const pathname = usePathname();
   const router = useRouter();
@@ -121,8 +123,8 @@ export default function MarketingNav() {
             </>
           ) : (
             <>
-              <Link href="/signin" className="nav-link nav-signin">{t.nav.signin}</Link>
-              <Link href="/signup" className="nav-signup">{t.nav.signup}</Link>
+              <button type="button" onClick={() => openAuth('signin')} className="nav-link nav-signin">{t.nav.signin}</button>
+              <button type="button" onClick={() => openAuth('signup')} className="nav-signup">{t.nav.signup}</button>
             </>
           )}
           <button className="nav-burger" onClick={() => setOpen(o => !o)} aria-label="Menu">
@@ -138,8 +140,8 @@ export default function MarketingNav() {
           {isSignedIn
             ? <Link href="/dashboard" onClick={() => setOpen(false)}>{t.nav.dashboard}</Link>
             : <>
-                <Link href="/signin" onClick={() => setOpen(false)}>{t.nav.signin}</Link>
-                <Link href="/signup" className="nav-signup" onClick={() => setOpen(false)}>{t.nav.signup}</Link>
+                <button type="button" onClick={() => { setOpen(false); openAuth('signin'); }}>{t.nav.signin}</button>
+                <button type="button" className="nav-signup" onClick={() => { setOpen(false); openAuth('signup'); }}>{t.nav.signup}</button>
               </>}
         </div>
       )}

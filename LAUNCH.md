@@ -19,6 +19,7 @@
 - [ ] Google OAuth-ის production credentials (Google Cloud Console → OAuth client, redirect Clerk-ის მისამართზე)
 - [ ] Vercel env: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` → production keys → Redeploy
 - [ ] შედეგი: ქრება "Development mode" ბეჯი, ქრება dev-ლიმიტები და ხანდახანი "სერვერის შეცდომა"
+- [ ] **Google OAuth-ის ბრენდინგი**: production instance-ში Custom Credentials ჩასვი (Google Cloud-ის client ID/secret) — Google-ის ფანჯარაში "clerk.accounts.dev"-ის ნაცვლად "peit.ge" გამოჩნდება
 
 ## ეტაპი 3 — გადახდები: Lemon Squeezy (1–2 დღე, review სჭირდება)
 

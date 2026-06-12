@@ -281,7 +281,7 @@ export default function ChatWidget() {
 
           {/* CTA */}
           <div className="border-t border-white/[0.04] px-4 py-2.5 flex items-center justify-between shrink-0">
-            <Link href="/signup"
+            <Link href="/?signup=1"
               className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors">
               {ui.ctaBtn}
             </Link>
