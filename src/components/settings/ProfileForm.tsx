@@ -7,6 +7,10 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRef } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { Camera } from 'lucide-react';
+import { DefaultAvatar } from '@/components/auth/UserMenu';
 import { Loader2, Save, ExternalLink, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -20,6 +24,9 @@ interface Profile {
 
 export default function ProfileForm() {
   const en = useLanguage().lang === 'en';
+  const { user } = useUser();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name,    setName]    = useState('');
   const [locale,  setLocale]  = useState('ka');
@@ -43,6 +50,32 @@ export default function ProfileForm() {
       }
     })();
   }, []);
+
+  async function uploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      setMsg({ kind: 'err', text: en ? 'Choose an image file.' : 'აირჩიე სურათის ფაილი.' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMsg({ kind: 'err', text: en ? 'Max size is 5 MB.' : 'მაქს. ზომა 5 MB-ია.' });
+      return;
+    }
+    setAvatarBusy(true);
+    setMsg(null);
+    try {
+      await user.setProfileImage({ file });
+      setProfile(p => p ? { ...p, imageUrl: user.imageUrl } : p);
+      setMsg({ kind: 'ok', text: en ? 'Avatar updated' : 'ავატარი განახლდა' });
+      setTimeout(() => setMsg(null), 2400);
+    } catch {
+      setMsg({ kind: 'err', text: en ? 'Upload failed — try again.' : 'ატვირთვა ვერ მოხერხდა — სცადე ისევ.' });
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -92,13 +125,33 @@ export default function ProfileForm() {
         </p>
 
         <div className="mt-5 flex items-center gap-4">
-          {profile.imageUrl ? (
-            <Image src={profile.imageUrl} alt={profile.name ?? profile.email} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
-          ) : (
-            <span className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold grid place-items-center">
-              {(profile.name ?? profile.email).slice(0, 1).toUpperCase()}
+          {/* Clickable avatar — uploads a new profile image via Clerk. */}
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={avatarBusy}
+            className="relative group shrink-0 rounded-full disabled:opacity-60"
+            title={en ? 'Change avatar' : 'ავატარის შეცვლა'}
+            aria-label={en ? 'Change avatar' : 'ავატარის შეცვლა'}
+          >
+            {profile.imageUrl ? (
+              <Image src={profile.imageUrl} alt={profile.name ?? profile.email} width={56} height={56} className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10 group-hover:ring-blue-500/50 transition-shadow" />
+            ) : (
+              <DefaultAvatar label={profile.name ?? profile.email} size={56} className="group-hover:ring-blue-500/50 transition-shadow" />
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-blue-600 border-2 border-[#0d0d1a] grid place-items-center">
+              {avatarBusy
+                ? <Loader2 className="w-3 h-3 text-white animate-spin" />
+                : <Camera className="w-3 h-3 text-white" />}
             </span>
-          )}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={uploadAvatar}
+            className="hidden"
+          />
           <div className="flex-1 min-w-0">
             <div className="text-sm text-white truncate">{profile.email}</div>
             <a
@@ -107,8 +160,9 @@ export default function ProfileForm() {
               rel="noopener noreferrer"
               className="text-[11px] text-violet-400 hover:text-violet-300 inline-flex items-center gap-1 mt-0.5"
             >
-              <ExternalLink className="w-3 h-3" /> {en ? 'Email, avatar, password' : 'Email, ავატარი, პაროლი'}
+              <ExternalLink className="w-3 h-3" /> {en ? 'Email & password' : 'Email და პაროლი'}
             </a>
+            <p className="text-[11px] text-gray-600 mt-1">{en ? 'Click the avatar to change it' : 'ავატარის შესაცვლელად დააჭირე მას'}</p>
           </div>
         </div>
 

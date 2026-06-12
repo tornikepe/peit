@@ -221,7 +221,7 @@ export default function SignUpForm({ onSwitch, onDone }: { onSwitch: () => void;
             autoComplete="name"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder={en ? 'Giorgi Beridze' : 'გიორგი ბერიძე'}
+            placeholder={en ? 'Name' : 'სახელი'}
             className={inputCls}
           />
         </Field>

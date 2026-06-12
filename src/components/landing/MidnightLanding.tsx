@@ -248,31 +248,6 @@ function Industries({ t }: { t: LandingContent }) {
   );
 }
 
-function Testimonials({ t }: { t: LandingContent }) {
-  return (
-    <section className="section" id="testimonials">
-      <div className="wrap">
-        <SectionHead kicker={t.testimonials.kicker} title={t.testimonials.title} sub={t.testimonials.sub} />
-        <div className="testi-grid" style={{ marginTop: 56 }}>
-          {t.testimonials.items.map((it, i) => (
-            <figure className="testi-card card" key={i} data-reveal data-delay={i + 1}>
-              <span className="testi-metric mono">{it.metric}</span>
-              <blockquote className="testi-quote">{it.quote}</blockquote>
-              <figcaption className="testi-foot">
-                <span className="testi-ava">{it.in}</span>
-                <span>
-                  <span className="testi-who">{it.who}</span>
-                  <span className="testi-role">{it.role}</span>
-                </span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-        <div className="testi-join mono" data-reveal>{t.testimonials.join}</div>
-      </div>
-    </section>
-  );
-}
 
 function Pricing({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
   return (
@@ -299,7 +274,7 @@ function Pricing({ t, ctaHref }: { t: LandingContent; ctaHref: string }) {
                 <span className="plan-p mono">{p.price}</span>
                 {p.per && <span className="plan-per">{p.per}</span>}
               </div>
-              {p.trial && <div className="plan-trial mono">{p.trial}</div>}
+              <div className="plan-trial mono">{p.trial || '\u00A0'}</div>
               <p className="plan-desc">{p.desc}</p>
               {p.enterprise ? (
                 // Enterprise: open an email to the sales inbox instead of routing.
@@ -393,7 +368,6 @@ export default function MidnightLanding() {
         <Features t={t} />
         <HowItWorks t={t} />
         <Industries t={t} />
-        <Testimonials t={t} />
         <Pricing t={t} ctaHref={ctaHref} />
         <FinalCTA t={t} ctaHref={ctaHref} />
         <FAQ t={t} />
