@@ -1,10 +1,13 @@
 'use client';
 
 // Our own avatar menu — replaces Clerk's <UserButton> so no Clerk UI is
-// visible anywhere. Centered dropdown: avatar + name + email on top, then
-// the navigation items and sign-out. Fully bilingual (ka/en).
+// visible anywhere. The dropdown is rendered in a PORTAL on document.body so
+// it escapes the marketing site's .ms-root reset (which would otherwise
+// repaint the links/sign-out white and kill the hovers) — guaranteeing it
+// looks and behaves identically on the homepage and the dashboard.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -30,11 +33,31 @@ export default function UserMenu() {
   const { signOut } = useClerk();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef  = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Anchor the fixed portal menu under the avatar button. Recomputed on open
+  // and kept in sync while scrolling / resizing.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 10, right: Math.max(10, window.innerWidth - r.right) });
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => { window.removeEventListener('scroll', place, true); window.removeEventListener('resize', place); };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setOpen(false);
+    };
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onEsc);
@@ -54,8 +77,9 @@ export default function UserMenu() {
     'group-hover:bg-blue-500/20 group-hover:border-blue-500/40 transition-colors';
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={btnRef}
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-label="account menu"
@@ -69,8 +93,12 @@ export default function UserMenu() {
         )}
       </button>
 
-      {open && (
-        <div className="absolute right-0 mt-2.5 w-[min(17rem,calc(100vw-1.25rem))] origin-top-right animate-menu-pop rounded-2xl border border-white/[0.1] bg-[#0d0d1a]/95 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden z-50 text-center">
+      {open && pos && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: pos.top, right: pos.right }}
+          className="w-[min(17rem,calc(100vw-1.25rem))] origin-top-right animate-menu-pop rounded-2xl border border-white/[0.1] bg-[#0d0d1a]/95 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden z-[100] text-center"
+        >
           {/* Identity header — centered over a soft brand glow */}
           <div
             className="relative px-4 pt-5 pb-4 flex flex-col items-center gap-2 border-b border-white/[0.07]"
@@ -108,14 +136,15 @@ export default function UserMenu() {
             <button
               type="button"
               onClick={() => { setOpen(false); void signOut(() => router.push('/')); }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-300 hover:text-red-200 border border-red-500/20 bg-red-500/[0.06] hover:bg-red-500/[0.14] hover:border-red-500/40 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-300 hover:text-red-200 border border-red-500/25 bg-red-500/[0.08] hover:bg-red-500/[0.18] hover:border-red-500/50 transition-colors"
             >
               <LogOut className="w-4 h-4" />
               {en ? 'Sign out' : 'გასვლა'}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
