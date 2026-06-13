@@ -270,6 +270,13 @@ h1, h2, h3, h4 {
   100% { background-position: 200% 0; }
 }
 
+/* Account-menu entrance — pops from the top-right anchor. */
+@keyframes menu-pop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-menu-pop { animation: menu-pop 0.18s cubic-bezier(.34, 1.3, .5, 1) both; }
+
 .animate-fade-in        { animation: fadeIn 0.35s ease forwards; }
 .animate-float-slow     { animation: float-slow 14s ease-in-out infinite; }
 .animate-float-slower   { animation: float-slower 18s ease-in-out infinite; }

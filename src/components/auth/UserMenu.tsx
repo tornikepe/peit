@@ -70,30 +70,30 @@ export default function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2.5 w-72 rounded-2xl border border-white/[0.1] bg-[#0d0d1a]/95 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden z-50 text-center">
+        <div className="absolute right-0 mt-2.5 w-[min(17rem,calc(100vw-1.25rem))] origin-top-right animate-menu-pop rounded-2xl border border-white/[0.1] bg-[#0d0d1a]/95 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden z-50 text-center">
           {/* Identity header — centered over a soft brand glow */}
           <div
-            className="relative px-4 pt-6 pb-5 flex flex-col items-center gap-2.5 border-b border-white/[0.07]"
-            style={{ background: 'radial-gradient(140px 90px at 50% 0%, rgba(59,130,246,0.18), transparent 70%)' }}
+            className="relative px-4 pt-5 pb-4 flex flex-col items-center gap-2 border-b border-white/[0.07]"
+            style={{ background: 'radial-gradient(130px 80px at 50% 0%, rgba(59,130,246,0.18), transparent 70%)' }}
           >
             {user.imageUrl ? (
               <Image
                 src={user.imageUrl}
                 alt={name || email}
-                width={64}
-                height={64}
-                className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-500/50 shadow-lg shadow-blue-600/25"
+                width={56}
+                height={56}
+                className="w-14 h-14 rounded-full object-cover ring-2 ring-blue-500/50 shadow-lg shadow-blue-600/25"
               />
             ) : (
-              <DefaultAvatar label={name || email} size={64} className="ring-2 ring-blue-500/50 shadow-lg shadow-blue-600/25" />
+              <DefaultAvatar label={name || email} size={56} className="ring-2 ring-blue-500/50 shadow-lg shadow-blue-600/25" />
             )}
-            {name && <p className="text-[15px] font-bold text-white truncate max-w-full tracking-tight">{name}</p>}
-            <span className="text-[11px] text-gray-400 truncate max-w-full bg-white/[0.05] border border-white/[0.07] rounded-full px-3 py-1">
+            {name && <p className="text-sm font-bold text-white truncate max-w-full tracking-tight">{name}</p>}
+            <span className="text-[11px] text-gray-400 truncate max-w-[calc(100%-1rem)] bg-white/[0.05] border border-white/[0.07] rounded-full px-2.5 py-1">
               {email}
             </span>
           </div>
 
-          <div className="py-2.5 flex flex-col gap-1">
+          <div className="py-2 flex flex-col gap-0.5">
             <Link href="/dashboard" onClick={() => setOpen(false)} className={itemCls}>
               <span className={chipCls}><LayoutDashboard className="w-3.5 h-3.5 text-blue-400" /></span>
               {en ? 'Dashboard' : 'მთავარი'}
